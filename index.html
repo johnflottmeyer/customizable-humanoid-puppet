@@ -79,6 +79,56 @@
 
 </radialGradient>
 
+<linearGradient
+    id="eyeSocketGradient"
+    x1="0%"
+    y1="0%"
+    x2="0%"
+    y2="100%">
+
+    <!-- Soft upper bevel catching light -->
+
+    <stop
+        offset="0%"
+        stop-color="#F2B797"
+        stop-opacity="0.16"/>
+
+    <!-- Transition from raised skin into recess -->
+
+    <stop
+        offset="12%"
+        stop-color="#9B654F"
+        stop-opacity="0.13"/>
+
+    <!-- Darkest part beneath the brow ridge -->
+
+    <stop
+        offset="28%"
+        stop-color="#38231D"
+        stop-opacity="0.38"/>
+
+    <!-- Shadow begins softening -->
+
+    <stop
+        offset="52%"
+        stop-color="#4A2E24"
+        stop-opacity="0.19"/>
+
+    <!-- Nearly gone -->
+
+    <stop
+        offset="76%"
+        stop-color="#4A2E24"
+        stop-opacity="0.05"/>
+
+    <!-- Fully blended into the face -->
+
+    <stop
+        offset="100%"
+        stop-color="#4A2E24"
+        stop-opacity="0"/>
+
+</linearGradient>
                 <path
     id="head"
     fill="url(#skinGradient)"
@@ -114,6 +164,14 @@
     =========================== -->
 
     <g id="leftEyeGroup">
+
+	<path
+    id="leftEyeSocket"
+    fill="url(#eyeSocketGradient)"
+    opacity="0.8"
+    rx="18"
+    ry="18">
+</path>
 
         <path
             id="leftEyeWhite"
@@ -172,6 +230,14 @@
     =========================== -->
 
     <g id="rightEyeGroup">
+
+	<path
+        id="rightEyeSocket"
+        fill="url(#eyeSocketGradient)"
+    opacity="0.8"
+    rx="18"
+    ry="18">
+</path>
 
         <path
             id="rightEyeWhite"
