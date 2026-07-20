@@ -36,6 +36,7 @@ window.eyeSettings = {
     ...defaultEyeSettings
 };
 
+
 /* ==========================
    EYE ANIMATION STATE
 ========================== */
@@ -48,6 +49,7 @@ window.eyeAnimationState = {
     blink: 0
 
 };
+
 
 /* ==========================
    EYE CONTROL NAMES
@@ -144,6 +146,7 @@ function createEyePath(
 
 
     return [
+
         `M ${left} ${centerY}`,
 
         `Q ${centerX} ${upperControlY}`,
@@ -153,6 +156,7 @@ function createEyePath(
         `${left} ${centerY}`,
 
         "Z"
+
     ].join(" ");
 
 }
@@ -180,16 +184,123 @@ function createUpperLidPath(
 
 
     return [
+
         `M ${left} ${centerY}`,
 
         `Q ${centerX} ${controlY}`,
 
         `${right} ${centerY}`
+
     ].join(" ");
 
 }
 
+/* ==========================
+   CREATE EYE SOCKET PATH
+========================== */
 
+function createEyeSocketPath(
+    side,
+    centerX,
+    centerY,
+    width,
+    height
+) {
+
+    const left =
+        centerX -
+        width / 2;
+
+    const right =
+        centerX +
+        width / 2;
+
+    const top =
+        centerY -
+        height / 2;
+
+    const bottom =
+        centerY +
+        height / 2;
+
+
+    const innerRound =
+        width * 0.14;
+
+    const outerRound =
+        width * 0.24;
+
+
+    if (side === "left") {
+
+        return [
+
+            `M ${left + innerRound} ${centerY}`,
+
+            /* Nose side */
+
+            `C ${left + innerRound * 0.35} ${centerY - height * 0.28}`,
+            `${left + innerRound * 0.75} ${top}`,
+            `${centerX} ${top}`,
+
+            /* Upper outer curve */
+
+            `C ${right - outerRound * 0.20} ${top}`,
+            `${right} ${centerY - height * 0.32}`,
+            `${right} ${centerY}`,
+
+            /* Lower outer curve */
+
+            `C ${right} ${centerY + height * 0.34}`,
+            `${centerX + width * 0.28} ${bottom}`,
+            `${centerX} ${bottom}`,
+
+            /* Rounded nose return */
+
+            `C ${left + innerRound * 0.80} ${bottom}`,
+            `${left + innerRound * 0.25} ${centerY + height * 0.25}`,
+            `${left + innerRound} ${centerY}`,
+
+            "Z"
+
+        ].join(" ");
+
+    }
+
+
+    return [
+
+        `M ${right - innerRound} ${centerY}`,
+
+        /* Nose side */
+
+        `C ${right - innerRound * 0.35} ${centerY - height * 0.28}`,
+        `${right - innerRound * 0.75} ${top}`,
+        `${centerX} ${top}`,
+
+        /* Upper outer curve */
+
+        `C ${left + outerRound * 0.20} ${top}`,
+        `${left} ${centerY - height * 0.32}`,
+        `${left} ${centerY}`,
+
+        /* Lower outer curve */
+
+        `C ${left} ${centerY + height * 0.34}`,
+        `${centerX - width * 0.28} ${bottom}`,
+        `${centerX} ${bottom}`,
+
+        /* Rounded nose return */
+
+        `C ${right - innerRound * 0.80} ${bottom}`,
+        `${right - innerRound * 0.25} ${centerY + height * 0.25}`,
+        `${right - innerRound} ${centerY}`,
+
+        "Z"
+
+    ].join(" ");
+
+}
 /* ==========================
    DRAW ONE EYE
 ========================== */
@@ -217,14 +328,19 @@ function drawEye(
 
     /* ==========================
        FIND SVG ELEMENTS
-    =========================== */
+    ========================== */
+
+    const eyeSocket =
+        document.getElementById(
+            `${side}EyeSocket`
+        );
 
     const eyeWhite =
         document.getElementById(
             `${side}EyeWhite`
         );
 
-    const eyeClipPath =
+        const eyeClipPath =
         document.getElementById(
             `${side}EyeClipPath`
         );
@@ -255,7 +371,6 @@ function drawEye(
         );
 
 
-
     if (
         !eyeWhite ||
         !eyeClipPath ||
@@ -276,46 +391,60 @@ function drawEye(
 
 
     /* ==========================
-       EYE SHAPE
-    =========================== */
+       ANIMATED EYE HEIGHT
+    ========================== */
+
+    const minimumEyeHeight = 2;
+
+    const animatedEyeHeight =
+        Math.max(
+            minimumEyeHeight,
+            settings.eyeHeight *
+            (1 - animation.blink)
+        );
+
 
     /* ==========================
-   	ANIMATED EYE HEIGHT
-     ========================== */
+       EYE SHAPE
+    ========================== */
 
-     const minimumEyeHeight = 2;
-
-     const animatedEyeHeight =
-         Math.max(
-             minimumEyeHeight,
-             settings.eyeHeight *
-             (1 - animation.blink)
-         );
-
-
-     const eyePath =
-         createEyePath(
-             centerX,
-             centerY,
-             settings.eyeWidth,
-             animatedEyeHeight
-         );
+    const eyePath =
+        createEyePath(
+            centerX,
+            centerY,
+            settings.eyeWidth,
+            animatedEyeHeight
+        );
 
 
-    eyeWhite.setAttribute(
-        "d",
-        eyePath
-    );
+    /* ==========================
+       EYE SOCKET
+    ========================== */
 
-    eyeClipPath.setAttribute(
-        "d",
-        eyePath
-    );
+    const socketPaddingX = 20;
+    const socketPaddingY = 18;
+    const socketOffsetY = 2;
+
+    const socketWidth =
+        settings.eyeWidth * 1.38;
+
+    const socketHeight =
+        settings.eyeHeight +
+        socketPaddingY;
+
+    const socketPath =
+        createEyeSocketPath(
+            side,
+            centerX,
+            centerY + socketOffsetY,
+            socketWidth,
+            socketHeight
+        );
 
 
     /* ==========================
        EYE ROTATION
-    =========================== */
+    ========================== */
 
     const eyeTransform =
         `rotate(
@@ -325,9 +454,51 @@ function drawEye(
         )`;
 
 
+    /* ==========================
+       DRAW SOCKET
+    ========================== */
+
+    if (eyeSocket) {
+
+        eyeSocket.setAttribute(
+            "d",
+            socketPath
+        );
+
+        eyeSocket.setAttribute(
+            "transform",
+            `rotate(
+                ${rotation * 1.5}
+                ${centerX}
+                ${centerY}
+            )`
+        );
+
+    }
+
+
+    /* ==========================
+       DRAW EYE WHITE
+    ========================== */
+
+    eyeWhite.setAttribute(
+        "d",
+        eyePath
+    );
+
     eyeWhite.setAttribute(
         "transform",
         eyeTransform
+    );
+
+
+    /* ==========================
+       UPDATE CLIP PATH
+    ========================== */
+
+    eyeClipPath.setAttribute(
+        "d",
+        eyePath
     );
 
     eyeClipPath.setAttribute(
@@ -338,13 +509,13 @@ function drawEye(
 
     /* ==========================
        SAFE IRIS MOVEMENT
-    =========================== */
+    ========================== */
 
     const eyeHalfWidth =
         settings.eyeWidth / 2;
 
     const eyeHalfHeight =
-        settings.eyeHeight / 2;
+        animatedEyeHeight / 2;
 
     const irisRadius =
         settings.irisSize / 2;
@@ -372,13 +543,13 @@ function drawEye(
 
     const irisOffsetX =
         clamp(
-             settings.pupilX +
-             animation.lookX,
-             -maximumIrisX,
-             maximumIrisX
-         );
+            settings.pupilX +
+            animation.lookX,
+            -maximumIrisX,
+            maximumIrisX
+        );
 
-     const irisOffsetY =
+    const irisOffsetY =
         clamp(
             settings.pupilY +
             animation.lookY,
@@ -396,7 +567,7 @@ function drawEye(
 
     /* ==========================
        IRIS
-    =========================== */
+    ========================== */
 
     iris.setAttribute(
         "cx",
@@ -416,7 +587,7 @@ function drawEye(
 
     /* ==========================
        INNER IRIS RING
-    =========================== */
+    ========================== */
 
     irisInner.setAttribute(
         "cx",
@@ -436,7 +607,7 @@ function drawEye(
 
     /* ==========================
        PUPIL
-    =========================== */
+    ========================== */
 
     pupil.setAttribute(
         "cx",
@@ -456,7 +627,7 @@ function drawEye(
 
     /* ==========================
        EYE HIGHLIGHT
-    =========================== */
+    ========================== */
 
     const highlightRadius =
         Math.max(
@@ -482,11 +653,9 @@ function drawEye(
         "r",
         highlightRadius
     );
-
-
     /* ==========================
        UPPER EYELID
-    =========================== */
+    ========================== */
 
     upperLid.setAttribute(
         "d",
