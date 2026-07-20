@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Humanoid Avatar</title>
+
+    <link
+        rel="stylesheet"
+        href="css/styles.css"
+    >
+</head>
+
+<body>
+
+    <div id="avatarEditor">
+
+        <!-- ==========================
+             CHARACTER PREVIEW
+        =========================== -->
+
+        <div id="character">
+
+            <svg
+                id="face"
+                viewBox="0 0 500 600"
+                xmlns="http://www.w3.org/2000/svg"
+            >
+
+<radialGradient id="skinGradient"
+                cx="40%"
+                cy="30%"
+                r="75%">
+
+    <stop offset="0%" style="stop-color:var(--skin-light);" />
+    <stop offset="55%" style="stop-color:var(--skin-mid);" />
+    <stop offset="100%" style="stop-color:var(--skin-dark);" />
+	</radialGradient>
+
+	<radialGradient
+    id="eyeGradient"
+    cx="38%"
+    cy="30%"
+    r="80%">
+
+    <stop offset="0%" stop-color="#FFFFFF"/>
+    <stop offset="55%" stop-color="#F7F7F7"/>
+    <stop offset="100%" stop-color="#C8C8C8"/>
+
+</radialGradient>
+
+<radialGradient
+    id="irisGradient"
+    cx="35%"
+    cy="30%"
+    r="70%">
+
+   
+<stop offset="100%" stop-color="#123F73"/>
+    <stop offset="65%" stop-color="#2F8DD8"/>
+     <stop offset="0%" stop-color="#74C8FF"/>
+
+</radialGradient>
+
+<radialGradient
+    id="pupilGradient"
+    cx="35%"
+    cy="30%"
+    r="70%">
+
+    <stop offset="0%" stop-color="#2E2E2E"/>
+    <stop offset="100%" stop-color="#000000"/>
+
+</radialGradient>
+
+                <path
+    id="head"
+    fill="url(#skinGradient)"
+    stroke="#2b211d"
+    stroke-width="4"/></path>
+
+                <!-- Eyes, nose, mouth, and other elements go here -->
+		<!-- ==========================
+     EYES
+========================== -->
+
+<!-- ==========================
+     EYES
+========================== -->
+
+<defs>
+
+    <clipPath id="leftEyeClip">
+        <path id="leftEyeClipPath"></path>
+    </clipPath>
+
+    <clipPath id="rightEyeClip">
+        <path id="rightEyeClipPath"></path>
+    </clipPath>
+
+</defs>
+
+
+<g id="eyes">
+
+    <!-- ==========================
+         LEFT EYE
+    =========================== -->
+
+    <g id="leftEyeGroup">
+
+        <path
+            id="leftEyeWhite"
+             fill="url(#eyeGradient)"
+    stroke="#888"
+    stroke-width="1"
+            stroke-linejoin="round"
+        ></path>
+
+
+        <g clip-path="url(#leftEyeClip)">
+
+            <circle
+                id="leftIris"
+                fill="url(#irisGradient)"
+                stroke="#354638"
+                stroke-width="1"
+            ></circle>
+
+            <circle
+                id="leftIrisInner"
+                fill="none"
+                stroke="#a7b79f"
+                stroke-width="1"
+                opacity="0.65"
+            ></circle>
+
+            <circle
+                id="leftPupil"
+                fill="url(#pupilGradient)"
+            ></circle>
+
+            <circle
+                id="leftEyeHighlight"
+                fill="#ffffff"
+                opacity="0.9"
+            ></circle>
+
+        </g>
+
+
+        <path
+            id="leftUpperLid"
+            fill="none"
+            stroke="#2b211d"
+            stroke-width="3"
+            stroke-linecap="round"
+        ></path>
+
+
+    </g>
+
+
+    <!-- ==========================
+         RIGHT EYE
+    =========================== -->
+
+    <g id="rightEyeGroup">
+
+        <path
+            id="rightEyeWhite"
+             fill="url(#eyeGradient)"
+    stroke="#888"
+    stroke-width="1"
+            stroke-linejoin="round"
+        ></path>
+
+
+        <g clip-path="url(#rightEyeClip)">
+
+            <circle
+                id="rightIris"
+                fill="url(#irisGradient)"
+                stroke="#354638"
+                stroke-width="1"
+            ></circle>
+
+            <circle
+                id="rightIrisInner"
+                fill="none"
+                stroke="#a7b79f"
+                stroke-width="1"
+                opacity="0.65"
+            ></circle>
+
+            <circle
+                id="rightPupil"
+                fill="url(#pupilGradient)"
+            ></circle>
+
+            <circle
+                id="rightEyeHighlight"
+                fill="#ffffff"
+                opacity="0.9"
+            ></circle>
+
+        </g>
+
+
+        <path
+            id="rightUpperLid"
+            fill="none"
+            stroke="#2b211d"
+            stroke-width="3"
+            stroke-linecap="round"
+        ></path>
+
+
+    </g>
+
+</g>
+            </svg>
+
+        </div>
+
+
+        <!-- ==========================
+             CUSTOMIZE BUTTON
+        =========================== -->
+
+        <button
+            type="button"
+            id="customizeButton"
+            aria-controls="customizeDrawer"
+            aria-expanded="false"
+        >
+            Customize
+        </button>
+
+
+        <!-- ==========================
+             DRAWER OVERLAY
+        =========================== -->
+
+        <div
+            id="drawerOverlay"
+            aria-hidden="true"
+        ></div>
+
+
+        <!-- ==========================
+             CUSTOMIZE DRAWER
+        =========================== -->
+
+        <aside
+            id="customizeDrawer"
+            aria-hidden="true"
+        >
+
+            <div class="drawer-header">
+
+                <h2>Customize</h2>
+
+                <button
+                    type="button"
+                    id="closeDrawerButton"
+                    aria-label="Close customize drawer"
+                >
+                    &times;
+                </button>
+
+            </div>
+
+
+            <!-- ==========================
+                 CUSTOMIZE PANELS
+            =========================== -->
+
+            <div id="customizePanels">
+
+
+                <!-- ==========================
+                     HEAD CONTROLS
+                =========================== -->
+
+                <details open>
+
+                    <summary>Head</summary>
+
+                    <div
+                        id="headControls"
+                        class="panelBody"
+                    >
+
+                        <label>
+                            Head height
+
+                            <span id="headHeightValue"></span>
+
+                            <input
+                                type="range"
+                                id="headHeight"
+                                min="400"
+                                max="560"
+                                value="475"
+                            >
+                        </label>
+
+
+                        <label>
+                            Forehead width
+
+                            <span id="foreheadWidthValue"></span>
+
+                            <input
+                                type="range"
+                                id="foreheadWidth"
+                                min="70"
+                                max="140"
+                                value="105"
+                            >
+                        </label>
+
+
+                        <label>
+                            Temple width
+
+                            <span id="templeWidthValue"></span>
+
+                            <input
+                                type="range"
+                                id="templeWidth"
+                                min="90"
+                                max="170"
+                                value="138"
+                            >
+                        </label>
+
+
+                        <label>
+                            Cheek width
+
+                            <span id="cheekWidthValue"></span>
+
+                            <input
+                                type="range"
+                                id="cheekWidth"
+                                min="90"
+                                max="175"
+                                value="142"
+                            >
+                        </label>
+
+
+                        <label>
+                            Jaw width
+
+                            <span id="jawWidthValue"></span>
+
+                            <input
+                                type="range"
+                                id="jawWidth"
+                                min="60"
+                                max="150"
+                                value="108"
+                            >
+                        </label>
+
+
+                        <label>
+                            Chin width
+
+                            <span id="chinWidthValue"></span>
+
+                            <input
+                                type="range"
+                                id="chinWidth"
+                                min="35"
+                                max="110"
+                                value="82"
+                            >
+                        </label>
+
+
+                        <label>
+                            Chin bottom width
+
+                            <span id="chinBottomWidthValue"></span>
+
+                            <input
+                                type="range"
+                                id="chinBottomWidth"
+                                min="10"
+                                max="80"
+                                value="48"
+                            >
+                        </label>
+
+
+                        <label>
+                            Chin depth
+
+                            <span id="chinDepthValue"></span>
+
+                            <input
+                                type="range"
+                                id="chinDepth"
+                                min="0"
+                                max="40"
+                                value="10"
+                            >
+                        </label>
+
+
+                        <label>
+                            Chin roundness
+
+                            <span id="chinRoundnessValue"></span>
+
+                            <input
+                                type="range"
+                                id="chinRoundness"
+                                min="5"
+                                max="60"
+                                value="34"
+                            >
+                        </label>
+
+
+                        <!-- ==========================
+                             HEAD BUTTONS
+                        =========================== -->
+
+                        <div class="control-buttons">
+
+                            <button
+                                type="button"
+                                id="saveHead"
+                            >
+                                Save head
+                            </button>
+
+                            <button
+                                type="button"
+                                id="loadHead"
+                            >
+                                Load saved
+                            </button>
+
+                            <button
+                                type="button"
+                                id="resetHead"
+                            >
+                                Reset head
+                            </button>
+
+                        </div>
+
+
+                        <p
+                            id="saveStatus"
+                            aria-live="polite"
+                        ></p>
+
+                    </div>
+
+                </details>
+
+
+                <!-- ==========================
+                     EYE CONTROLS
+                =========================== -->
+
+                <details>
+
+                    <summary>Eyes</summary>
+
+                    <div
+                        id="eyeControls"
+                        class="panelBody"
+                    >
+
+                        <label>
+                            Vertical position
+
+                            <span id="eyeYValue"></span>
+
+                            <input
+                                type="range"
+                                id="eyeY"
+                                min="160"
+                                max="320"
+                                value="235"
+                            >
+                        </label>
+
+
+                        <label>
+                            Eye spacing
+
+                            <span id="eyeSpacingValue"></span>
+
+                            <input
+                                type="range"
+                                id="eyeSpacing"
+                                min="60"
+                                max="220"
+                                value="115"
+                            >
+                        </label>
+
+
+                        <label>
+                            Eye width
+
+                            <span id="eyeWidthValue"></span>
+
+                            <input
+                                type="range"
+                                id="eyeWidth"
+                                min="30"
+                                max="130"
+                                value="76"
+                            >
+                        </label>
+
+
+                        <label>
+                            Eye height
+
+                            <span id="eyeHeightValue"></span>
+
+                            <input
+                                type="range"
+                                id="eyeHeight"
+                                min="20"
+                                max="100"
+                                value="48"
+                            >
+                        </label>
+
+
+                        <label>
+                            Eye rotation
+
+                            <span id="eyeRotationValue"></span>
+
+                            <input
+                                type="range"
+                                id="eyeRotation"
+                                min="-30"
+                                max="30"
+                                value="0"
+                            >
+                        </label>
+
+
+                        <label>
+                            Iris size
+
+                            <span id="irisSizeValue"></span>
+
+                            <input
+                                type="range"
+                                id="irisSize"
+                                min="8"
+                                max="55"
+                                value="28"
+                            >
+                        </label>
+
+
+                        <label>
+                            Pupil size
+
+                            <span id="pupilSizeValue"></span>
+
+                            <input
+                                type="range"
+                                id="pupilSize"
+                                min="3"
+                                max="30"
+                                value="13"
+                            >
+                        </label>
+
+
+                        <label>
+                            Look left and right
+
+                            <span id="pupilXValue"></span>
+
+                            <input
+                                type="range"
+                                id="pupilX"
+                                min="-18"
+                                max="18"
+                                value="0"
+                            >
+                        </label>
+
+
+                        <label>
+                            Look up and down
+
+                            <span id="pupilYValue"></span>
+
+                            <input
+                                type="range"
+                                id="pupilY"
+                                min="-12"
+                                max="12"
+                                value="0"
+                            >
+                        </label>
+
+
+                        <div class="control-buttons">
+
+                            <button
+                                type="button"
+                                id="saveEyes"
+                            >
+                                Save eyes
+                            </button>
+
+                            <button
+                                type="button"
+                                id="loadEyes"
+                            >
+                                Load saved
+                            </button>
+
+                            <button
+                                type="button"
+                                id="resetEyes"
+                            >
+                                Reset eyes
+                            </button>
+
+                        </div>
+
+
+                        <p
+                            id="eyeSaveStatus"
+                            aria-live="polite"
+                        ></p>
+
+                    </div>
+
+                </details>
+
+
+                <!-- ==========================
+                     FUTURE NOSE CONTROLS
+                =========================== -->
+
+                <!--
+                <details>
+
+                    <summary>Nose</summary>
+
+                    <div
+                        id="noseControls"
+                        class="panelBody"
+                    >
+
+                        Nose sliders will go here.
+
+                    </div>
+
+                </details>
+                -->
+
+
+                <!-- ==========================
+                     FUTURE MOUTH CONTROLS
+                =========================== -->
+
+                <!--
+                <details>
+
+                    <summary>Mouth</summary>
+
+                    <div
+                        id="mouthControls"
+                        class="panelBody"
+                    >
+
+                        Mouth sliders will go here.
+
+                    </div>
+
+                </details>
+                -->
+
+            </div>
+
+        </aside>
+
+    </div>
+
+
+    <!-- ==========================
+         JAVASCRIPT
+    =========================== -->
+
+    <script src="js/head.js"></script>
+    <script src="js/eyes.js"></script>
+    <script src="js/idle.js"></script>
+    <script src="js/drawer.js"></script>
+
+    <script src="js/app.js"></script>
+
+</body>
+
+</html>
