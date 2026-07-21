@@ -32,7 +32,7 @@
                 viewBox="0 0 500 600"
                 xmlns="http://www.w3.org/2000/svg"
             >
-
+<defs>
 <radialGradient id="skinGradient"
                 cx="40%"
                 cy="30%"
@@ -50,8 +50,12 @@
     r="80%">
 
     <stop offset="0%" stop-color="#FFFFFF"/>
-    <stop offset="55%" stop-color="#F7F7F7"/>
-    <stop offset="100%" stop-color="#C8C8C8"/>
+    <stop offset="55%" stop-color="#F4F4F4"/>
+    <stop offset="100%" stop-color="#C2C2C2"/>
+    <!--
+        <stop offset="100%" stop-color="#C8C8C8"/>
+        <stop offset="55%" stop-color="#F7F7F7"/>
+    -->
 
 </radialGradient>
 
@@ -79,56 +83,272 @@
 
 </radialGradient>
 
+<radialGradient
+    id="leftEyeSocketGradient"
+    gradientUnits="userSpaceOnUse"
+    cx="183"
+    cy="225"
+    r="68"
+    gradientTransform="translate(0 85) scale(1 0.62)"
+>
+    <stop offset="0%" stop-color="#744429" stop-opacity="0.60" />
+    <stop offset="42%" stop-color="#9c6440" stop-opacity="0.45" />
+    <stop offset="75%" stop-color="#c98d61" stop-opacity="0.15" />
+    <stop offset="100%" stop-color="#e6ad7d" stop-opacity="0" />
+</radialGradient>
+
+<radialGradient
+    id="rightEyeSocketGradient"
+    gradientUnits="userSpaceOnUse"
+    cx="317"
+    cy="225"
+    r="68"
+    gradientTransform="translate(0 85) scale(1 0.62)"
+>
+    <stop offset="0%" stop-color="#744429" stop-opacity="0.60" />
+    <stop offset="42%" stop-color="#9c6440" stop-opacity="0.45" />
+    <stop offset="75%" stop-color="#c98d61" stop-opacity="0.15" />
+    <stop offset="100%" stop-color="#e6ad7d" stop-opacity="0" />
+</radialGradient>
+
+<!-- ==========================
+     MAIN NOSE
+========================== -->
+
 <linearGradient
-    id="eyeSocketGradient"
+    id="noseMainGradient"
     x1="0%"
     y1="0%"
     x2="0%"
-    y2="100%">
-
-    <!-- Soft upper bevel catching light -->
+    y2="100%"
+>
+    <!-- Completely blends into face -->
 
     <stop
         offset="0%"
-        stop-color="#F2B797"
-        stop-opacity="0.16"/>
-
-    <!-- Transition from raised skin into recess -->
-
-    <stop
-        offset="12%"
-        stop-color="#9B654F"
-        stop-opacity="0.13"/>
-
-    <!-- Darkest part beneath the brow ridge -->
+        stop-color="#efbd91"
+        stop-opacity="0"
+    />
 
     <stop
-        offset="28%"
-        stop-color="#38231D"
-        stop-opacity="0.38"/>
+        offset="38%"
+        stop-color="#efbd91"
+        stop-opacity="0"
+    />
 
-    <!-- Shadow begins softening -->
-
-    <stop
-        offset="52%"
-        stop-color="#4A2E24"
-        stop-opacity="0.19"/>
-
-    <!-- Nearly gone -->
+    <!-- Subtle nose form begins lower down -->
 
     <stop
-        offset="76%"
-        stop-color="#4A2E24"
-        stop-opacity="0.05"/>
+        offset="62%"
+        stop-color="#dc9a72"
+        stop-opacity=".25"
+    />
 
-    <!-- Fully blended into the face -->
+    <stop
+        offset="84%"
+        stop-color="#c77c5b"
+        stop-opacity=".55"
+    />
 
     <stop
         offset="100%"
-        stop-color="#4A2E24"
-        stop-opacity="0"/>
-
+        stop-color="#b7674d"
+        stop-opacity=".72"
+    />
 </linearGradient>
+
+
+<!-- ==========================
+     LEFT NOSTRIL WING
+========================== -->
+
+<linearGradient
+    id="leftNostrilGradient"
+    x1="0%"
+    y1="0%"
+    x2="0%"
+    y2="100%"
+>
+    <!-- Top is face color and invisible -->
+
+    <stop
+        offset="0%"
+        stop-color="#efbd91"
+        stop-opacity="0"
+    />
+
+    <stop
+        offset="38%"
+        stop-color="#efbd91"
+        stop-opacity="0"
+    />
+
+    <stop
+        offset="70%"
+        stop-color="#d68d68"
+        stop-opacity=".35"
+    />
+
+    <stop
+        offset="100%"
+        stop-color="#bb6c51"
+        stop-opacity=".68"
+    />
+</linearGradient>
+
+
+<!-- ==========================
+     RIGHT NOSTRIL WING
+========================== -->
+
+<linearGradient
+    id="rightNostrilGradient"
+    x1="0%"
+    y1="0%"
+    x2="0%"
+    y2="100%"
+>
+    <stop
+        offset="0%"
+        stop-color="#efbd91"
+        stop-opacity="0"
+    />
+
+    <stop
+        offset="38%"
+        stop-color="#efbd91"
+        stop-opacity="0"
+    />
+
+    <stop
+        offset="70%"
+        stop-color="#d68d68"
+        stop-opacity=".35"
+    />
+
+    <stop
+        offset="100%"
+        stop-color="#bb6c51"
+        stop-opacity=".68"
+    />
+</linearGradient>
+
+
+<!-- ==========================
+     NOSTRIL HOLES
+========================== -->
+
+<radialGradient
+    id="leftNostrilHoleGradient"
+    cx="55%"
+    cy="55%"
+    r="70%"
+>
+    <stop
+        offset="0%"
+        stop-color="#351713"
+    />
+
+    <stop
+        offset="45%"
+        stop-color="#52251d"
+    />
+
+    <stop
+        offset="78%"
+        stop-color="#874735"
+        stop-opacity=".75"
+    />
+
+    <stop
+        offset="100%"
+        stop-color="#bb6c51"
+        stop-opacity="0"
+    />
+</radialGradient>
+
+
+<radialGradient
+    id="rightNostrilHoleGradient"
+    cx="45%"
+    cy="55%"
+    r="70%"
+>
+    <stop
+        offset="0%"
+        stop-color="#351713"
+    />
+
+    <stop
+        offset="45%"
+        stop-color="#52251d"
+    />
+
+    <stop
+        offset="78%"
+        stop-color="#874735"
+        stop-opacity=".75"
+    />
+
+    <stop
+        offset="100%"
+        stop-color="#bb6c51"
+        stop-opacity="0"
+    />
+</radialGradient>
+<radialGradient
+    id="noseFrontGradient"
+    cx="42%"
+    cy="30%"
+    r="78%"
+>
+    <stop
+        offset="0%"
+        stop-color="var(--skin-light)"
+        stop-opacity="0.72"
+    />
+
+    <stop
+        offset="55%"
+        stop-color="var(--skin-mid)"
+        stop-opacity="0.82"
+    />
+
+    <stop
+        offset="88%"
+        stop-color="#d29a72"
+        stop-opacity="0.92"
+    />
+
+    <stop
+        offset="100%"
+        stop-color="#bd795d"
+        stop-opacity="0.88"
+    />
+</radialGradient><radialGradient
+    id="noseBottomShadowGradient"
+    cx="50%"
+    cy="50%"
+    r="50%"
+>
+    <stop
+        offset="0%"
+        stop-color="#6b362a"
+        stop-opacity="0.34"
+    />
+
+    <stop
+        offset="52%"
+        stop-color="#8c4c39"
+        stop-opacity="0.20"
+    />
+
+    <stop
+        offset="100%"
+        stop-color="#a9634b"
+        stop-opacity="0"
+    />
+</radialGradient></defs>
                 <path
     id="head"
     fill="url(#skinGradient)"
@@ -167,7 +387,7 @@
 
 	<path
     id="leftEyeSocket"
-    fill="url(#eyeSocketGradient)"
+    fill="url(#leftEyeSocketGradient)"
     opacity="0.8"
     rx="18"
     ry="18">
@@ -233,7 +453,7 @@
 
 	<path
         id="rightEyeSocket"
-        fill="url(#eyeSocketGradient)"
+        fill="url(#rightEyeSocketGradient)"
     opacity="0.8"
     rx="18"
     ry="18">
@@ -291,7 +511,58 @@
     </g>
 
 </g>
-            </svg>
+<!-- ==========================
+     NOSE
+========================== -->
+
+<!-- ==========================
+     NOSE
+========================== -->
+
+<g id="nose">
+
+    <path id="leftNostril"></path>
+
+    <path id="rightNostril"></path>
+
+    <ellipse
+        id="noseShadow"
+        cx="250"
+        cy="374"
+        rx="22"
+        ry="33"
+    />
+	<!-- Soft underside shadow -->
+
+<ellipse
+    id="noseBottomShadow"
+    cx="250"
+    cy="399"
+    rx="22"
+    ry="5"
+/>
+    <ellipse
+        id="leftNostrilHole"
+        cx="231"
+        cy="399"
+        rx="11"
+        ry="4"
+    />
+
+    <ellipse
+        id="rightNostrilHole"
+        cx="269"
+        cy="399"
+        rx="11"
+        ry="4"
+    />
+
+    <path
+        id="noseFront"
+        d=""
+    />
+
+</g>      </svg>
 
         </div>
 
@@ -685,7 +956,60 @@
                                 value="0"
                             >
                         </label>
+			<label for="eyeUpperArch">
+    Upper Lid Arch
+    <span id="eyeUpperArchValue"></span>
+</label>
 
+<input
+    id="eyeUpperArch"
+    type="range"
+    min="0.5"
+    max="1.8"
+    step="0.05"
+>
+
+
+<label for="eyeLowerArch">
+    Lower Lid Arch
+    <span id="eyeLowerArchValue"></span>
+</label>
+
+<input
+    id="eyeLowerArch"
+    type="range"
+    min="0.25"
+    max="1.4"
+    step="0.05"
+>
+
+
+<label for="eyeInnerCorner">
+    Inner Corner
+    <span id="eyeInnerCornerValue"></span>
+</label>
+
+<input
+    id="eyeInnerCorner"
+    type="range"
+    min="-10"
+    max="10"
+    step="1"
+>
+
+
+<label for="eyeOuterCorner">
+    Outer Corner
+    <span id="eyeOuterCornerValue"></span>
+</label>
+
+<input
+    id="eyeOuterCorner"
+    type="range"
+    min="-10"
+    max="10"
+    step="1"
+>
 
                         <div class="control-buttons">
 
@@ -724,25 +1048,232 @@
 
 
                 <!-- ==========================
-                     FUTURE NOSE CONTROLS
-                =========================== -->
+     NOSE CONTROLS
+========================== -->
 
-                <!--
-                <details>
+<details>
 
-                    <summary>Nose</summary>
+    <summary>Nose</summary>
 
-                    <div
-                        id="noseControls"
-                        class="panelBody"
-                    >
+    <div
+        id="noseControls"
+        class="panelBody"
+    >
 
-                        Nose sliders will go here.
+        <label>
+            Horizontal position
 
-                    </div>
+            <span id="noseXValue"></span>
 
-                </details>
-                -->
+            <input
+                type="range"
+                id="noseX"
+                min="-80"
+                max="80"
+                value="0"
+            >
+        </label>
+
+
+        <label>
+            Vertical position
+
+            <span id="noseYValue"></span>
+
+            <input
+                type="range"
+                id="noseY"
+                min="-180"
+                max="80"
+                value="-135"
+            >
+        </label>
+
+
+        <label>
+            Nose width
+
+            <span id="noseWidthValue"></span>
+
+            <input
+                type="range"
+                id="noseWidth"
+                min="10"
+                max="60"
+                value="25"
+            >
+        </label>
+
+
+        <label>
+            Nose height
+
+            <span id="noseHeightValue"></span>
+
+            <input
+                type="range"
+                id="noseHeight"
+                min="10"
+                max="80"
+                value="33"
+            >
+        </label>
+
+
+        <label>
+            Nostril spacing
+
+            <span id="nostrilSpacingValue"></span>
+
+            <input
+                type="range"
+                id="nostrilSpacing"
+                min="8"
+                max="50"
+                value="22"
+            >
+        </label>
+
+
+        <label>
+            Nostril vertical position
+
+            <span id="nostrilYValue"></span>
+
+            <input
+                type="range"
+                id="nostrilY"
+                min="350"
+                max="440"
+                value="397"
+            >
+        </label>
+
+
+        <label>
+            Nostril width
+
+            <span id="nostrilWidthValue"></span>
+
+            <input
+                type="range"
+                id="nostrilWidth"
+                min="5"
+                max="40"
+                value="18"
+            >
+        </label>
+
+
+        <label>
+            Nostril height
+
+            <span id="nostrilHeightValue"></span>
+
+            <input
+                type="range"
+                id="nostrilHeight"
+                min="3"
+                max="30"
+                value="11"
+            >
+        </label>
+
+
+        <label>
+            Nostril-hole spacing
+
+            <span id="nostrilHoleSpacingValue"></span>
+
+            <input
+                type="range"
+                id="nostrilHoleSpacing"
+                min="4"
+                max="40"
+                value="17"
+            >
+        </label>
+
+
+        <label>
+            Nostril-hole vertical position
+
+            <span id="nostrilHoleYValue"></span>
+
+            <input
+                type="range"
+                id="nostrilHoleY"
+                min="360"
+                max="450"
+                value="404"
+            >
+        </label>
+
+
+        <label>
+            Nostril-hole width
+
+            <span id="nostrilHoleWidthValue"></span>
+
+            <input
+                type="range"
+                id="nostrilHoleWidth"
+                min="2"
+                max="20"
+                value="7"
+            >
+        </label>
+
+
+        <label>
+            Nostril-hole height
+
+            <span id="nostrilHoleHeightValue"></span>
+
+            <input
+                type="range"
+                id="nostrilHoleHeight"
+                min="1"
+                max="14"
+                value="4"
+            >
+        </label>
+
+
+        <div class="control-buttons">
+
+            <button
+                type="button"
+                id="saveNose"
+            >
+                Save nose
+            </button>
+
+            <button
+                type="button"
+                id="loadNose"
+            >
+                Load saved
+            </button>
+
+            <button
+                type="button"
+                id="resetNose"
+            >
+                Reset nose
+            </button>
+
+        </div>
+
+
+        <p
+            id="noseSaveStatus"
+            aria-live="polite"
+        ></p>
+
+    </div>
+
+</details>
 
 
                 <!-- ==========================
@@ -779,6 +1310,7 @@
 
     <script src="js/head.js"></script>
     <script src="js/eyes.js"></script>
+<script src="js/nose.js"></script>
     <script src="js/idle.js"></script>
     <script src="js/drawer.js"></script>
 
