@@ -329,3 +329,34 @@ font-family: Arial, sans-serif;
     flex-wrap: wrap;
     gap: 0.5rem;
 }
+
+/* ==========================
+   NOSE 
+============================*/
+#noseShadow {
+    fill: url(#noseMainGradient);
+}
+
+#noseFront{
+    fill:url(#noseFrontGradient);
+}
+
+#leftNostril {
+    fill: url(#leftNostrilGradient);
+}
+
+#rightNostril {
+    fill: url(#rightNostrilGradient);
+}
+
+#leftNostrilHole {
+    fill: url(#leftNostrilHoleGradient);
+}
+
+#rightNostrilHole {
+    fill: url(#rightNostrilHoleGradient);
+}
+#noseBottomShadow {
+    fill: url(#noseBottomShadowGradient);
+    pointer-events: none;
+}
