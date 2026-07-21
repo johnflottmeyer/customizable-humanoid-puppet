@@ -7,13 +7,19 @@ const defaultEyeSettings = {
     /* POSITION */
 
     eyeY: 235,
-    eyeSpacing: 118,
+    eyeSpacing: 134,
 
     /* SHAPE */
 
-    eyeWidth: 82,
+    eyeWidth: 78,
     eyeHeight: 42,
-    eyeRotation: 2,
+    eyeRotation: 0,
+
+    eyeUpperArch: 1.2,
+    eyeLowerArch: 0.75,
+
+    eyeInnerCorner: -2,
+    eyeOuterCorner: 2,
 
     /* IRIS */
 
@@ -63,6 +69,12 @@ const eyeControls = [
     "eyeWidth",
     "eyeHeight",
     "eyeRotation",
+
+    "eyeUpperArch",
+    "eyeLowerArch",
+
+    "eyeInnerCorner",
+    "eyeOuterCorner",
 
     "irisSize",
 
@@ -116,15 +128,70 @@ function clamp(
 
 
 /* ==========================
+   GET EYE CORNERS
+========================== */
+
+function getEyeCornerPositions(
+    side,
+    centerY
+) {
+
+    const settings =
+        window.eyeSettings;
+
+    /*
+       eyeInnerCorner and eyeOuterCorner
+       represent vertical offsets.
+
+       Negative values move a corner upward.
+       Positive values move a corner downward.
+    */
+
+    if (side === "left") {
+
+        return {
+
+            leftCornerY:
+                centerY +
+                settings.eyeInnerCorner,
+
+            rightCornerY:
+                centerY +
+                settings.eyeOuterCorner
+
+        };
+
+    }
+
+    return {
+
+        leftCornerY:
+            centerY +
+            settings.eyeOuterCorner,
+
+        rightCornerY:
+            centerY +
+            settings.eyeInnerCorner
+
+    };
+
+}
+
+
+/* ==========================
    CREATE EYE PATH
 ========================== */
 
 function createEyePath(
+    side,
     centerX,
     centerY,
     width,
     height
 ) {
+
+    const settings =
+        window.eyeSettings;
 
     const halfWidth =
         width / 2;
@@ -138,22 +205,66 @@ function createEyePath(
     const right =
         centerX + halfWidth;
 
+    const corners =
+        getEyeCornerPositions(
+            side,
+            centerY
+        );
+
+    const leftCornerY =
+        corners.leftCornerY;
+
+    const rightCornerY =
+        corners.rightCornerY;
+
+    /*
+       The top and bottom curves use separate
+       control points so they are no longer
+       vertically symmetrical.
+    */
+
     const upperControlY =
-        centerY - halfHeight;
+        centerY -
+        halfHeight *
+        settings.eyeUpperArch;
 
     const lowerControlY =
-        centerY + halfHeight;
+        centerY +
+        halfHeight *
+        settings.eyeLowerArch;
 
+    /*
+       Cubic curves allow the inner and outer
+       halves to have slightly different shapes.
+    */
+
+    const upperLeftControlX =
+        centerX -
+        width * 0.20;
+
+    const upperRightControlX =
+        centerX +
+        width * 0.28;
+
+    const lowerRightControlX =
+        centerX +
+        width * 0.24;
+
+    const lowerLeftControlX =
+        centerX -
+        width * 0.30;
 
     return [
 
-        `M ${left} ${centerY}`,
+        `M ${left} ${leftCornerY}`,
 
-        `Q ${centerX} ${upperControlY}`,
-        `${right} ${centerY}`,
+        `C ${upperLeftControlX} ${upperControlY}`,
+        `${upperRightControlX} ${upperControlY}`,
+        `${right} ${rightCornerY}`,
 
-        `Q ${centerX} ${lowerControlY}`,
-        `${left} ${centerY}`,
+        `C ${lowerRightControlX} ${lowerControlY}`,
+        `${lowerLeftControlX} ${lowerControlY}`,
+        `${left} ${leftCornerY}`,
 
         "Z"
 
@@ -167,11 +278,15 @@ function createEyePath(
 ========================== */
 
 function createUpperLidPath(
+    side,
     centerX,
     centerY,
     width,
     height
 ) {
+
+    const settings =
+        window.eyeSettings;
 
     const left =
         centerX - width / 2;
@@ -179,21 +294,44 @@ function createUpperLidPath(
     const right =
         centerX + width / 2;
 
-    const controlY =
-        centerY - height / 2 - 2;
+    const corners =
+        getEyeCornerPositions(
+            side,
+            centerY
+        );
 
+    const leftCornerY =
+        corners.leftCornerY;
+
+    const rightCornerY =
+        corners.rightCornerY;
+
+    const controlY =
+        centerY -
+        height / 2 *
+        settings.eyeUpperArch -
+        2;
+
+    const leftControlX =
+        centerX -
+        width * 0.20;
+
+    const rightControlX =
+        centerX +
+        width * 0.28;
 
     return [
 
-        `M ${left} ${centerY}`,
+        `M ${left} ${leftCornerY}`,
 
-        `Q ${centerX} ${controlY}`,
-
-        `${right} ${centerY}`
+        `C ${leftControlX} ${controlY}`,
+        `${rightControlX} ${controlY}`,
+        `${right} ${rightCornerY}`
 
     ].join(" ");
 
 }
+
 
 /* ==========================
    CREATE EYE SOCKET PATH
@@ -223,84 +361,56 @@ function createEyeSocketPath(
         centerY +
         height / 2;
 
+    /*
+       Controls how quickly each rounded end
+       transitions into the top and bottom.
+    */
 
-    const innerRound =
-        width * 0.14;
+    const horizontalRound =
+        width * 0.20;
 
-    const outerRound =
-        width * 0.24;
-
-
-    if (side === "left") {
-
-        return [
-
-            `M ${left + innerRound} ${centerY}`,
-
-            /* Nose side */
-
-            `C ${left + innerRound * 0.35} ${centerY - height * 0.28}`,
-            `${left + innerRound * 0.75} ${top}`,
-            `${centerX} ${top}`,
-
-            /* Upper outer curve */
-
-            `C ${right - outerRound * 0.20} ${top}`,
-            `${right} ${centerY - height * 0.32}`,
-            `${right} ${centerY}`,
-
-            /* Lower outer curve */
-
-            `C ${right} ${centerY + height * 0.34}`,
-            `${centerX + width * 0.28} ${bottom}`,
-            `${centerX} ${bottom}`,
-
-            /* Rounded nose return */
-
-            `C ${left + innerRound * 0.80} ${bottom}`,
-            `${left + innerRound * 0.25} ${centerY + height * 0.25}`,
-            `${left + innerRound} ${centerY}`,
-
-            "Z"
-
-        ].join(" ");
-
-    }
-
+    const verticalRound =
+        height * 0.34;
 
     return [
 
-        `M ${right - innerRound} ${centerY}`,
+        /*
+           Begin at the full left edge.
+           This prevents the side from pinching inward.
+        */
 
-        /* Nose side */
+        `M ${left} ${centerY}`,
 
-        `C ${right - innerRound * 0.35} ${centerY - height * 0.28}`,
-        `${right - innerRound * 0.75} ${top}`,
+        /* Left upper rounded end */
+
+        `C ${left} ${centerY - verticalRound}`,
+        `${left + horizontalRound} ${top}`,
         `${centerX} ${top}`,
 
-        /* Upper outer curve */
+        /* Right upper rounded end */
 
-        `C ${left + outerRound * 0.20} ${top}`,
-        `${left} ${centerY - height * 0.32}`,
-        `${left} ${centerY}`,
+        `C ${right - horizontalRound} ${top}`,
+        `${right} ${centerY - verticalRound}`,
+        `${right} ${centerY}`,
 
-        /* Lower outer curve */
+        /* Right lower rounded end */
 
-        `C ${left} ${centerY + height * 0.34}`,
-        `${centerX - width * 0.28} ${bottom}`,
+        `C ${right} ${centerY + verticalRound}`,
+        `${right - horizontalRound} ${bottom}`,
         `${centerX} ${bottom}`,
 
-        /* Rounded nose return */
+        /* Left lower rounded end */
 
-        `C ${right - innerRound * 0.80} ${bottom}`,
-        `${right - innerRound * 0.25} ${centerY + height * 0.25}`,
-        `${right - innerRound} ${centerY}`,
+        `C ${left + horizontalRound} ${bottom}`,
+        `${left} ${centerY + verticalRound}`,
+        `${left} ${centerY}`,
 
         "Z"
 
     ].join(" ");
 
 }
+
 /* ==========================
    DRAW ONE EYE
 ========================== */
@@ -340,7 +450,7 @@ function drawEye(
             `${side}EyeWhite`
         );
 
-        const eyeClipPath =
+    const eyeClipPath =
         document.getElementById(
             `${side}EyeClipPath`
         );
@@ -404,12 +514,36 @@ function drawEye(
         );
 
 
+    /*
+       Corner shaping gradually flattens during
+       a blink so the eye closes cleanly.
+    */
+
+    const originalInnerCorner =
+        settings.eyeInnerCorner;
+
+    const originalOuterCorner =
+        settings.eyeOuterCorner;
+
+    const blinkCornerAmount =
+        1 - animation.blink;
+
+    settings.eyeInnerCorner =
+        originalInnerCorner *
+        blinkCornerAmount;
+
+    settings.eyeOuterCorner =
+        originalOuterCorner *
+        blinkCornerAmount;
+
+
     /* ==========================
        EYE SHAPE
     ========================== */
 
     const eyePath =
         createEyePath(
+            side,
             centerX,
             centerY,
             settings.eyeWidth,
@@ -417,11 +551,22 @@ function drawEye(
         );
 
 
+    /*
+       Restore the user settings immediately
+       after creating the animated path.
+    */
+
+    settings.eyeInnerCorner =
+        originalInnerCorner;
+
+    settings.eyeOuterCorner =
+        originalOuterCorner;
+
+
     /* ==========================
        EYE SOCKET
     ========================== */
 
-    const socketPaddingX = 20;
     const socketPaddingY = 18;
     const socketOffsetY = 2;
 
@@ -523,7 +668,6 @@ function drawEye(
     const pupilRadius =
         settings.pupilSize / 2;
 
-
     const maximumIrisX =
         Math.max(
             0,
@@ -539,7 +683,6 @@ function drawEye(
             irisRadius -
             4
         );
-
 
     const irisOffsetX =
         clamp(
@@ -557,12 +700,13 @@ function drawEye(
             maximumIrisY
         );
 
-
     const irisX =
-        centerX + irisOffsetX;
+        centerX +
+        irisOffsetX;
 
     const irisY =
-        centerY + irisOffsetY;
+        centerY +
+        irisOffsetY;
 
 
     /* ==========================
@@ -638,7 +782,6 @@ function drawEye(
     const highlightOffset =
         settings.irisSize * 0.18;
 
-
     highlight.setAttribute(
         "cx",
         irisX - highlightOffset
@@ -653,6 +796,8 @@ function drawEye(
         "r",
         highlightRadius
     );
+
+
     /* ==========================
        UPPER EYELID
     ========================== */
@@ -660,6 +805,7 @@ function drawEye(
     upperLid.setAttribute(
         "d",
         createUpperLidPath(
+            side,
             centerX,
             centerY,
             settings.eyeWidth,
@@ -686,7 +832,6 @@ function drawEyes() {
 
     const faceCenterX = 250;
 
-
     const leftEyeX =
         faceCenterX -
         settings.eyeSpacing / 2;
@@ -695,14 +840,12 @@ function drawEyes() {
         faceCenterX +
         settings.eyeSpacing / 2;
 
-
     drawEye(
         "left",
         leftEyeX,
         settings.eyeY,
         settings.eyeRotation
     );
-
 
     drawEye(
         "right",
@@ -738,17 +881,14 @@ function initializeEyeControls() {
 
             }
 
-
             slider.value =
                 window.eyeSettings[
                     settingName
                 ];
 
-
             displayEyeValue(
                 settingName
             );
-
 
             slider.addEventListener(
                 "input",
@@ -760,11 +900,9 @@ function initializeEyeControls() {
                         slider.value
                     );
 
-
                     displayEyeValue(
                         settingName
                     );
-
 
                     drawEyes();
 
@@ -795,12 +933,10 @@ function updateEyeControls() {
                 return;
             }
 
-
             slider.value =
                 window.eyeSettings[
                     settingName
                 ];
-
 
             displayEyeValue(
                 settingName
@@ -848,7 +984,6 @@ function saveEyes() {
             )
         );
 
-
         displayEyeStatus(
             "Eye settings saved."
         );
@@ -858,7 +993,6 @@ function saveEyes() {
         displayEyeStatus(
             "Eye settings could not be saved."
         );
-
 
         console.error(
             "Eye settings could not be saved:",
@@ -881,11 +1015,9 @@ function loadEyes() {
             "humanoidEyeSettings"
         );
 
-
     if (!savedSettings) {
         return false;
     }
-
 
     try {
 
@@ -894,22 +1026,25 @@ function loadEyes() {
                 savedSettings
             );
 
+        /*
+           Begin with the newest defaults so
+           older saved eye settings receive
+           the new shape properties.
+        */
 
         Object.assign(
             window.eyeSettings,
+            defaultEyeSettings,
             parsedSettings
         );
-
 
         updateEyeControls();
 
         drawEyes();
 
-
         displayEyeStatus(
             "Saved eye settings loaded."
         );
-
 
         return true;
 
@@ -919,12 +1054,10 @@ function loadEyes() {
             "Saved eye settings could not be loaded."
         );
 
-
         console.error(
             "Saved eye settings could not be loaded:",
             error
         );
-
 
         return false;
 
@@ -944,11 +1077,9 @@ function resetEyes() {
         defaultEyeSettings
     );
 
-
     updateEyeControls();
 
     drawEyes();
-
 
     displayEyeStatus(
         "Eye settings reset."
