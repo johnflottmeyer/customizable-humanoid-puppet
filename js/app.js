@@ -110,7 +110,9 @@ function initializeHeadControls() {
                         typeof window.drawEyes ===
                         "function"
                     ) {
+
                         window.drawEyes();
+
                     }
 
                 }
@@ -235,6 +237,15 @@ function loadHead() {
 
         window.drawHead();
 
+        if (
+            typeof window.drawEyes ===
+            "function"
+        ) {
+
+            window.drawEyes();
+
+        }
+
         displayHeadStatus(
             "Saved head settings loaded."
         );
@@ -274,7 +285,9 @@ function resetHead() {
         typeof window.drawEyes ===
         "function"
     ) {
+
         window.drawEyes();
+
     }
 
     displayHeadStatus(
@@ -285,7 +298,7 @@ function resetHead() {
 
 
 /* ==========================
-   BUTTON EVENTS
+   HEAD BUTTON EVENTS
 ========================== */
 
 function initializeHeadButtons() {
@@ -349,6 +362,10 @@ function initializeHeadButtons() {
 }
 
 
+/* ==========================
+   EYE BUTTON EVENTS
+========================== */
+
 function initializeEyeButtons() {
 
     const saveButton =
@@ -367,7 +384,11 @@ function initializeEyeButtons() {
         );
 
 
-    if (saveButton) {
+    if (
+        saveButton &&
+        typeof window.saveEyes ===
+        "function"
+    ) {
 
         saveButton.addEventListener(
             "click",
@@ -376,7 +397,11 @@ function initializeEyeButtons() {
 
     }
 
-    if (loadButton) {
+    if (
+        loadButton &&
+        typeof window.loadEyes ===
+        "function"
+    ) {
 
         loadButton.addEventListener(
             "click",
@@ -406,7 +431,11 @@ function initializeEyeButtons() {
 
     }
 
-    if (resetButton) {
+    if (
+        resetButton &&
+        typeof window.resetEyes ===
+        "function"
+    ) {
 
         resetButton.addEventListener(
             "click",
@@ -425,6 +454,10 @@ function initializeEyeButtons() {
 window.addEventListener(
     "DOMContentLoaded",
     function () {
+
+        /* ==========================
+           HEAD
+        ========================== */
 
         if (
             typeof window.drawHead !==
@@ -449,9 +482,6 @@ window.addEventListener(
 
         }
 
-
-        /* HEAD */
-
         initializeHeadControls();
 
         initializeHeadButtons();
@@ -468,7 +498,9 @@ window.addEventListener(
         }
 
 
-        /* EYES */
+        /* ==========================
+           EYES
+        ========================== */
 
         if (
             typeof window.initializeEyeControls ===
@@ -480,13 +512,30 @@ window.addEventListener(
             initializeEyeButtons();
 
             const savedEyesLoaded =
-                window.loadEyes();
+                typeof window.loadEyes ===
+                "function"
+                    ? window.loadEyes()
+                    : false;
 
             if (!savedEyesLoaded) {
 
-                window.updateEyeControls();
+                if (
+                    typeof window.updateEyeControls ===
+                    "function"
+                ) {
 
-                window.drawEyes();
+                    window.updateEyeControls();
+
+                }
+
+                if (
+                    typeof window.drawEyes ===
+                    "function"
+                ) {
+
+                    window.drawEyes();
+
+                }
 
             }
 
@@ -497,24 +546,53 @@ window.addEventListener(
             );
 
         }
-/* ==========================
-   IDLE ANIMATION
-========================== */
 
-if (
-    typeof window.startIdleAnimation ===
-    "function"
-) {
 
-    window.startIdleAnimation();
+        /* ==========================
+           NOSE
+        ========================== */
 
-} else {
+        if (
+            typeof window.initializeNose ===
+            "function"
+        ) {
 
-    console.warn(
-        "startIdleAnimation() was not loaded."
-    );
+            window.initializeNose();
 
-}
+        } else if (
+            typeof initializeNose ===
+            "function"
+        ) {
+
+            initializeNose();
+
+        } else {
+
+            console.error(
+                "initializeNose() was not loaded."
+            );
+
+        }
+
+
+        /* ==========================
+           IDLE ANIMATION
+        ========================== */
+
+        if (
+            typeof window.startIdleAnimation ===
+            "function"
+        ) {
+
+            window.startIdleAnimation();
+
+        } else {
+
+            console.warn(
+                "startIdleAnimation() was not loaded."
+            );
+
+        }
 
     }
 );
