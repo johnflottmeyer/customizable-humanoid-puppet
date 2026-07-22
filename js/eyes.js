@@ -25,7 +25,15 @@ const defaultEyeSettings = {
 
     irisSize: 27,
 
-    /* PUPIL */
+    /*
+        Fine adjustment for the resting
+        center of both irises.
+    */
+
+    irisCenterX: 0,
+    irisCenterY: 0,
+
+    /* PUPIL / GAZE */
 
     pupilSize: 10,
     pupilX: 0,
@@ -77,6 +85,8 @@ const eyeControls = [
     "eyeOuterCorner",
 
     "irisSize",
+    "irisCenterX",
+    "irisCenterY",
 
     "pupilSize",
     "pupilX",
@@ -374,32 +384,19 @@ function createEyeSocketPath(
 
     return [
 
-        /*
-           Begin at the full left edge.
-           This prevents the side from pinching inward.
-        */
-
         `M ${left} ${centerY}`,
-
-        /* Left upper rounded end */
 
         `C ${left} ${centerY - verticalRound}`,
         `${left + horizontalRound} ${top}`,
         `${centerX} ${top}`,
 
-        /* Right upper rounded end */
-
         `C ${right - horizontalRound} ${top}`,
         `${right} ${centerY - verticalRound}`,
         `${right} ${centerY}`,
 
-        /* Right lower rounded end */
-
         `C ${right} ${centerY + verticalRound}`,
         `${right - horizontalRound} ${bottom}`,
         `${centerX} ${bottom}`,
-
-        /* Left lower rounded end */
 
         `C ${left + horizontalRound} ${bottom}`,
         `${left} ${centerY + verticalRound}`,
@@ -410,6 +407,7 @@ function createEyeSocketPath(
     ].join(" ");
 
 }
+
 
 /* ==========================
    DRAW ONE EYE
@@ -504,7 +502,8 @@ function drawEye(
        ANIMATED EYE HEIGHT
     ========================== */
 
-    const minimumEyeHeight = 2;
+    const minimumEyeHeight =
+        2;
 
     const animatedEyeHeight =
         Math.max(
@@ -551,11 +550,6 @@ function drawEye(
         );
 
 
-    /*
-       Restore the user settings immediately
-       after creating the animated path.
-    */
-
     settings.eyeInnerCorner =
         originalInnerCorner;
 
@@ -567,11 +561,15 @@ function drawEye(
        EYE SOCKET
     ========================== */
 
-    const socketPaddingY = 18;
-    const socketOffsetY = 2;
+    const socketPaddingY =
+        18;
+
+    const socketOffsetY =
+        2;
 
     const socketWidth =
-        settings.eyeWidth * 1.38;
+        settings.eyeWidth *
+        1.38;
 
     const socketHeight =
         settings.eyeHeight +
@@ -700,12 +698,51 @@ function drawEye(
             maximumIrisY
         );
 
+
+    /* ==========================
+       VISUAL IRIS CENTER
+    ========================== */
+
+    /*
+        The upper and lower eye arches can have
+        different depths.
+
+        This means centerY is not always the
+        visual center of the white eye shape.
+    */
+
+    const upperEyeDepth =
+        eyeHalfHeight *
+        settings.eyeUpperArch;
+
+    const lowerEyeDepth =
+        eyeHalfHeight *
+        settings.eyeLowerArch;
+
+    const visualCenterOffsetY =
+        (
+            lowerEyeDepth -
+            upperEyeDepth
+        ) / 2;
+
+
+    /*
+        irisCenterX and irisCenterY adjust the
+        resting center.
+
+        pupilX, pupilY and animation offsets
+        then move the gaze from that center.
+    */
+
     const irisX =
         centerX +
+        settings.irisCenterX +
         irisOffsetX;
 
     const irisY =
         centerY +
+        visualCenterOffsetY +
+        settings.irisCenterY +
         irisOffsetY;
 
 
@@ -776,20 +813,24 @@ function drawEye(
     const highlightRadius =
         Math.max(
             2,
-            settings.irisSize * 0.11
+            settings.irisSize *
+            0.11
         );
 
     const highlightOffset =
-        settings.irisSize * 0.18;
+        settings.irisSize *
+        0.18;
 
     highlight.setAttribute(
         "cx",
-        irisX - highlightOffset
+        irisX -
+        highlightOffset
     );
 
     highlight.setAttribute(
         "cy",
-        irisY - highlightOffset
+        irisY -
+        highlightOffset
     );
 
     highlight.setAttribute(
@@ -830,7 +871,8 @@ function drawEyes() {
     const settings =
         window.eyeSettings;
 
-    const faceCenterX = 250;
+    const faceCenterX =
+        250;
 
     const leftEyeX =
         faceCenterX -
@@ -1029,7 +1071,7 @@ function loadEyes() {
         /*
            Begin with the newest defaults so
            older saved eye settings receive
-           the new shape properties.
+           irisCenterX and irisCenterY.
         */
 
         Object.assign(
