@@ -117,12 +117,15 @@
 
 <linearGradient
     id="noseMainGradient"
-    x1="0%"
-    y1="0%"
-    x2="0%"
-    y2="100%"
+    gradientUnits="userSpaceOnUse"
+    x1="250"
+    y1="300"
+    x2="250"
+    y2="420"
+    gradientTransform="translate(250 0) scale(0.88 1) translate(-250 0)"
 >
-    <!-- Completely blends into face -->
+
+    <!-- Invisible bridge -->
 
     <stop
         offset="0%"
@@ -131,33 +134,36 @@
     />
 
     <stop
-        offset="38%"
+        offset="32%"
         stop-color="#efbd91"
         stop-opacity="0"
     />
 
-    <!-- Subtle nose form begins lower down -->
+    <!-- Nasal bone -->
 
     <stop
-        offset="62%"
+        offset="56%"
         stop-color="#dc9a72"
-        stop-opacity=".25"
+        stop-opacity=".12"
     />
 
+    <!-- Upper cartilage -->
+
     <stop
-        offset="84%"
+        offset="78%"
         stop-color="#c77c5b"
-        stop-opacity=".55"
+        stop-opacity=".32"
     />
+
+    <!-- Lower bridge -->
 
     <stop
         offset="100%"
         stop-color="#b7674d"
-        stop-opacity=".72"
+        stop-opacity=".46"
     />
+
 </linearGradient>
-
-
 <!-- ==========================
      LEFT NOSTRIL WING
 ========================== -->
@@ -298,34 +304,21 @@
 </radialGradient>
 <radialGradient
     id="noseFrontGradient"
-    cx="42%"
-    cy="30%"
-    r="78%"
->
-    <stop
-        offset="0%"
-        stop-color="var(--skin-light)"
-        stop-opacity="0.72"
-    />
+    gradientUnits="userSpaceOnUse"
+    cx="250"
+    cy="386"
+    r="24">
 
-    <stop
-        offset="55%"
-        stop-color="var(--skin-mid)"
-        stop-opacity="0.82"
-    />
+    <stop offset="0%" stop-color="var(--skin-light)" stop-opacity="0.85"/>
 
-    <stop
-        offset="88%"
-        stop-color="#d29a72"
-        stop-opacity="0.92"
-    />
+    <stop offset="35%" stop-color="var(--skin-mid)" stop-opacity="0.78"/>
 
-    <stop
-        offset="100%"
-        stop-color="#bd795d"
-        stop-opacity="0.88"
-    />
-</radialGradient><radialGradient
+    <stop offset="72%" stop-color="#d29a72" stop-opacity="0.65"/>
+
+    <stop offset="100%" stop-color="#bd795d" stop-opacity="0.18"/>
+
+</radialGradient>
+<radialGradient
     id="noseBottomShadowGradient"
     cx="50%"
     cy="50%"
@@ -348,17 +341,159 @@
         stop-color="#a9634b"
         stop-opacity="0"
     />
-</radialGradient></defs>
+</radialGradient>
+<!-- ==========================
+     UPPER LIP
+========================== -->
+
+<linearGradient
+    id="upperLipGradient"
+    gradientUnits="userSpaceOnUse"
+    x1="250"
+    y1="365"
+    x2="250"
+    y2="390"
+>
+    <stop
+        offset="0%"
+        stop-color="#a76568"
+    />
+
+    <stop
+        offset="55%"
+        stop-color="#b97373"
+    />
+
+    <stop
+        offset="100%"
+        stop-color="#945558"
+    />
+</linearGradient>
+
+
+<!-- ==========================
+     LOWER LIP
+========================== -->
+
+<linearGradient
+    id="lowerLipGradient"
+    gradientUnits="userSpaceOnUse"
+    x1="250"
+    y1="380"
+    x2="250"
+    y2="405"
+>
+    <stop
+        offset="0%"
+        stop-color="#a96568"
+    />
+
+    <stop
+        offset="48%"
+        stop-color="#c27e7b"
+    />
+
+    <stop
+        offset="100%"
+        stop-color="#ad6868"
+    />
+</linearGradient>
+
+
+<!-- ==========================
+     MOUTH OPENING
+========================== -->
+
+<radialGradient
+    id="mouthOpeningGradient"
+    cx="50%"
+    cy="50%"
+    r="70%"
+>
+    <stop
+        offset="0%"
+        stop-color="#5a3135"
+        stop-opacity="0.72"
+    />
+
+    <stop
+        offset="65%"
+        stop-color="#744348"
+        stop-opacity="0.48"
+    />
+
+    <stop
+        offset="100%"
+        stop-color="#8b5558"
+        stop-opacity="0"
+    />
+</radialGradient>
+
+<!-- ==========================
+     LOWER LIP HIGHLIGHT
+========================== -->
+
+<radialGradient
+    id="lowerLipHighlightGradient"
+    cx="50%"
+    cy="50%"
+    r="50%"
+>
+    <stop
+        offset="0%"
+        stop-color="#efb2a7"
+        stop-opacity="0.42"
+    />
+
+    <stop
+        offset="55%"
+        stop-color="#e6a096"
+        stop-opacity="0.18"
+    />
+
+    <stop
+        offset="100%"
+        stop-color="#e6a096"
+        stop-opacity="0"
+    />
+</radialGradient>
+
+
+<!-- ==========================
+     UNDER-LIP SHADOW
+========================== -->
+
+<radialGradient
+    id="underLipShadowGradient"
+    cx="50%"
+    cy="50%"
+    r="50%"
+>
+    <stop
+        offset="0%"
+        stop-color="#7e493b"
+        stop-opacity="0.20"
+    />
+
+    <stop
+        offset="55%"
+        stop-color="#965a47"
+        stop-opacity="0.10"
+    />
+
+    <stop
+        offset="100%"
+        stop-color="#aa7059"
+        stop-opacity="0"
+    />
+</radialGradient>
+</defs>
                 <path
     id="head"
     fill="url(#skinGradient)"
     stroke="#2b211d"
     stroke-width="4"/></path>
 
-                <!-- Eyes, nose, mouth, and other elements go here -->
-		<!-- ==========================
-     EYES
-========================== -->
 
 <!-- ==========================
      EYES
@@ -511,9 +646,6 @@
     </g>
 
 </g>
-<!-- ==========================
-     NOSE
-========================== -->
 
 <!-- ==========================
      NOSE
@@ -532,15 +664,15 @@
         rx="22"
         ry="33"
     />
-	<!-- Soft underside shadow -->
 
-<ellipse
-    id="noseBottomShadow"
-    cx="250"
-    cy="399"
-    rx="22"
-    ry="5"
-/>
+    <ellipse
+        id="noseBottomShadow"
+        cx="250"
+        cy="399"
+        rx="22"
+        ry="5"
+    />
+
     <ellipse
         id="leftNostrilHole"
         cx="231"
@@ -562,7 +694,28 @@
         d=""
     />
 
-</g>      </svg>
+</g> 
+<!-- ==========================
+     MOUTH
+========================== -->
+
+<!-- ==========================
+     MOUTH
+========================== -->
+<g id="mouthGroup">
+
+    <ellipse id="underLipShadow"></ellipse>
+
+    <path id="upperLip"></path>
+
+    <path id="lowerLip"></path>
+
+    <path id="mouthOpening"></path>
+
+    <ellipse id="lowerLipHighlight"></ellipse>
+
+</g>
+ </svg>
 
         </div>
 
@@ -956,6 +1109,36 @@
                                 value="0"
                             >
                         </label>
+<label for="irisCenterX">
+    Iris horizontal center
+
+    <span id="irisCenterXValue"></span>
+</label>
+
+<input
+    id="irisCenterX"
+    type="range"
+    min="-20"
+    max="20"
+    step="1"
+    value="0"
+>
+
+
+<label for="irisCenterY">
+    Iris vertical center
+
+    <span id="irisCenterYValue"></span>
+</label>
+
+<input
+    id="irisCenterY"
+    type="range"
+    min="-20"
+    max="20"
+    step="1"
+    value="0"
+>
 			<label for="eyeUpperArch">
     Upper Lid Arch
     <span id="eyeUpperArchValue"></span>
@@ -1311,6 +1494,7 @@
     <script src="js/head.js"></script>
     <script src="js/eyes.js"></script>
 <script src="js/nose.js"></script>
+<script src="js/mouth.js"></script>
     <script src="js/idle.js"></script>
     <script src="js/drawer.js"></script>
 
