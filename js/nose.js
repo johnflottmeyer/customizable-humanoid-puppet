@@ -23,10 +23,10 @@ const defaultNoseSettings = {
 
     /* Nostril holes */
 
-    nostrilHoleSpacing: 19,
+    nostrilHoleSpacing: 18,
     nostrilHoleY: 399,
-    nostrilHoleWidth: 9,
-    nostrilHoleHeight: 2
+    nostrilHoleWidth: 7,
+    nostrilHoleHeight: 2.8
 
 };
 
@@ -216,9 +216,6 @@ function applyNoseSettings() {
        NOSE BRIDGE SHADOW
     ========================== */
 
-    const bridgeCenterY =
-        noseCenterY;
-
     noseShadow.setAttribute(
         "cx",
         noseCenterX
@@ -226,7 +223,7 @@ function applyNoseSettings() {
 
     noseShadow.setAttribute(
         "cy",
-        bridgeCenterY
+        noseCenterY
     );
 
     noseShadow.setAttribute(
@@ -250,25 +247,19 @@ function applyNoseSettings() {
        CENTER TIP DIMENSIONS
     ========================== */
 
-    /*
-        These values are calculated before
-        the wings so the wing positions can
-        respect the width of the center tip.
-    */
-
     const tipCenterY =
         noseCenterY +
         noseHeight * 0.48;
 
     const tipHalfWidth =
         Math.max(
-            noseWidth * 0.76,
+            noseWidth * 0.82,
             6
         );
 
     const tipHeight =
         Math.max(
-            noseHeight * 0.68,
+            noseHeight * 0.60,
             8
         );
 
@@ -286,7 +277,7 @@ function applyNoseSettings() {
 
     const tipBottomY =
         tipCenterY +
-        tipHeight * 0.48;
+        tipHeight * 0.36;
 
     const topHalfWidth =
         tipHalfWidth * 0.38;
@@ -295,7 +286,7 @@ function applyNoseSettings() {
         tipHalfWidth * 0.88;
 
     const lowerHalfWidth =
-        tipHalfWidth * 0.72;
+        tipHalfWidth * 0.82;
 
 
     /* ==========================
@@ -303,16 +294,12 @@ function applyNoseSettings() {
     ========================== */
 
     /*
-        wingGap keeps the wings from moving
-        underneath the center tip.
-
-        nostrilSpacing can still move the
-        wings outward, but cannot force them
-        into the tip.
+        Negative gap lets the wings tuck
+        slightly beneath the center tip.
     */
 
     const wingGap =
-        2.5;
+        -1.5;
 
     const minimumWingSpacing =
         tipHalfWidth +
@@ -342,11 +329,11 @@ function applyNoseSettings() {
 
     const nostrilTopY =
         nostrilCenterY -
-        nostrilHeight * 0.72;
+        nostrilHeight * 0.58;
 
     const nostrilBottomY =
         nostrilCenterY +
-        nostrilHeight * 0.72;
+        nostrilHeight * 0.58;
 
 
     /* ==========================
@@ -360,25 +347,31 @@ function applyNoseSettings() {
             ${leftInnerX}
             ${nostrilTopY}
 
-            L
+            C
+            ${leftInnerX + nostrilWidth * 0.16}
+            ${nostrilTopY + nostrilHeight * 0.18}
+
+            ${leftInnerX + nostrilWidth * 0.10}
+            ${nostrilBottomY - nostrilHeight * 0.18}
+
             ${leftInnerX}
             ${nostrilBottomY}
 
             C
             ${leftInnerX - nostrilWidth * 0.20}
-            ${nostrilBottomY + nostrilHeight * 0.08}
+            ${nostrilBottomY + nostrilHeight * 0.06}
 
-            ${leftOuterX + nostrilWidth * 0.28}
+            ${leftOuterX + nostrilWidth * 0.30}
             ${nostrilBottomY}
 
             ${leftOuterX}
-            ${nostrilCenterY + nostrilHeight * 0.30}
+            ${nostrilCenterY + nostrilHeight * 0.20}
 
             C
             ${leftOuterX - nostrilWidth * 0.02}
-            ${nostrilCenterY - nostrilHeight * 0.22}
+            ${nostrilCenterY - nostrilHeight * 0.12}
 
-            ${leftOuterX + nostrilWidth * 0.28}
+            ${leftOuterX + nostrilWidth * 0.30}
             ${nostrilTopY}
 
             ${leftInnerX}
@@ -400,25 +393,31 @@ function applyNoseSettings() {
             ${rightInnerX}
             ${nostrilTopY}
 
-            L
+            C
+            ${rightInnerX - nostrilWidth * 0.16}
+            ${nostrilTopY + nostrilHeight * 0.18}
+
+            ${rightInnerX - nostrilWidth * 0.10}
+            ${nostrilBottomY - nostrilHeight * 0.18}
+
             ${rightInnerX}
             ${nostrilBottomY}
 
             C
             ${rightInnerX + nostrilWidth * 0.20}
-            ${nostrilBottomY + nostrilHeight * 0.08}
+            ${nostrilBottomY + nostrilHeight * 0.06}
 
-            ${rightOuterX - nostrilWidth * 0.28}
+            ${rightOuterX - nostrilWidth * 0.30}
             ${nostrilBottomY}
 
             ${rightOuterX}
-            ${nostrilCenterY + nostrilHeight * 0.30}
+            ${nostrilCenterY + nostrilHeight * 0.20}
 
             C
             ${rightOuterX + nostrilWidth * 0.02}
-            ${nostrilCenterY - nostrilHeight * 0.22}
+            ${nostrilCenterY - nostrilHeight * 0.12}
 
-            ${rightOuterX - nostrilWidth * 0.28}
+            ${rightOuterX - nostrilWidth * 0.30}
             ${nostrilTopY}
 
             ${rightInnerX}
@@ -467,13 +466,13 @@ function applyNoseSettings() {
     noseBottomShadow.setAttribute(
         "cy",
         noseCenterY +
-        noseHeight * 0.92
+        noseHeight * 0.88
     );
 
     noseBottomShadow.setAttribute(
         "rx",
         Math.max(
-            noseWidth * 1.15,
+            noseWidth * 0.72,
             6
         )
     );
@@ -481,8 +480,8 @@ function applyNoseSettings() {
     noseBottomShadow.setAttribute(
         "ry",
         Math.max(
-            noseHeight * 0.12,
-            2
+            noseHeight * 0.08,
+            1.5
         )
     );
 
@@ -557,13 +556,35 @@ function applyNoseSettings() {
        NOSTRIL HOLES
     ========================== */
 
+    const nostrilHoleSpacing =
+        Math.max(
+            settings.nostrilHoleSpacing,
+            2
+        );
+
+    const nostrilHoleWidth =
+        Math.max(
+            settings.nostrilHoleWidth,
+            1
+        );
+
+    const nostrilHoleHeight =
+        Math.max(
+            settings.nostrilHoleHeight,
+            1
+        );
+
     const leftHoleX =
         noseCenterX -
-        settings.nostrilHoleSpacing;
+        nostrilHoleSpacing;
 
     const rightHoleX =
         noseCenterX +
-        settings.nostrilHoleSpacing;
+        nostrilHoleSpacing;
+
+    const holeY =
+        settings.nostrilHoleY;
+
 
     leftHole.setAttribute(
         "cx",
@@ -577,44 +598,32 @@ function applyNoseSettings() {
 
     leftHole.setAttribute(
         "cy",
-        settings.nostrilHoleY
+        holeY
     );
 
     rightHole.setAttribute(
         "cy",
-        settings.nostrilHoleY
+        holeY
     );
 
     leftHole.setAttribute(
         "rx",
-        Math.max(
-            settings.nostrilHoleWidth,
-            1
-        )
+        nostrilHoleWidth
     );
 
     rightHole.setAttribute(
         "rx",
-        Math.max(
-            settings.nostrilHoleWidth,
-            1
-        )
+        nostrilHoleWidth
     );
 
     leftHole.setAttribute(
         "ry",
-        Math.max(
-            settings.nostrilHoleHeight,
-            1
-        )
+        nostrilHoleHeight
     );
 
     rightHole.setAttribute(
         "ry",
-        Math.max(
-            settings.nostrilHoleHeight,
-            1
-        )
+        nostrilHoleHeight
     );
 
 
@@ -623,14 +632,14 @@ function applyNoseSettings() {
     ========================== */
 
     const holeRotation =
-        wingRotation * 0.55;
+        wingRotation * 0.80;
 
     leftHole.setAttribute(
         "transform",
         `rotate(
             ${holeRotation}
             ${leftHoleX}
-            ${settings.nostrilHoleY}
+            ${holeY}
         )`
     );
 
@@ -639,7 +648,7 @@ function applyNoseSettings() {
         `rotate(
             ${-holeRotation}
             ${rightHoleX}
-            ${settings.nostrilHoleY}
+            ${holeY}
         )`
     );
 
