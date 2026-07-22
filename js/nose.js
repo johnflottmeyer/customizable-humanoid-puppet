@@ -39,6 +39,7 @@ const noseControls = [
 
     "noseX",
     "noseY",
+
     "noseWidth",
     "noseHeight",
 
@@ -179,8 +180,9 @@ function applyNoseSettings() {
 
     const noseCenterX =
         250;
-const noseCenterY =
-    374;
+
+    const noseCenterY =
+        374;
 
     const nostrilCenterY =
         settings.nostrilY;
@@ -214,15 +216,8 @@ const noseCenterY =
        NOSE BRIDGE SHADOW
     ========================== */
 
-    /*
-        The bridge sits above the tip.
-
-        It is narrower than the tip but tall
-        enough to create a visible nose form.
-    */
-
     const bridgeCenterY =
-    noseCenterY;
+        noseCenterY;
 
     noseShadow.setAttribute(
         "cx",
@@ -252,16 +247,90 @@ const noseCenterY =
 
 
     /* ==========================
+       CENTER TIP DIMENSIONS
+    ========================== */
+
+    /*
+        These values are calculated before
+        the wings so the wing positions can
+        respect the width of the center tip.
+    */
+
+    const tipCenterY =
+        noseCenterY +
+        noseHeight * 0.48;
+
+    const tipHalfWidth =
+        Math.max(
+            noseWidth * 0.76,
+            6
+        );
+
+    const tipHeight =
+        Math.max(
+            noseHeight * 0.68,
+            8
+        );
+
+    const tipTopY =
+        tipCenterY -
+        tipHeight * 0.48;
+
+    const tipShoulderY =
+        tipCenterY -
+        tipHeight * 0.14;
+
+    const tipLowerY =
+        tipCenterY +
+        tipHeight * 0.25;
+
+    const tipBottomY =
+        tipCenterY +
+        tipHeight * 0.48;
+
+    const topHalfWidth =
+        tipHalfWidth * 0.38;
+
+    const shoulderHalfWidth =
+        tipHalfWidth * 0.88;
+
+    const lowerHalfWidth =
+        tipHalfWidth * 0.72;
+
+
+    /* ==========================
        NOSTRIL WING VALUES
     ========================== */
 
+    /*
+        wingGap keeps the wings from moving
+        underneath the center tip.
+
+        nostrilSpacing can still move the
+        wings outward, but cannot force them
+        into the tip.
+    */
+
+    const wingGap =
+        2.5;
+
+    const minimumWingSpacing =
+        tipHalfWidth +
+        wingGap;
+
+    const actualWingSpacing =
+        Math.max(
+            settings.nostrilSpacing,
+            minimumWingSpacing
+        );
+
     const leftInnerX =
         noseCenterX -
-        settings.nostrilSpacing;
+        actualWingSpacing;
 
     const rightInnerX =
         noseCenterX +
-        settings.nostrilSpacing;
+        actualWingSpacing;
 
     const leftOuterX =
         leftInnerX -
@@ -283,13 +352,6 @@ const noseCenterY =
     /* ==========================
        LEFT NOSTRIL WING
     ========================== */
-
-    /*
-        The inside edge remains nearly flat.
-
-        The outer portion curves around and
-        slightly beneath the nose tip.
-    */
 
     leftNostril.setAttribute(
         "d",
@@ -371,11 +433,6 @@ const noseCenterY =
        ROTATE NOSTRIL WINGS
     ========================== */
 
-    /*
-        A small rotation helps the wings tuck
-        beneath the tip without forming hooks.
-    */
-
     const wingRotation =
         15;
 
@@ -399,142 +456,102 @@ const noseCenterY =
 
 
     /* ==========================
-   BOTTOM-OF-NOSE SHADOW
-========================== */
+       BOTTOM-OF-NOSE SHADOW
+    ========================== */
 
-noseBottomShadow.setAttribute(
-    "cx",
-    noseCenterX
-);
+    noseBottomShadow.setAttribute(
+        "cx",
+        noseCenterX
+    );
 
-noseBottomShadow.setAttribute(
-    "cy",
-    noseCenterY +
-    noseHeight * 0.92
-);
+    noseBottomShadow.setAttribute(
+        "cy",
+        noseCenterY +
+        noseHeight * 0.92
+    );
 
-noseBottomShadow.setAttribute(
-    "rx",
-    Math.max(
-        noseWidth * 1.15,
-        6
-    )
-);
+    noseBottomShadow.setAttribute(
+        "rx",
+        Math.max(
+            noseWidth * 1.15,
+            6
+        )
+    );
 
-noseBottomShadow.setAttribute(
-    "ry",
-    Math.max(
-        noseHeight * 0.12,
-        2
-    )
-);
+    noseBottomShadow.setAttribute(
+        "ry",
+        Math.max(
+            noseHeight * 0.12,
+            2
+        )
+    );
+
 
     /* ==========================
-   ROUNDED NOSE TIP
-========================== */
+       CENTER NOSE TIP PATH
+    ========================== */
 
-/*
-    The noseFront is only the center bulb.
+    noseFront.setAttribute(
+        "d",
+        `
+            M
+            ${noseCenterX - topHalfWidth}
+            ${tipTopY}
 
-    It should not flare sideways into the
-    nostril-wing area.
-*/
+            C
+            ${noseCenterX - topHalfWidth * 0.55}
+            ${tipTopY - tipHeight * 0.04}
 
-const tipCenterY =
-    noseCenterY +
-    noseHeight * 0.42;
+            ${noseCenterX + topHalfWidth * 0.55}
+            ${tipTopY - tipHeight * 0.04}
 
-const tipHalfWidth =
-    Math.max(
-        noseWidth * 0.72,
-        5
+            ${noseCenterX + topHalfWidth}
+            ${tipTopY}
+
+            C
+            ${noseCenterX + shoulderHalfWidth * 0.72}
+            ${tipTopY + tipHeight * 0.10}
+
+            ${noseCenterX + tipHalfWidth}
+            ${tipShoulderY}
+
+            ${noseCenterX + tipHalfWidth}
+            ${tipCenterY}
+
+            C
+            ${noseCenterX + tipHalfWidth}
+            ${tipLowerY}
+
+            ${noseCenterX + lowerHalfWidth}
+            ${tipBottomY}
+
+            ${noseCenterX}
+            ${tipBottomY}
+
+            C
+            ${noseCenterX - lowerHalfWidth}
+            ${tipBottomY}
+
+            ${noseCenterX - tipHalfWidth}
+            ${tipLowerY}
+
+            ${noseCenterX - tipHalfWidth}
+            ${tipCenterY}
+
+            C
+            ${noseCenterX - tipHalfWidth}
+            ${tipShoulderY}
+
+            ${noseCenterX - shoulderHalfWidth * 0.72}
+            ${tipTopY + tipHeight * 0.10}
+
+            ${noseCenterX - topHalfWidth}
+            ${tipTopY}
+
+            Z
+        `
     );
 
-const tipHeight =
-    Math.max(
-        noseHeight * 0.92,
-        8
-    );
-
-const tipTopY =
-    tipCenterY -
-    tipHeight * 0.56;
-
-const tipBottomY =
-    tipCenterY +
-    tipHeight * 0.48;
-
-const upperHalfWidth =
-    tipHalfWidth * 0.48;
-
-const middleHalfWidth =
-    tipHalfWidth * 0.78;
-
-
-/* ==========================
-   CENTER NOSE BULB PATH
-========================== */
-
-noseFront.setAttribute(
-    "d",
-    `
-        M
-        ${noseCenterX - upperHalfWidth}
-        ${tipTopY}
-
-        C
-        ${noseCenterX - middleHalfWidth}
-        ${tipTopY + tipHeight * 0.18}
-
-        ${noseCenterX - tipHalfWidth}
-        ${tipCenterY + tipHeight * 0.02}
-
-        ${noseCenterX - tipHalfWidth}
-        ${tipCenterY + tipHeight * 0.22}
-
-        C
-        ${noseCenterX - tipHalfWidth}
-        ${tipCenterY + tipHeight * 0.38}
-
-        ${noseCenterX - tipHalfWidth * 0.52}
-        ${tipBottomY}
-
-        ${noseCenterX}
-        ${tipBottomY}
-
-        C
-        ${noseCenterX + tipHalfWidth * 0.52}
-        ${tipBottomY}
-
-        ${noseCenterX + tipHalfWidth}
-        ${tipCenterY + tipHeight * 0.38}
-
-        ${noseCenterX + tipHalfWidth}
-        ${tipCenterY + tipHeight * 0.22}
-
-        C
-        ${noseCenterX + tipHalfWidth}
-        ${tipCenterY + tipHeight * 0.02}
-
-        ${noseCenterX + middleHalfWidth}
-        ${tipTopY + tipHeight * 0.18}
-
-        ${noseCenterX + upperHalfWidth}
-        ${tipTopY}
-
-        C
-        ${noseCenterX + upperHalfWidth * 0.45}
-        ${tipTopY - tipHeight * 0.04}
-
-        ${noseCenterX - upperHalfWidth * 0.45}
-        ${tipTopY - tipHeight * 0.04}
-
-        ${noseCenterX - upperHalfWidth}
-        ${tipTopY}
-
-        Z
-    `
-);
 
     /* ==========================
        NOSTRIL HOLES
@@ -570,33 +587,40 @@ noseFront.setAttribute(
 
     leftHole.setAttribute(
         "rx",
-        settings.nostrilHoleWidth
+        Math.max(
+            settings.nostrilHoleWidth,
+            1
+        )
     );
 
     rightHole.setAttribute(
         "rx",
-        settings.nostrilHoleWidth
+        Math.max(
+            settings.nostrilHoleWidth,
+            1
+        )
     );
 
     leftHole.setAttribute(
         "ry",
-        settings.nostrilHoleHeight
+        Math.max(
+            settings.nostrilHoleHeight,
+            1
+        )
     );
 
     rightHole.setAttribute(
         "ry",
-        settings.nostrilHoleHeight
+        Math.max(
+            settings.nostrilHoleHeight,
+            1
+        )
     );
 
 
     /* ==========================
        ROTATE NOSTRIL HOLES
     ========================== */
-
-    /*
-        The hole rotation is even subtler
-        than the rotation of the wings.
-    */
 
     const holeRotation =
         wingRotation * 0.55;
