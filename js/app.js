@@ -101,9 +101,10 @@ function initializeHeadControls() {
 
                     window.drawHead();
 
+
                     /*
-                     Eyes are positioned inside the SVG,
-                     so redraw them after the head changes.
+                       Redraw facial features after
+                       changing the head shape.
                     */
 
                     if (
@@ -112,6 +113,15 @@ function initializeHeadControls() {
                     ) {
 
                         window.drawEyes();
+
+                    }
+
+                    if (
+                        typeof window.drawMouth ===
+                        "function"
+                    ) {
+
+                        window.drawMouth();
 
                     }
 
@@ -246,6 +256,15 @@ function loadHead() {
 
         }
 
+        if (
+            typeof window.drawMouth ===
+            "function"
+        ) {
+
+            window.drawMouth();
+
+        }
+
         displayHeadStatus(
             "Saved head settings loaded."
         );
@@ -287,6 +306,15 @@ function resetHead() {
     ) {
 
         window.drawEyes();
+
+    }
+
+    if (
+        typeof window.drawMouth ===
+        "function"
+    ) {
+
+        window.drawMouth();
 
     }
 
@@ -448,6 +476,93 @@ function initializeEyeButtons() {
 
 
 /* ==========================
+   MOUTH BUTTON EVENTS
+========================== */
+
+function initializeMouthButtons() {
+
+    const saveButton =
+        document.getElementById(
+            "saveMouth"
+        );
+
+    const loadButton =
+        document.getElementById(
+            "loadMouth"
+        );
+
+    const resetButton =
+        document.getElementById(
+            "resetMouth"
+        );
+
+
+    if (
+        saveButton &&
+        typeof window.saveMouth ===
+        "function"
+    ) {
+
+        saveButton.addEventListener(
+            "click",
+            window.saveMouth
+        );
+
+    }
+
+
+    if (
+        loadButton &&
+        typeof window.loadMouth ===
+        "function"
+    ) {
+
+        loadButton.addEventListener(
+            "click",
+            function () {
+
+                const loaded =
+                    window.loadMouth();
+
+                if (!loaded) {
+
+                    const status =
+                        document.getElementById(
+                            "mouthSaveStatus"
+                        );
+
+                    if (status) {
+
+                        status.textContent =
+                            "No saved mouth was found.";
+
+                    }
+
+                }
+
+            }
+        );
+
+    }
+
+
+    if (
+        resetButton &&
+        typeof window.resetMouth ===
+        "function"
+    ) {
+
+        resetButton.addEventListener(
+            "click",
+            window.resetMouth
+        );
+
+    }
+
+}
+
+
+/* ==========================
    START APPLICATION
 ========================== */
 
@@ -574,6 +689,25 @@ window.addEventListener(
 
         }
 
+
+        /* ==========================
+   MOUTH
+========================== */
+
+if (
+    typeof window.drawMouth ===
+    "function"
+) {
+
+    window.drawMouth();
+
+} else {
+
+    console.error(
+        "drawMouth() was not loaded."
+    );
+
+}
 
         /* ==========================
            IDLE ANIMATION
