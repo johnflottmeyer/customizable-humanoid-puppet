@@ -337,8 +337,8 @@ font-family: Arial, sans-serif;
     fill: url(#noseMainGradient);
 }
 
-#noseFront{
-    fill:url(#noseFrontGradient);
+#noseFront {
+    fill: url(#noseFrontGradient);
 }
 
 #leftNostril {
@@ -356,7 +356,25 @@ font-family: Arial, sans-serif;
 #rightNostrilHole {
     fill: url(#rightNostrilHoleGradient);
 }
+
 #noseBottomShadow {
     fill: url(#noseBottomShadowGradient);
     pointer-events: none;
+}
+/* ==========================
+   MOUTH PROTOTYPE
+========================== */
+
+#mouthGroup {
+    pointer-events: none;
+}
+
+#mouthPrototype {
+    fill: #b97872;
+
+    stroke: #744945;
+    stroke-width: 0.8;
+
+    stroke-linejoin: round;
+    stroke-linecap: round;
 }
