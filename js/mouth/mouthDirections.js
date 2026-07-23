@@ -998,3 +998,20 @@
         getCenterWeight:
             getCenterWeight,
 
+        getUpperLiftDirection:
+            getUpperLiftDirection,
+
+        getLowerLiftDirection:
+            getLowerLiftDirection,
+
+        sample:
+            sample
+
+    };
+
+})();
+
+
+console.log(
+    "mouthDirections.js loaded"
+);
