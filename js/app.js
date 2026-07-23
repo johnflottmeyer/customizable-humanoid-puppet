@@ -37,6 +37,46 @@ const headControls = [
 
 
 /* ==========================
+   DRAW MOUTH LAYERS
+========================== */
+
+function drawMouthLayers() {
+
+    /*
+       Draw the existing mouth first.
+    */
+
+    if (
+        typeof window.drawMouth ===
+        "function"
+    ) {
+
+        window.drawMouth();
+
+    }
+
+
+    /*
+       Draw the new geometry-based
+       mouth engine after the old mouth.
+
+       Since its SVG group is appended later,
+       it should appear above the existing mouth.
+    */
+
+    if (
+        typeof window.drawMouthEngine ===
+        "function"
+    ) {
+
+        window.drawMouthEngine();
+
+    }
+
+}
+
+
+/* ==========================
    DISPLAY HEAD VALUE
 ========================== */
 
@@ -116,14 +156,7 @@ function initializeHeadControls() {
 
                     }
 
-                    if (
-                        typeof window.drawMouth ===
-                        "function"
-                    ) {
-
-                        window.drawMouth();
-
-                    }
+                    drawMouthLayers();
 
                 }
             );
@@ -256,14 +289,7 @@ function loadHead() {
 
         }
 
-        if (
-            typeof window.drawMouth ===
-            "function"
-        ) {
-
-            window.drawMouth();
-
-        }
+        drawMouthLayers();
 
         displayHeadStatus(
             "Saved head settings loaded."
@@ -309,14 +335,7 @@ function resetHead() {
 
     }
 
-    if (
-        typeof window.drawMouth ===
-        "function"
-    ) {
-
-        window.drawMouth();
-
-    }
+    drawMouthLayers();
 
     displayHeadStatus(
         "Head settings reset."
@@ -538,6 +557,10 @@ function initializeMouthButtons() {
 
                     }
 
+                } else {
+
+                    drawMouthLayers();
+
                 }
 
             }
@@ -554,7 +577,13 @@ function initializeMouthButtons() {
 
         resetButton.addEventListener(
             "click",
-            window.resetMouth
+            function () {
+
+                window.resetMouth();
+
+                drawMouthLayers();
+
+            }
         );
 
     }
@@ -691,23 +720,47 @@ window.addEventListener(
 
 
         /* ==========================
-   MOUTH
-========================== */
+           MOUTH
+        ========================== */
 
-if (
-    typeof window.drawMouth ===
-    "function"
-) {
+        initializeMouthButtons();
 
-    window.drawMouth();
 
-} else {
+        if (
+            typeof window.drawMouth ===
+            "function"
+        ) {
 
-    console.error(
-        "drawMouth() was not loaded."
-    );
+            window.drawMouth();
 
-}
+        } else {
+
+            console.error(
+                "drawMouth() was not loaded."
+            );
+
+        }
+
+
+        /* ==========================
+           MOUTH ENGINE
+        ========================== */
+
+        if (
+            typeof window.drawMouthEngine ===
+            "function"
+        ) {
+
+            window.drawMouthEngine();
+
+        } else {
+
+            console.error(
+                "drawMouthEngine() was not loaded."
+            );
+
+        }
+
 
         /* ==========================
            IDLE ANIMATION
