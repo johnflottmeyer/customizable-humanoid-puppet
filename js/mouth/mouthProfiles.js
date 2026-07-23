@@ -747,3 +747,7 @@
     };
 
 })();
+
+console.log(
+    "mouthProfiles.js loaded"
+);
