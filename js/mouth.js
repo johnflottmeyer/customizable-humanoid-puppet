@@ -702,8 +702,16 @@ function createMouthOpeningPath() {
 
     const {
 
+        settings,
+
         centerX,
         width,
+
+        leftCornerX,
+        rightCornerX,
+
+        leftCornerY,
+        rightCornerY,
 
         upperLipY,
         lowerLipY,
@@ -713,40 +721,41 @@ function createMouthOpeningPath() {
     } = geometry;
 
 
-    //const openingWidth =
-        //width * 0.72;
-const openingWidth =
-    width *
-    Math.max(
-        0.46,
-        0.60 -
-        openingHeight * 0.007
-    );
+    /*
+        The opening now shares the same
+        corner system as the lips.
+    */
 
-
-    const halfOpeningWidth =
-        openingWidth / 2;
+    const animatedInset =
+        Math.max(
+            4,
+            settings.cornerInset -
+            openingHeight * 0.25
+        );
 
 
     const leftX =
-        centerX -
-        halfOpeningWidth;
+        leftCornerX +
+        animatedInset;
 
 
     const rightX =
-        centerX +
-        halfOpeningWidth;
+        rightCornerX -
+        animatedInset;
+
+
+    const openingWidth =
+        rightX -
+        leftX;
 
 
     /*
-        Closed mouth:
-        use a simple crease.
-
-        Open mouth:
-        use a filled opening shape.
+        Closed mouth remains a crease.
     */
 
-    if (openingHeight < 0.8) {
+    if (
+        openingHeight < 0.8
+    ) {
 
         const creaseY =
             upperLipY + 0.55;
@@ -756,7 +765,7 @@ const openingWidth =
 
             `M
                 ${leftX}
-                ${creaseY}
+                ${leftCornerY + 0.2}
             `,
 
 
@@ -765,22 +774,22 @@ const openingWidth =
                 ${creaseY - 0.35}
 
                 ${centerX - openingWidth * 0.16}
-                ${creaseY + 0.35}
+                ${creaseY + 0.3}
 
                 ${centerX}
-                ${creaseY + 0.15}
+                ${creaseY + 0.12}
             `,
 
 
             `C
                 ${centerX + openingWidth * 0.16}
-                ${creaseY + 0.35}
+                ${creaseY + 0.3}
 
                 ${rightX - openingWidth * 0.22}
                 ${creaseY - 0.35}
 
                 ${rightX}
-                ${creaseY}
+                ${rightCornerY + 0.2}
             `
 
         ].join(" ");
@@ -788,81 +797,96 @@ const openingWidth =
     }
 
 
-    const openingCenterY =
+    /*
+        Upper and lower opening edges are
+        derived from the same lip geometry.
+    */
 
-        (
-            upperLipY +
-            lowerLipY
-        ) / 2 +
+    const upperCenterY =
+        upperLipY +
+        openingHeight * 0.08;
+
+
+    const lowerCenterY =
+        lowerLipY +
+        openingHeight * 0.55;
+
+
+    const upperSideY =
+        upperCenterY +
+        openingHeight * 0.20;
+
+
+    const lowerSideY =
+        lowerCenterY -
         openingHeight * 0.18;
 
 
-    //const halfOpeningHeight =
-      //  openingHeight / 2;
-const halfOpeningHeight =
-    openingHeight * 0.62;
-
     return [
+
+        /*
+            Start at left shared corner.
+        */
 
         `M
             ${leftX}
-            ${openingCenterY}
+            ${leftCornerY + openingHeight * 0.08}
         `,
 
 
         /*
-            Upper opening edge.
+            Upper interior edge.
         */
 
         `C
-            ${leftX + openingWidth * 0.20}
-            ${openingCenterY - halfOpeningHeight * 0.65}
+            ${leftX + openingWidth * 0.18}
+            ${upperSideY}
 
-            ${centerX - openingWidth * 0.17}
-            ${openingCenterY - halfOpeningHeight}
+            ${centerX - openingWidth * 0.18}
+            ${upperCenterY}
 
             ${centerX}
-            ${openingCenterY - halfOpeningHeight}
+            ${upperCenterY}
         `,
 
 
         `C
-            ${centerX + openingWidth * 0.17}
-            ${openingCenterY - halfOpeningHeight}
+            ${centerX + openingWidth * 0.18}
+            ${upperCenterY}
 
-            ${rightX - openingWidth * 0.20}
-            ${openingCenterY - halfOpeningHeight * 0.65}
+            ${rightX - openingWidth * 0.18}
+            ${upperSideY}
 
             ${rightX}
-            ${openingCenterY}
+            ${rightCornerY + openingHeight * 0.08}
         `,
 
 
         /*
-            Lower opening edge.
+            Lower interior edge.
         */
 
         `C
-            ${rightX - openingWidth * 0.20}
-            ${openingCenterY + halfOpeningHeight * 0.70}
+            ${rightX - openingWidth * 0.16}
+            ${lowerSideY}
 
-            ${centerX + openingWidth * 0.17}
-            ${openingCenterY + halfOpeningHeight}
+            ${centerX + openingWidth * 0.20}
+            ${lowerCenterY}
 
             ${centerX}
-            ${openingCenterY + halfOpeningHeight}
+            ${lowerCenterY}
         `,
 
 
         `C
-            ${centerX - openingWidth * 0.17}
-            ${openingCenterY + halfOpeningHeight}
+            ${centerX - openingWidth * 0.20}
+            ${lowerCenterY}
 
-            ${leftX + openingWidth * 0.20}
-            ${openingCenterY + halfOpeningHeight * 0.70}
+            ${leftX + openingWidth * 0.16}
+            ${lowerSideY}
 
             ${leftX}
-            ${openingCenterY}
+            ${leftCornerY + openingHeight * 0.08}
         `,
 
         "Z"
@@ -870,7 +894,6 @@ const halfOpeningHeight =
     ].join(" ");
 
 }
-
 
 /* ==========================
    DRAW MOUTH LIGHTING
@@ -1411,7 +1434,7 @@ const MOUTH_SHAPES = {
 
 
     AH: {
-    open: 10,
+    open: 70,
     spread: -2,
     pucker: 1,
     upperRaise: 0.4,
