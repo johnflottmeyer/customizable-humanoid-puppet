@@ -17,15 +17,15 @@
     ========================== */
 
   const defaultMouthDebugSettings = {
-    enabled: true,
+    enabled: false,
 
-    showLandmarks: true,
+    showLandmarks: false,
 
-    showSeam: true,
-    showSamples: true,
+    showSeam: false,
+    showSamples: false,
 
-    showUpperBorder: true,
-    showLowerBorder: true,
+    showUpperBorder: false,
+    showLowerBorder: false,
 
     showNormals: false,
     showTangents: false,
@@ -33,8 +33,8 @@
     showUpperDirections: false,
     showLowerDirections: false,
 
-    showPads: true,
-    showPadWidths: true,
+    showPads: false,
+    showPadWidths: false,
   };
 
   window.mouthDebugSettings = {

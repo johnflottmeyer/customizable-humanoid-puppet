@@ -530,8 +530,12 @@
   }
 
   /* ==========================
-       BUILD LIP ANATOMY
-    ========================== */
+    BUILD LIP ANATOMY
+  ========================== */
+
+  /* ==========================
+   BUILD LIP ANATOMY
+========================== */
 
   function buildLipAnatomy(seamSamples) {
     if (!Array.isArray(seamSamples)) {
@@ -542,39 +546,103 @@
 
     const directionSettings = getMouthDirectionSettings();
 
-    return seamSamples.map(function (seamSample) {
-      const profile = MouthProfiles.sample(
-        seamSample.t,
+    const settings = window.mouthEngineSettings || {};
 
-        profileSettings,
-      );
+    /*
+    These are the original default values.
+
+    They let thickness controls scale the
+    existing pad geometry instead of replacing it.
+  */
+
+    const defaultUpperThickness = 6.5;
+    const defaultLowerThickness = 7.2;
+
+    const upperThickness = safeNumber(
+      settings.upperLipThickness,
+      defaultUpperThickness,
+    );
+
+    const lowerThickness = safeNumber(
+      settings.lowerLipThickness,
+      defaultLowerThickness,
+    );
+
+    const upperThicknessScale = clamp(
+      upperThickness / defaultUpperThickness,
+      0,
+      4,
+    );
+
+    const lowerThicknessScale = clamp(
+      lowerThickness / defaultLowerThickness,
+      0,
+      4,
+    );
+
+    const cupidBowHeight = safeNumber(settings.cupidBowHeight, 2.5);
+
+    const philtrumDip = safeNumber(settings.philtrumDip, 1.5);
+
+    const upperCenterFullness = safeNumber(settings.upperCenterFullness, 0);
+
+    const lowerCenterFullness = safeNumber(settings.lowerCenterFullness, 1.8);
+
+    return seamSamples.map(function (seamSample) {
+      const profile = MouthProfiles.sample(seamSample.t, profileSettings);
 
       const pads = MouthPads.sample(seamSample.t);
 
       const directions = MouthDirections.sample(
         seamSample.t,
-
         seamSample.seamTangent,
-
         seamSample.seamNormal,
-
         directionSettings,
       );
 
+      /*
+      Begin with the original pad heights.
+    */
+
+      let upperHeight = pads.upperHeight * upperThicknessScale;
+
+      let lowerHeight = pads.lowerHeight * lowerThicknessScale;
+
+      /*
+      Add small procedural offsets.
+
+      These intentionally use restrained
+      multipliers so the existing mouth shape
+      remains recognizable.
+    */
+
+      upperHeight += profile.cupidWeight * cupidBowHeight * 0.45;
+
+      upperHeight -= profile.philtrumWeight * philtrumDip * 0.4;
+
+      upperHeight += directions.centerWeight * upperCenterFullness * 0.25;
+
+      lowerHeight += profile.lowerLobeWeight * lowerCenterFullness * 0.4;
+
+      /*
+      Prevent either surface from exploding
+      into oversized or pointed geometry.
+    */
+
+      upperHeight = clamp(upperHeight, 0, 30);
+
+      lowerHeight = clamp(lowerHeight, 0, 35);
+
       const upperBorder = movePoint(
         seamSample.seamPoint,
-
         directions.upper,
-
-        pads.upperHeight,
+        upperHeight,
       );
 
       const lowerBorder = movePoint(
         seamSample.seamPoint,
-
         directions.lower,
-
-        pads.lowerHeight,
+        lowerHeight,
       );
 
       return {
@@ -590,9 +658,9 @@
 
         lowerDirection: directions.lower,
 
-        upperHeight: pads.upperHeight,
+        upperHeight: upperHeight,
 
-        lowerHeight: pads.lowerHeight,
+        lowerHeight: lowerHeight,
 
         upperPads: pads.upper,
 
@@ -616,7 +684,6 @@
       };
     });
   }
-
   /* ==========================
        COMPATIBILITY BUILDER
     ========================== */

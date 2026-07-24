@@ -50,27 +50,6 @@ function drawMouthLayers() {
   if (typeof window.drawMouthEngine === "function") {
     window.drawMouthEngine();
   }
-
-  /*
-        Draw diagnostics last so they remain
-        visible over the mouth surface.
-    */
-
-  if (window.MouthDebug && typeof window.MouthDebug.draw === "function") {
-    window.MouthDebug.draw();
-  }
-
-  /*
-        Refresh an existing inspector selection
-        after the mouth geometry changes.
-    */
-
-  if (
-    window.FaceInspector &&
-    typeof window.FaceInspector.refresh === "function"
-  ) {
-    window.FaceInspector.refresh();
-  }
 }
 
 /* ==========================
@@ -464,6 +443,12 @@ window.addEventListener("DOMContentLoaded", function () {
   initializeMouthDebugger();
 
   /* ==========================
+        FACE INSPECTOR
+        ========================== */
+
+  initializeFaceInspector();
+
+  /* ==========================
            IDLE ANIMATION
         ========================== */
 
@@ -473,6 +458,22 @@ window.addEventListener("DOMContentLoaded", function () {
     console.warn("startIdleAnimation() was not loaded.");
   }
 });
+
+/* ==========================
+   INITIALIZE FACE INSPECTOR
+========================== */
+
+function initializeFaceInspector() {
+  if (
+    !window.FaceInspector ||
+    typeof window.FaceInspector.initialize !== "function"
+  ) {
+    console.warn("FaceInspector was not loaded.");
+    return;
+  }
+
+  window.FaceInspector.initialize();
+}
 
 /* ==========================
    PUBLIC REDRAW HELPER
