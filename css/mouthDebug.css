@@ -1,0 +1,92 @@
+/* ==========================
+   MOUTH DEBUG CONTROLS
+========================== */
+
+#mouthDebugControls {
+    gap: 0.7rem;
+}
+
+.mouth-debug-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.debug-checkbox {
+    display: grid !important;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 0.65rem !important;
+
+    padding: 0.45rem 0.55rem;
+
+    color: #f1f3f7;
+    background-color: #292c32;
+
+    border: 1px solid #3d414a;
+    border-radius: 7px;
+
+    cursor: pointer;
+}
+
+.debug-checkbox:hover {
+    background-color: #31353c;
+}
+
+.debug-checkbox input {
+    width: 1rem;
+    height: 1rem;
+
+    margin: 0;
+
+    cursor: pointer;
+}
+
+.debug-checkbox span {
+    opacity: 1 !important;
+    font-size: 0.88rem !important;
+}
+
+#resetMouthDebug {
+    padding: 0.6rem 0.75rem;
+
+    color: #ffffff;
+    background-color: #414650;
+
+    border: 1px solid #5b616d;
+    border-radius: 7px;
+
+    cursor: pointer;
+}
+
+#resetMouthDebug:hover {
+    background-color: #505661;
+}
+
+.debug-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    margin: 0.25rem 0 0;
+
+    color: #b9bec8;
+    font-size: 0.76rem;
+    line-height: 1.35;
+}
+
+
+/* ==========================
+   MOUTH DEBUG SVG LAYER
+========================== */
+
+#mouthDebugLayer {
+    pointer-events: none;
+}
+
+#mouthDebugLayer path,
+#mouthDebugLayer line,
+#mouthDebugLayer circle,
+#mouthDebugLayer ellipse {
+    vector-effect: non-scaling-stroke;
+}

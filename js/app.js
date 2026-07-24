@@ -3,783 +3,479 @@
 ========================== */
 
 const defaultHeadSettings = {
-
-    headHeight: 475,
-    foreheadWidth: 105,
-    templeWidth: 138,
-    cheekWidth: 142,
-    jawWidth: 108,
-    chinWidth: 82,
-    chinBottomWidth: 48,
-    chinDepth: 10,
-    chinRoundness: 34
-
+  headHeight: 475,
+  foreheadWidth: 105,
+  templeWidth: 138,
+  cheekWidth: 142,
+  jawWidth: 108,
+  chinWidth: 82,
+  chinBottomWidth: 48,
+  chinDepth: 10,
+  chinRoundness: 34,
 };
-
 
 /* ==========================
    HEAD CONTROL NAMES
 ========================== */
 
 const headControls = [
-
-    "headHeight",
-    "foreheadWidth",
-    "templeWidth",
-    "cheekWidth",
-    "jawWidth",
-    "chinWidth",
-    "chinBottomWidth",
-    "chinDepth",
-    "chinRoundness"
-
+  "headHeight",
+  "foreheadWidth",
+  "templeWidth",
+  "cheekWidth",
+  "jawWidth",
+  "chinWidth",
+  "chinBottomWidth",
+  "chinDepth",
+  "chinRoundness",
 ];
-
 
 /* ==========================
    DRAW MOUTH LAYERS
 ========================== */
 
 function drawMouthLayers() {
-
-    /*
-       Draw the existing mouth first.
+  /*
+        Draw the older animated mouth first.
     */
 
-    if (
-        typeof window.drawMouth ===
-        "function"
-    ) {
+  if (typeof window.drawMouth === "function") {
+    window.drawMouth();
+  }
 
-        window.drawMouth();
-
-    }
-
-
-    /*
-       Draw the new geometry-based
-       mouth engine after the old mouth.
-
-       Since its SVG group is appended later,
-       it should appear above the existing mouth.
+  /*
+        Draw the procedural mouth above it.
     */
 
-    if (
-        typeof window.drawMouthEngine ===
-        "function"
-    ) {
+  if (typeof window.drawMouthEngine === "function") {
+    window.drawMouthEngine();
+  }
 
-        window.drawMouthEngine();
+  /*
+        Draw diagnostics last so they remain
+        visible over the mouth surface.
+    */
 
-    }
+  if (window.MouthDebug && typeof window.MouthDebug.draw === "function") {
+    window.MouthDebug.draw();
+  }
 
+  /*
+        Refresh an existing inspector selection
+        after the mouth geometry changes.
+    */
+
+  if (
+    window.FaceInspector &&
+    typeof window.FaceInspector.refresh === "function"
+  ) {
+    window.FaceInspector.refresh();
+  }
 }
-
 
 /* ==========================
    DISPLAY HEAD VALUE
 ========================== */
 
 function displayHeadValue(settingName) {
+  const valueDisplay = document.getElementById(`${settingName}Value`);
 
-    const valueDisplay =
-        document.getElementById(
-            `${settingName}Value`
-        );
+  if (!valueDisplay) {
+    return;
+  }
 
-    if (!valueDisplay) {
-        return;
-    }
-
-    valueDisplay.textContent =
-        window.headSettings[settingName];
-
+  valueDisplay.textContent = window.headSettings[settingName];
 }
-
 
 /* ==========================
    INITIALIZE HEAD CONTROLS
 ========================== */
 
 function initializeHeadControls() {
+  headControls.forEach(function (settingName) {
+    const slider = document.getElementById(settingName);
 
-    headControls.forEach(
-        function (settingName) {
+    if (!slider) {
+      console.warn(`Could not find head slider: ${settingName}`);
 
-            const slider =
-                document.getElementById(
-                    settingName
-                );
+      return;
+    }
 
-            if (!slider) {
+    slider.value = window.headSettings[settingName];
 
-                console.warn(
-                    `Could not find head slider: ${settingName}`
-                );
+    displayHeadValue(settingName);
 
-                return;
+    slider.addEventListener("input", function () {
+      window.headSettings[settingName] = Number(slider.value);
 
-            }
+      displayHeadValue(settingName);
 
-            slider.value =
-                window.headSettings[settingName];
+      window.drawHead();
 
-            displayHeadValue(settingName);
+      if (typeof window.drawEyes === "function") {
+        window.drawEyes();
+      }
 
+      if (typeof window.drawNose === "function") {
+        window.drawNose();
+      }
 
-            slider.addEventListener(
-                "input",
-                function () {
-
-                    window.headSettings[
-                        settingName
-                    ] = Number(slider.value);
-
-                    displayHeadValue(
-                        settingName
-                    );
-
-                    window.drawHead();
-
-
-                    /*
-                       Redraw facial features after
-                       changing the head shape.
-                    */
-
-                    if (
-                        typeof window.drawEyes ===
-                        "function"
-                    ) {
-
-                        window.drawEyes();
-
-                    }
-
-                    drawMouthLayers();
-
-                }
-            );
-
-        }
-    );
-
+      drawMouthLayers();
+    });
+  });
 }
-
 
 /* ==========================
    UPDATE HEAD CONTROLS
 ========================== */
 
 function updateHeadControls() {
+  headControls.forEach(function (settingName) {
+    const slider = document.getElementById(settingName);
 
-    headControls.forEach(
-        function (settingName) {
+    if (!slider) {
+      return;
+    }
 
-            const slider =
-                document.getElementById(
-                    settingName
-                );
+    slider.value = window.headSettings[settingName];
 
-            if (!slider) {
-                return;
-            }
-
-            slider.value =
-                window.headSettings[settingName];
-
-            displayHeadValue(settingName);
-
-        }
-    );
-
+    displayHeadValue(settingName);
+  });
 }
-
 
 /* ==========================
    HEAD STATUS MESSAGE
 ========================== */
 
 function displayHeadStatus(message) {
+  const saveStatus = document.getElementById("saveStatus");
 
-    const saveStatus =
-        document.getElementById(
-            "saveStatus"
-        );
+  if (!saveStatus) {
+    return;
+  }
 
-    if (!saveStatus) {
-        return;
-    }
-
-    saveStatus.textContent = message;
-
+  saveStatus.textContent = message;
 }
-
 
 /* ==========================
    SAVE HEAD
 ========================== */
 
 function saveHead() {
+  try {
+    localStorage.setItem(
+      "humanoidHeadSettings",
+      JSON.stringify(window.headSettings),
+    );
 
-    try {
+    displayHeadStatus("Head settings saved.");
+  } catch (error) {
+    displayHeadStatus("Head settings could not be saved.");
 
-        localStorage.setItem(
-            "humanoidHeadSettings",
-            JSON.stringify(
-                window.headSettings
-            )
-        );
-
-        displayHeadStatus(
-            "Head settings saved."
-        );
-
-    } catch (error) {
-
-        displayHeadStatus(
-            "Head settings could not be saved."
-        );
-
-        console.error(
-            "Head settings could not be saved:",
-            error
-        );
-
-    }
-
+    console.error("Head settings could not be saved:", error);
+  }
 }
-
 
 /* ==========================
    LOAD HEAD
 ========================== */
 
 function loadHead() {
+  const savedSettings = localStorage.getItem("humanoidHeadSettings");
 
-    const savedSettings =
-        localStorage.getItem(
-            "humanoidHeadSettings"
-        );
+  if (!savedSettings) {
+    return false;
+  }
 
-    if (!savedSettings) {
-        return false;
+  try {
+    const parsedSettings = JSON.parse(savedSettings);
+
+    Object.assign(window.headSettings, parsedSettings);
+
+    updateHeadControls();
+
+    window.drawHead();
+
+    if (typeof window.drawEyes === "function") {
+      window.drawEyes();
     }
 
-    try {
-
-        const parsedSettings =
-            JSON.parse(savedSettings);
-
-        Object.assign(
-            window.headSettings,
-            parsedSettings
-        );
-
-        updateHeadControls();
-
-        window.drawHead();
-
-        if (
-            typeof window.drawEyes ===
-            "function"
-        ) {
-
-            window.drawEyes();
-
-        }
-
-        drawMouthLayers();
-
-        displayHeadStatus(
-            "Saved head settings loaded."
-        );
-
-        return true;
-
-    } catch (error) {
-
-        console.error(
-            "Saved head settings could not be loaded:",
-            error
-        );
-
-        return false;
-
+    if (typeof window.drawNose === "function") {
+      window.drawNose();
     }
 
+    drawMouthLayers();
+
+    displayHeadStatus("Saved head settings loaded.");
+
+    return true;
+  } catch (error) {
+    console.error("Saved head settings could not be loaded:", error);
+
+    return false;
+  }
 }
-
 
 /* ==========================
    RESET HEAD
 ========================== */
 
 function resetHead() {
+  Object.assign(window.headSettings, defaultHeadSettings);
 
-    Object.assign(
-        window.headSettings,
-        defaultHeadSettings
-    );
+  updateHeadControls();
 
-    updateHeadControls();
+  window.drawHead();
 
-    window.drawHead();
+  if (typeof window.drawEyes === "function") {
+    window.drawEyes();
+  }
 
-    if (
-        typeof window.drawEyes ===
-        "function"
-    ) {
+  if (typeof window.drawNose === "function") {
+    window.drawNose();
+  }
 
-        window.drawEyes();
+  drawMouthLayers();
 
-    }
-
-    drawMouthLayers();
-
-    displayHeadStatus(
-        "Head settings reset."
-    );
-
+  displayHeadStatus("Head settings reset.");
 }
-
 
 /* ==========================
    HEAD BUTTON EVENTS
 ========================== */
 
 function initializeHeadButtons() {
+  const saveButton = document.getElementById("saveHead");
 
-    const saveButton =
-        document.getElementById(
-            "saveHead"
-        );
+  const loadButton = document.getElementById("loadHead");
 
-    const loadButton =
-        document.getElementById(
-            "loadHead"
-        );
+  const resetButton = document.getElementById("resetHead");
 
-    const resetButton =
-        document.getElementById(
-            "resetHead"
-        );
+  if (saveButton) {
+    saveButton.addEventListener("click", saveHead);
+  }
 
+  if (loadButton) {
+    loadButton.addEventListener("click", function () {
+      const loaded = loadHead();
 
-    if (saveButton) {
+      if (!loaded) {
+        displayHeadStatus("No saved head was found.");
+      }
+    });
+  }
 
-        saveButton.addEventListener(
-            "click",
-            saveHead
-        );
-
-    }
-
-    if (loadButton) {
-
-        loadButton.addEventListener(
-            "click",
-            function () {
-
-                const loaded =
-                    loadHead();
-
-                if (!loaded) {
-
-                    displayHeadStatus(
-                        "No saved head was found."
-                    );
-
-                }
-
-            }
-        );
-
-    }
-
-    if (resetButton) {
-
-        resetButton.addEventListener(
-            "click",
-            resetHead
-        );
-
-    }
-
+  if (resetButton) {
+    resetButton.addEventListener("click", resetHead);
+  }
 }
-
 
 /* ==========================
    EYE BUTTON EVENTS
 ========================== */
 
 function initializeEyeButtons() {
+  const saveButton = document.getElementById("saveEyes");
 
-    const saveButton =
-        document.getElementById(
-            "saveEyes"
-        );
+  const loadButton = document.getElementById("loadEyes");
 
-    const loadButton =
-        document.getElementById(
-            "loadEyes"
-        );
+  const resetButton = document.getElementById("resetEyes");
 
-    const resetButton =
-        document.getElementById(
-            "resetEyes"
-        );
+  if (saveButton && typeof window.saveEyes === "function") {
+    saveButton.addEventListener("click", window.saveEyes);
+  }
 
+  if (loadButton && typeof window.loadEyes === "function") {
+    loadButton.addEventListener("click", function () {
+      const loaded = window.loadEyes();
 
-    if (
-        saveButton &&
-        typeof window.saveEyes ===
-        "function"
-    ) {
+      if (!loaded) {
+        const status = document.getElementById("eyeSaveStatus");
 
-        saveButton.addEventListener(
-            "click",
-            window.saveEyes
-        );
+        if (status) {
+          status.textContent = "No saved eyes were found.";
+        }
+      }
+    });
+  }
 
-    }
-
-    if (
-        loadButton &&
-        typeof window.loadEyes ===
-        "function"
-    ) {
-
-        loadButton.addEventListener(
-            "click",
-            function () {
-
-                const loaded =
-                    window.loadEyes();
-
-                if (!loaded) {
-
-                    const status =
-                        document.getElementById(
-                            "eyeSaveStatus"
-                        );
-
-                    if (status) {
-
-                        status.textContent =
-                            "No saved eyes were found.";
-
-                    }
-
-                }
-
-            }
-        );
-
-    }
-
-    if (
-        resetButton &&
-        typeof window.resetEyes ===
-        "function"
-    ) {
-
-        resetButton.addEventListener(
-            "click",
-            window.resetEyes
-        );
-
-    }
-
+  if (resetButton && typeof window.resetEyes === "function") {
+    resetButton.addEventListener("click", window.resetEyes);
+  }
 }
-
 
 /* ==========================
    MOUTH BUTTON EVENTS
 ========================== */
 
 function initializeMouthButtons() {
+  const saveButton = document.getElementById("saveMouth");
 
-    const saveButton =
-        document.getElementById(
-            "saveMouth"
-        );
+  const loadButton = document.getElementById("loadMouth");
 
-    const loadButton =
-        document.getElementById(
-            "loadMouth"
-        );
+  const resetButton = document.getElementById("resetMouth");
 
-    const resetButton =
-        document.getElementById(
-            "resetMouth"
-        );
+  if (saveButton && typeof window.saveMouth === "function") {
+    saveButton.addEventListener("click", window.saveMouth);
+  }
 
+  if (loadButton && typeof window.loadMouth === "function") {
+    loadButton.addEventListener("click", function () {
+      const loaded = window.loadMouth();
 
-    if (
-        saveButton &&
-        typeof window.saveMouth ===
-        "function"
-    ) {
+      if (!loaded) {
+        const status = document.getElementById("mouthSaveStatus");
 
-        saveButton.addEventListener(
-            "click",
-            window.saveMouth
-        );
+        if (status) {
+          status.textContent = "No saved mouth was found.";
+        }
+      } else {
+        drawMouthLayers();
+      }
+    });
+  }
 
-    }
+  if (resetButton && typeof window.resetMouth === "function") {
+    resetButton.addEventListener("click", function () {
+      window.resetMouth();
 
-
-    if (
-        loadButton &&
-        typeof window.loadMouth ===
-        "function"
-    ) {
-
-        loadButton.addEventListener(
-            "click",
-            function () {
-
-                const loaded =
-                    window.loadMouth();
-
-                if (!loaded) {
-
-                    const status =
-                        document.getElementById(
-                            "mouthSaveStatus"
-                        );
-
-                    if (status) {
-
-                        status.textContent =
-                            "No saved mouth was found.";
-
-                    }
-
-                } else {
-
-                    drawMouthLayers();
-
-                }
-
-            }
-        );
-
-    }
-
-
-    if (
-        resetButton &&
-        typeof window.resetMouth ===
-        "function"
-    ) {
-
-        resetButton.addEventListener(
-            "click",
-            function () {
-
-                window.resetMouth();
-
-                drawMouthLayers();
-
-            }
-        );
-
-    }
-
+      drawMouthLayers();
+    });
+  }
 }
 
+/* ==========================
+   INITIALIZE MOUTH DEBUGGER
+========================== */
+
+function initializeMouthDebugger() {
+  if (
+    !window.MouthDebug ||
+    typeof window.MouthDebug.initialize !== "function"
+  ) {
+    console.warn("MouthDebug was not loaded.");
+
+    return;
+  }
+
+  window.MouthDebug.initialize();
+}
 
 /* ==========================
    START APPLICATION
 ========================== */
 
-window.addEventListener(
-    "DOMContentLoaded",
-    function () {
-
-        /* ==========================
+window.addEventListener("DOMContentLoaded", function () {
+  /* ==========================
            HEAD
         ========================== */
 
-        if (
-            typeof window.drawHead !==
-            "function"
-        ) {
+  if (typeof window.drawHead !== "function") {
+    console.error("drawHead() was not loaded.");
 
-            console.error(
-                "drawHead() was not loaded."
-            );
+    return;
+  }
 
-            return;
+  if (!window.headSettings) {
+    console.error("window.headSettings was not loaded.");
 
-        }
+    return;
+  }
 
-        if (!window.headSettings) {
+  initializeHeadControls();
 
-            console.error(
-                "window.headSettings was not loaded."
-            );
+  initializeHeadButtons();
 
-            return;
+  const savedHeadLoaded = loadHead();
 
-        }
+  if (!savedHeadLoaded) {
+    updateHeadControls();
 
-        initializeHeadControls();
+    window.drawHead();
+  }
 
-        initializeHeadButtons();
-
-        const savedHeadLoaded =
-            loadHead();
-
-        if (!savedHeadLoaded) {
-
-            updateHeadControls();
-
-            window.drawHead();
-
-        }
-
-
-        /* ==========================
+  /* ==========================
            EYES
         ========================== */
 
-        if (
-            typeof window.initializeEyeControls ===
-            "function"
-        ) {
+  if (typeof window.initializeEyeControls === "function") {
+    window.initializeEyeControls();
 
-            window.initializeEyeControls();
+    initializeEyeButtons();
 
-            initializeEyeButtons();
+    const savedEyesLoaded =
+      typeof window.loadEyes === "function" ? window.loadEyes() : false;
 
-            const savedEyesLoaded =
-                typeof window.loadEyes ===
-                "function"
-                    ? window.loadEyes()
-                    : false;
+    if (!savedEyesLoaded) {
+      if (typeof window.updateEyeControls === "function") {
+        window.updateEyeControls();
+      }
 
-            if (!savedEyesLoaded) {
+      if (typeof window.drawEyes === "function") {
+        window.drawEyes();
+      }
+    }
+  } else {
+    console.error("Eye functions were not loaded.");
+  }
 
-                if (
-                    typeof window.updateEyeControls ===
-                    "function"
-                ) {
-
-                    window.updateEyeControls();
-
-                }
-
-                if (
-                    typeof window.drawEyes ===
-                    "function"
-                ) {
-
-                    window.drawEyes();
-
-                }
-
-            }
-
-        } else {
-
-            console.error(
-                "Eye functions were not loaded."
-            );
-
-        }
-
-
-        /* ==========================
+  /* ==========================
            NOSE
         ========================== */
 
-        if (
-            typeof window.initializeNose ===
-            "function"
-        ) {
+  if (typeof window.initializeNose === "function") {
+    window.initializeNose();
+  } else if (typeof initializeNose === "function") {
+    initializeNose();
+  } else {
+    console.error("initializeNose() was not loaded.");
+  }
 
-            window.initializeNose();
-
-        } else if (
-            typeof initializeNose ===
-            "function"
-        ) {
-
-            initializeNose();
-
-        } else {
-
-            console.error(
-                "initializeNose() was not loaded."
-            );
-
-        }
-
-
-        /* ==========================
-           MOUTH
+  /* ==========================
+           MOUTH BUTTONS
         ========================== */
 
-        initializeMouthButtons();
+  initializeMouthButtons();
 
-
-        if (
-            typeof window.drawMouth ===
-            "function"
-        ) {
-
-            window.drawMouth();
-
-        } else {
-
-            console.error(
-                "drawMouth() was not loaded."
-            );
-
-        }
-
-
-        /* ==========================
-           MOUTH ENGINE
+  /* ==========================
+           LEGACY MOUTH
         ========================== */
 
-        if (
-            typeof window.drawMouthEngine ===
-            "function"
-        ) {
+  if (typeof window.drawMouth === "function") {
+    window.drawMouth();
+  } else {
+    console.error("drawMouth() was not loaded.");
+  }
 
-            window.drawMouthEngine();
+  /* ==========================
+           PROCEDURAL MOUTH ENGINE
+        ========================== */
 
-        } else {
+  if (typeof window.drawMouthEngine === "function") {
+    window.drawMouthEngine();
+  } else {
+    console.error("drawMouthEngine() was not loaded.");
+  }
 
-            console.error(
-                "drawMouthEngine() was not loaded."
-            );
+  /* ==========================
+           MOUTH DEBUGGER
+        ========================== */
 
-        }
+  initializeMouthDebugger();
 
-
-        /* ==========================
+  /* ==========================
            IDLE ANIMATION
         ========================== */
 
-        if (
-            typeof window.startIdleAnimation ===
-            "function"
-        ) {
+  if (typeof window.startIdleAnimation === "function") {
+    window.startIdleAnimation();
+  } else {
+    console.warn("startIdleAnimation() was not loaded.");
+  }
+});
 
-            window.startIdleAnimation();
+/* ==========================
+   PUBLIC REDRAW HELPER
+========================== */
 
-        } else {
-
-            console.warn(
-                "startIdleAnimation() was not loaded."
-            );
-
-        }
-
-    }
-);
+window.drawMouthLayers = drawMouthLayers;

@@ -1,2068 +1,1294 @@
 /* ==========================
-   MOUTH ENGINE — VERSION 4.0
+   MOUTH ENGINE — VERSION 4.3
 
-   Adds procedural rounded mouth corners.
+   Responsibilities:
 
-   Requires:
+   - Build mouth landmarks
+   - Build and sample the mouth seam
+   - Apply lip profile and tissue pads
+   - Calculate upper and lower lip borders
+   - Draw completed lip surfaces
+   - Draw the mouth seam
+   - Store current geometry
+   - Expose geometry to MouthDebug
+   - Refresh FaceInspector selections
 
-   Point
-   Spline
-   PathBuilder
-   MouthProfiles
-   MouthDirections
-   MouthPads
+   Debug geometry is rendered only by
+   mouthDebug.js.
 ========================== */
 
 (function () {
+  "use strict";
 
-    "use strict";
+  const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
-    const SVG_NAMESPACE =
-        "http://www.w3.org/2000/svg";
-
-
-    /* ==========================
+  /* ==========================
        DEFAULT SETTINGS
     ========================== */
 
-    const defaultMouthEngineSettings = {
+  const defaultMouthEngineSettings = {
+    /* Position */
 
-        /* Position */
+    centerX: 250,
+    centerY: 381,
 
-        centerX: 250,
-        centerY: 381,
+    /* Mouth seam */
 
+    width: 150,
 
-        /* Mouth seam */
+    cornerY: 0,
+    peakY: -1.5,
+    cupidY: -0.5,
 
-        width: 150,
+    tension: 0.25,
 
-        cornerY: 0,
-        peakY: -1.5,
-        cupidY: -0.5,
+    /* Upper lip */
 
-        tension: 0.25,
+    upperLipThickness: 6.5,
 
+    cupidBowHeight: 3.2,
+    cupidBowWidth: 0.16,
 
-        /* Upper lip profile */
+    philtrumDip: 2.4,
+    upperCenterFullness: 0.5,
 
-        upperLipThickness: 6.5,
+    upperAsymmetry: 0,
 
-        cupidBowHeight: 3.2,
-        cupidBowWidth: 0.16,
+    /* Lower lip */
 
-        philtrumDip: 2.4,
-        upperCenterFullness: 0.5,
+    lowerLipThickness: 8.5,
 
-        upperAsymmetry: 0,
+    lowerCenterFullness: 2.5,
+    lowerLobeWidth: 0.34,
 
+    lowerAsymmetry: 0,
 
-        /* Lower lip profile */
+    /* Corners */
 
-        lowerLipThickness: 8.5,
+    cornerTaper: 1.9,
+    cornerThickness: 0.02,
 
-        lowerCenterFullness: 2.5,
-        lowerLobeWidth: 0.34,
+    cornerInset: 0.04,
+    cornerRoundness: 0.7,
 
-        lowerAsymmetry: 0,
+    /* Direction field */
 
+    upperVerticalBias: 0.88,
+    lowerVerticalBias: 0.94,
 
-        /* Profile corners */
+    upperCornerFlare: 0.34,
+    lowerCornerFlare: 0.18,
 
-        cornerTaper: 1.9,
-        cornerThickness: 0.02,
+    cornerFlareWidth: 0.28,
 
+    smile: 0,
 
-        /* Rounded mouth corners */
+    upperExpressionStrength: 0.28,
+    lowerExpressionStrength: 0.18,
 
-        cornerInset: 0.04,
-        cornerRoundness: 0.7,
+    directionAsymmetry: 0,
 
+    /* Appearance */
 
-        /* Direction field */
+    upperLipColor: "#b85f68",
+    lowerLipColor: "#ca7880",
 
-        upperVerticalBias: 0.88,
-        lowerVerticalBias: 0.94,
+    seamColor: "#8f2740",
+    seamWidth: 2,
 
-        upperCornerFlare: 0.34,
-        lowerCornerFlare: 0.18,
+    /* Visibility */
 
-        cornerFlareWidth: 0.28,
+    showLipShapes: true,
+    showSeam: true,
 
-        smile: 0,
+    /* Sampling */
 
-        upperExpressionStrength: 0.28,
-        lowerExpressionStrength: 0.18,
+    sampleCount: 40,
+  };
 
-        directionAsymmetry: 0,
+  window.mouthEngineSettings = {
+    ...defaultMouthEngineSettings,
 
+    ...(window.mouthEngineSettings || {}),
+  };
 
-        /* Appearance */
-
-        upperLipColor: "#b85f68",
-        lowerLipColor: "#ca7880",
-
-        seamColor: "#8f2740",
-        seamWidth: 2,
-
-
-        /* Visibility */
-
-        showLipShapes: true,
-
-        showLandmarks: false,
-        showSamples: false,
-
-        showNormals: false,
-        showTangents: false,
-
-        showUpperDirections: false,
-        showLowerDirections: false,
-
-        showUpperCurve: true,
-        showLowerCurve: true,
-
-        showUpperProfilePoints: false,
-        showLowerProfilePoints: false,
-
-
-        /* Sampling */
-
-        sampleCount: 40,
-
-        normalLength: 12,
-        tangentLength: 12,
-        directionLength: 14
-
-    };
-
-
-    window.mouthEngineSettings = {
-        ...defaultMouthEngineSettings
-    };
-
-
-    /* ==========================
-       DEPENDENCY CHECK
+  /* ==========================
+       EMPTY GEOMETRY
     ========================== */
 
-    function dependenciesAvailable() {
+  function buildEmptyGeometry() {
+    return {
+      landmarks: [],
 
-        const missing = [];
+      seamSpline: null,
 
-        if (!window.Point) {
-            missing.push("Point");
-        }
+      seamSamples: [],
 
-        if (!window.Spline) {
-            missing.push("Spline");
-        }
+      anatomySamples: [],
 
-        if (!window.PathBuilder) {
-            missing.push("PathBuilder");
-        }
+      surfaceSamples: [],
 
-        if (!window.MouthProfiles) {
-            missing.push("MouthProfiles");
-        }
+      upperPoints: [],
 
-        if (!window.MouthDirections) {
-            missing.push("MouthDirections");
-        }
+      lowerPoints: [],
 
-        if (!window.MouthPads) {
-            missing.push("MouthPads");
-        }
+      seamPoints: [],
+    };
+  }
 
-        if (missing.length > 0) {
+  /* ==========================
+       CURRENT GEOMETRY
+    ========================== */
 
-            console.error(
-                "mouthEngine.js is missing dependencies:",
-                missing.join(", ")
-            );
+  let currentMouthGeometry = buildEmptyGeometry();
 
-            return false;
-        }
+  /* ==========================
+       DEPENDENCIES
+    ========================== */
 
-        return true;
+  function dependenciesAvailable() {
+    const missing = [];
+
+    if (!window.Point) {
+      missing.push("Point");
     }
 
+    if (!window.Spline) {
+      missing.push("Spline");
+    }
 
-    /* ==========================
+    if (!window.PathBuilder) {
+      missing.push("PathBuilder");
+    }
+
+    if (!window.MouthProfiles) {
+      missing.push("MouthProfiles");
+    }
+
+    if (!window.MouthDirections) {
+      missing.push("MouthDirections");
+    }
+
+    if (!window.MouthPads) {
+      missing.push("MouthPads");
+    }
+
+    if (missing.length) {
+      console.error(
+        "mouthEngine.js is missing dependencies:",
+
+        missing.join(", "),
+      );
+
+      return false;
+    }
+
+    return true;
+  }
+
+  /* ==========================
        NUMBER HELPERS
     ========================== */
 
-    function safeNumber(
-        value,
-        fallback
-    ) {
+  function safeNumber(value, fallback) {
+    const number = Number(value);
 
-        const number =
-            Number(value);
+    return Number.isFinite(number) ? number : fallback;
+  }
 
-        return Number.isFinite(number)
-            ? number
-            : fallback;
-    }
+  function clamp(value, minimum, maximum) {
+    return Math.max(
+      minimum,
 
+      Math.min(maximum, value),
+    );
+  }
 
-    function clamp(
-        value,
-        minimum,
-        maximum
-    ) {
+  function clamp01(value) {
+    return clamp(value, 0, 1);
+  }
 
-        return Math.max(
-            minimum,
-            Math.min(
-                maximum,
-                value
-            )
-        );
-    }
+  function mix(start, end, amount) {
+    return start + (end - start) * amount;
+  }
 
-
-    function clamp01(value) {
-
-        return clamp(
-            value,
-            0,
-            1
-        );
-    }
-
-
-    function mix(
-        start,
-        end,
-        amount
-    ) {
-
-        return (
-            start +
-            (end - start) *
-            amount
-        );
-    }
-
-
-    /* ==========================
+  /* ==========================
        POINT HELPERS
     ========================== */
 
-    function createPoint(
-        x,
-        y
-    ) {
+  function createPoint(x, y) {
+    return new Point(x, y);
+  }
 
-        return new Point(
-            x,
-            y
-        );
+  function clonePoint(point) {
+    if (!point) {
+      return null;
     }
 
+    return createPoint(point.x, point.y);
+  }
 
-    function movePoint(
-        point,
-        direction,
-        distance
-    ) {
+  function movePoint(point, direction, distance) {
+    return createPoint(
+      point.x + direction.x * distance,
 
-        return createPoint(
+      point.y + direction.y * distance,
+    );
+  }
 
-            point.x +
-            direction.x *
-            distance,
+  function mixPoints(first, second, amount) {
+    const blend = clamp01(amount);
 
-            point.y +
-            direction.y *
-            distance
+    return createPoint(
+      mix(first.x, second.x, blend),
 
-        );
-    }
+      mix(first.y, second.y, blend),
+    );
+  }
 
+  function formatPoint(point) {
+    return [safeNumber(point.x, 0), safeNumber(point.y, 0)].join(" ");
+  }
 
-    function mixPoints(
-        first,
-        second,
-        amount
-    ) {
-
-        const blend =
-            clamp01(amount);
-
-        return createPoint(
-
-            mix(
-                first.x,
-                second.x,
-                blend
-            ),
-
-            mix(
-                first.y,
-                second.y,
-                blend
-            )
-
-        );
-    }
-
-
-    function formatPoint(point) {
-
-        return (
-            safeNumber(point.x, 0) +
-            " " +
-            safeNumber(point.y, 0)
-        );
-    }
-
-
-    /* ==========================
-       GET SVG
+  /* ==========================
+       SVG HELPERS
     ========================== */
 
-    function getFaceSvg() {
+  function getFaceSvg() {
+    return (
+      document.getElementById("faceSvg") ||
+      document.getElementById("face") ||
+      document.querySelector("svg")
+    );
+  }
 
-        return (
-            document.getElementById("faceSvg") ||
-            document.querySelector("svg")
-        );
+  function getMouthEngineGroup() {
+    const svg = getFaceSvg();
+
+    if (!svg) {
+      console.warn("MouthEngine could not find the face SVG.");
+
+      return null;
     }
 
+    let group = document.getElementById("mouthEngineGroup");
 
-    /* ==========================
-       GET OR CREATE GROUP
-    ========================== */
+    if (!group) {
+      group = document.createElementNS(SVG_NAMESPACE, "g");
 
-    function getMouthEngineGroup() {
-
-        const svg =
-            getFaceSvg();
-
-        if (!svg) {
-
-            console.warn(
-                "Mouth engine could not find the face SVG."
-            );
-
-            return null;
-        }
-
-        let group =
-            document.getElementById(
-                "mouthEngineGroup"
-            );
-
-        if (!group) {
-
-            group =
-                document.createElementNS(
-                    SVG_NAMESPACE,
-                    "g"
-                );
-
-            group.setAttribute(
-                "id",
-                "mouthEngineGroup"
-            );
-        }
-
-        svg.appendChild(group);
-
-        return group;
+      group.setAttribute("id", "mouthEngineGroup");
     }
 
+    /*
+            Reappend the group so the procedural
+            mouth remains above older mouth layers.
+        */
 
-    /* ==========================
-       CLEAR GROUP
-    ========================== */
+    svg.appendChild(group);
 
-    function clearMouthEngineGroup(group) {
+    return group;
+  }
 
-        while (group.firstChild) {
-
-            group.removeChild(
-                group.firstChild
-            );
-        }
+  function clearElement(element) {
+    if (!element) {
+      return;
     }
 
+    while (element.firstChild) {
+      element.removeChild(element.firstChild);
+    }
+  }
 
-    /* ==========================
+  function createPath(pathData, options) {
+    const settings = options || {};
+
+    const path = document.createElementNS(SVG_NAMESPACE, "path");
+
+    path.setAttribute("d", pathData || "");
+
+    path.setAttribute("fill", settings.fill || "none");
+
+    path.setAttribute("stroke", settings.stroke || "none");
+
+    path.setAttribute("stroke-width", safeNumber(settings.strokeWidth, 1));
+
+    path.setAttribute("stroke-linecap", settings.lineCap || "round");
+
+    path.setAttribute("stroke-linejoin", settings.lineJoin || "round");
+
+    if (settings.id) {
+      path.setAttribute("id", settings.id);
+    }
+
+    if (settings.className) {
+      path.setAttribute("class", settings.className);
+    }
+
+    return path;
+  }
+
+  /* ==========================
        SAMPLE COUNT
     ========================== */
 
-    function getSampleCount() {
+  function getSampleCount() {
+    return Math.max(
+      8,
 
-        return Math.max(
+      Math.floor(
+        safeNumber(
+          window.mouthEngineSettings.sampleCount,
 
-            8,
+          defaultMouthEngineSettings.sampleCount,
+        ),
+      ),
+    );
+  }
 
-            Math.floor(
-
-                safeNumber(
-                    window
-                        .mouthEngineSettings
-                        .sampleCount,
-                    40
-                )
-
-            )
-
-        );
-    }
-
-
-    /* ==========================
+  /* ==========================
        PROFILE SETTINGS
     ========================== */
 
-    function getMouthProfileSettings() {
+  function getMouthProfileSettings() {
+    const settings = window.mouthEngineSettings;
 
-        const settings =
-            window.mouthEngineSettings;
+    return {
+      upperLipThickness: settings.upperLipThickness,
 
-        return {
+      lowerLipThickness: settings.lowerLipThickness,
 
-            upperLipThickness:
-                settings.upperLipThickness,
+      cupidBowHeight: settings.cupidBowHeight,
 
-            lowerLipThickness:
-                settings.lowerLipThickness,
+      cupidBowWidth: settings.cupidBowWidth,
 
-            cupidBowHeight:
-                settings.cupidBowHeight,
+      philtrumDip: settings.philtrumDip,
 
-            cupidBowWidth:
-                settings.cupidBowWidth,
+      upperCenterFullness: settings.upperCenterFullness,
 
-            philtrumDip:
-                settings.philtrumDip,
+      lowerCenterFullness: settings.lowerCenterFullness,
 
-            upperCenterFullness:
-                settings.upperCenterFullness,
+      lowerLobeWidth: settings.lowerLobeWidth,
 
-            lowerCenterFullness:
-                settings.lowerCenterFullness,
+      cornerTaper: settings.cornerTaper,
 
-            lowerLobeWidth:
-                settings.lowerLobeWidth,
+      cornerThickness: settings.cornerThickness,
 
-            cornerTaper:
-                settings.cornerTaper,
+      upperAsymmetry: settings.upperAsymmetry,
 
-            cornerThickness:
-                settings.cornerThickness,
+      lowerAsymmetry: settings.lowerAsymmetry,
+    };
+  }
 
-            upperAsymmetry:
-                settings.upperAsymmetry,
-
-            lowerAsymmetry:
-                settings.lowerAsymmetry
-
-        };
-    }
-
-
-    /* ==========================
+  /* ==========================
        DIRECTION SETTINGS
     ========================== */
 
-    function getMouthDirectionSettings() {
+  function getMouthDirectionSettings() {
+    const settings = window.mouthEngineSettings;
 
-        const settings =
-            window.mouthEngineSettings;
+    return {
+      upperVerticalBias: settings.upperVerticalBias,
 
-        return {
+      lowerVerticalBias: settings.lowerVerticalBias,
 
-            upperVerticalBias:
-                settings.upperVerticalBias,
+      upperCornerFlare: settings.upperCornerFlare,
 
-            lowerVerticalBias:
-                settings.lowerVerticalBias,
+      lowerCornerFlare: settings.lowerCornerFlare,
 
-            upperCornerFlare:
-                settings.upperCornerFlare,
+      cornerFlareWidth: settings.cornerFlareWidth,
 
-            lowerCornerFlare:
-                settings.lowerCornerFlare,
+      smile: settings.smile,
 
-            cornerFlareWidth:
-                settings.cornerFlareWidth,
+      upperExpressionStrength: settings.upperExpressionStrength,
 
-            smile:
-                settings.smile,
+      lowerExpressionStrength: settings.lowerExpressionStrength,
 
-            upperExpressionStrength:
-                settings.upperExpressionStrength,
+      asymmetry: settings.directionAsymmetry,
+    };
+  }
 
-            lowerExpressionStrength:
-                settings.lowerExpressionStrength,
-
-            asymmetry:
-                settings.directionAsymmetry
-
-        };
-    }
-
-
-    /* ==========================
-       BUILD LANDMARKS
+  /* ==========================
+       MOUTH LANDMARKS
     ========================== */
 
-    function buildMouthLandmarks() {
+  function buildMouthLandmarks() {
+    const settings = window.mouthEngineSettings;
 
-        const settings =
-            window.mouthEngineSettings;
+    const width = safeNumber(settings.width, defaultMouthEngineSettings.width);
 
-        const halfWidth =
-            settings.width / 2;
+    const centerX = safeNumber(
+      settings.centerX,
+      defaultMouthEngineSettings.centerX,
+    );
 
-        return [
+    const centerY = safeNumber(
+      settings.centerY,
+      defaultMouthEngineSettings.centerY,
+    );
 
-            createPoint(
+    const halfWidth = width / 2;
 
-                settings.centerX -
-                halfWidth,
+    return [
+      /*
+                Left corner
+            */
 
-                settings.centerY +
-                settings.cornerY
+      createPoint(
+        centerX - halfWidth,
 
-            ),
+        centerY + safeNumber(settings.cornerY, 0),
+      ),
 
-            createPoint(
+      /*
+                Left upper peak
+            */
 
-                settings.centerX -
-                settings.width *
-                0.2,
+      createPoint(
+        centerX - width * 0.2,
 
-                settings.centerY +
-                settings.peakY
+        centerY + safeNumber(settings.peakY, -1.5),
+      ),
 
-            ),
+      /*
+                Center cupid point
+            */
 
-            createPoint(
+      createPoint(
+        centerX,
 
-                settings.centerX,
+        centerY + safeNumber(settings.cupidY, -0.5),
+      ),
 
-                settings.centerY +
-                settings.cupidY
+      /*
+                Right upper peak
+            */
 
-            ),
+      createPoint(
+        centerX + width * 0.2,
 
-            createPoint(
+        centerY + safeNumber(settings.peakY, -1.5),
+      ),
 
-                settings.centerX +
-                settings.width *
-                0.2,
+      /*
+                Right corner
+            */
 
-                settings.centerY +
-                settings.peakY
+      createPoint(
+        centerX + halfWidth,
 
-            ),
+        centerY + safeNumber(settings.cornerY, 0),
+      ),
+    ];
+  }
 
-            createPoint(
-
-                settings.centerX +
-                halfWidth,
-
-                settings.centerY +
-                settings.cornerY
-
-            )
-
-        ];
-    }
-
-
-    /* ==========================
-       BUILD SEAM
+  /* ==========================
+       MOUTH SEAM
     ========================== */
 
-    function buildMouthSeam() {
+  function buildMouthSeam(landmarks) {
+    const points = Array.isArray(landmarks) ? landmarks : buildMouthLandmarks();
 
-        return Spline.fromPoints(
+    return Spline.fromPoints(
+      points,
 
-            buildMouthLandmarks(),
+      safeNumber(
+        window.mouthEngineSettings.tension,
 
-            window
-                .mouthEngineSettings
-                .tension
+        defaultMouthEngineSettings.tension,
+      ),
+    );
+  }
 
-        );
-    }
-
-
-    /* ==========================
+  /* ==========================
        SAMPLE SEAM
     ========================== */
 
-    function sampleMouthSeam(
-        seamSpline
-    ) {
-
-        const sampleCount =
-            getSampleCount();
-
-        const seamSamples = [];
-
-        for (
-            let index = 0;
-            index <= sampleCount;
-            index += 1
-        ) {
-
-            const t =
-                index / sampleCount;
-
-            seamSamples.push({
-
-                t:
-                    t,
-
-                seamPoint:
-                    seamSpline.getPoint(t),
-
-                seamTangent:
-                    seamSpline.getTangent(t),
-
-                seamNormal:
-                    seamSpline.getNormal(t)
-
-            });
-        }
-
-        return seamSamples;
+  function sampleMouthSeam(seamSpline) {
+    if (!seamSpline) {
+      return [];
     }
 
+    const sampleCount = getSampleCount();
 
-    /* ==========================
+    const samples = [];
+
+    for (let index = 0; index <= sampleCount; index += 1) {
+      const t = index / sampleCount;
+
+      samples.push({
+        t: t,
+
+        seamPoint: seamSpline.getPoint(t),
+
+        seamTangent: seamSpline.getTangent(t),
+
+        seamNormal: seamSpline.getNormal(t),
+      });
+    }
+
+    return samples;
+  }
+
+  /* ==========================
        BUILD LIP ANATOMY
     ========================== */
 
-    function buildLipAnatomy(
-        seamSamples
-    ) {
-
-        const profileSettings =
-            getMouthProfileSettings();
-
-        const directionSettings =
-            getMouthDirectionSettings();
-
-        return seamSamples.map(
-
-            function (seamSample) {
-
-                const profile =
-                    MouthProfiles.sample(
-
-                        seamSample.t,
-
-                        profileSettings
-
-                    );
-
-                const pads =
-                    MouthPads.sample(
-
-                        seamSample.t
-
-                    );
-
-                const directions =
-                    MouthDirections.sample(
-
-                        seamSample.t,
-
-                        seamSample.seamTangent,
-
-                        seamSample.seamNormal,
-
-                        directionSettings
-
-                    );
-
-                const upperBorder =
-                    movePoint(
-
-                        seamSample.seamPoint,
-
-                        directions.upper,
-
-                        pads.upperHeight
-
-                    );
-
-                const lowerBorder =
-                    movePoint(
-
-                        seamSample.seamPoint,
-
-                        directions.lower,
-
-                        pads.lowerHeight
-
-                    );
-
-                return {
-
-                    t:
-                        seamSample.t,
-
-                    seamPoint:
-                        seamSample.seamPoint,
-
-                    seamTangent:
-                        seamSample.seamTangent,
-
-                    seamNormal:
-                        seamSample.seamNormal,
-
-                    upperDirection:
-                        directions.upper,
-
-                    lowerDirection:
-                        directions.lower,
-
-                    upperHeight:
-                        pads.upperHeight,
-
-                    lowerHeight:
-                        pads.lowerHeight,
-
-                    upperPads:
-                        pads.upper,
-
-                    lowerPads:
-                        pads.lower,
-
-                    upperBorder:
-                        upperBorder,
-
-                    lowerBorder:
-                        lowerBorder,
-
-                    cornerWeight:
-                        profile.cornerWeight,
-
-                    cupidWeight:
-                        profile.cupidWeight,
-
-                    philtrumWeight:
-                        profile.philtrumWeight,
-
-                    lowerLobeWeight:
-                        profile.lowerLobeWeight,
-
-                    directionCornerWeight:
-                        directions.cornerWeight,
-
-                    directionCenterWeight:
-                        directions.centerWeight
-
-                };
-            }
-
-        );
+  function buildLipAnatomy(seamSamples) {
+    if (!Array.isArray(seamSamples)) {
+      return [];
     }
 
+    const profileSettings = getMouthProfileSettings();
 
-    /* ==========================
-       BUILD MOUTH SAMPLES
+    const directionSettings = getMouthDirectionSettings();
 
-       Compatibility helper.
+    return seamSamples.map(function (seamSample) {
+      const profile = MouthProfiles.sample(
+        seamSample.t,
+
+        profileSettings,
+      );
+
+      const pads = MouthPads.sample(seamSample.t);
+
+      const directions = MouthDirections.sample(
+        seamSample.t,
+
+        seamSample.seamTangent,
+
+        seamSample.seamNormal,
+
+        directionSettings,
+      );
+
+      const upperBorder = movePoint(
+        seamSample.seamPoint,
+
+        directions.upper,
+
+        pads.upperHeight,
+      );
+
+      const lowerBorder = movePoint(
+        seamSample.seamPoint,
+
+        directions.lower,
+
+        pads.lowerHeight,
+      );
+
+      return {
+        t: seamSample.t,
+
+        seamPoint: seamSample.seamPoint,
+
+        seamTangent: seamSample.seamTangent,
+
+        seamNormal: seamSample.seamNormal,
+
+        upperDirection: directions.upper,
+
+        lowerDirection: directions.lower,
+
+        upperHeight: pads.upperHeight,
+
+        lowerHeight: pads.lowerHeight,
+
+        upperPads: pads.upper,
+
+        lowerPads: pads.lower,
+
+        upperBorder: upperBorder,
+
+        lowerBorder: lowerBorder,
+
+        cornerWeight: profile.cornerWeight,
+
+        cupidWeight: profile.cupidWeight,
+
+        philtrumWeight: profile.philtrumWeight,
+
+        lowerLobeWeight: profile.lowerLobeWeight,
+
+        directionCornerWeight: directions.cornerWeight,
+
+        directionCenterWeight: directions.centerWeight,
+      };
+    });
+  }
+
+  /* ==========================
+       COMPATIBILITY BUILDER
     ========================== */
 
-    function buildMouthSamples(
-        seamSpline
-    ) {
-
-        return buildLipAnatomy(
-            sampleMouthSeam(
-                seamSpline
-            )
-        );
+  function buildMouthSamples(seamSpline) {
+    if (!seamSpline) {
+      return [];
     }
 
+    return buildLipAnatomy(sampleMouthSeam(seamSpline));
+  }
 
-    /* ==========================
-       SAMPLE ARRAYS
+  /* ==========================
+       POINT ARRAY HELPERS
     ========================== */
 
-    function getSeamPoints(samples) {
-
-        return samples.map(
-            function (sample) {
-                return sample.seamPoint;
-            }
-        );
+  function getSeamPoints(samples) {
+    if (!Array.isArray(samples)) {
+      return [];
     }
 
+    return samples
 
-    function getUpperPoints(samples) {
+      .map(function (sample) {
+        return sample.seamPoint;
+      })
 
-        return samples.map(
-            function (sample) {
-                return sample.upperBorder;
-            }
-        );
+      .filter(Boolean);
+  }
+
+  function getUpperPoints(samples) {
+    if (!Array.isArray(samples)) {
+      return [];
     }
 
+    return samples
 
-    function getLowerPoints(samples) {
+      .map(function (sample) {
+        return sample.upperBorder;
+      })
 
-        return samples.map(
-            function (sample) {
-                return sample.lowerBorder;
-            }
-        );
+      .filter(Boolean);
+  }
+
+  function getLowerPoints(samples) {
+    if (!Array.isArray(samples)) {
+      return [];
     }
 
+    return samples
 
-    /* ==========================
-       CORNER INSET
+      .map(function (sample) {
+        return sample.lowerBorder;
+      })
+
+      .filter(Boolean);
+  }
+
+  /* ==========================
+       SURFACE CORNER INSET
     ========================== */
 
-    function getLipSurfaceSamples(
-        samples
-    ) {
-
-        if (samples.length <= 4) {
-            return samples.slice();
-        }
-
-        const settings =
-            window.mouthEngineSettings;
-
-        const inset =
-            clamp(
-                safeNumber(
-                    settings.cornerInset,
-                    defaultMouthEngineSettings.cornerInset
-                ),
-                0,
-                0.22
-            );
-
-        const maximumTrim =
-            Math.max(
-                0,
-                Math.floor(
-                    (samples.length - 3) / 2
-                )
-            );
-
-        const trimCount =
-            clamp(
-                Math.round(
-                    (samples.length - 1) *
-                    inset
-                ),
-                0,
-                maximumTrim
-            );
-
-        if (trimCount === 0) {
-            return samples.slice();
-        }
-
-        return samples.slice(
-            trimCount,
-            samples.length - trimCount
-        );
+  function getLipSurfaceSamples(samples) {
+    if (!Array.isArray(samples)) {
+      return [];
     }
 
+    if (samples.length <= 4) {
+      return samples.slice();
+    }
 
-    /* ==========================
-       BUILD OPEN POINT PATH
+    const settings = window.mouthEngineSettings;
+
+    const inset = clamp(
+      safeNumber(
+        settings.cornerInset,
+
+        defaultMouthEngineSettings.cornerInset,
+      ),
+
+      0,
+
+      0.22,
+    );
+
+    const maximumTrim = Math.max(
+      0,
+
+      Math.floor((samples.length - 3) / 2),
+    );
+
+    const trimCount = clamp(
+      Math.round((samples.length - 1) * inset),
+
+      0,
+
+      maximumTrim,
+    );
+
+    if (trimCount === 0) {
+      return samples.slice();
+    }
+
+    return samples.slice(
+      trimCount,
+
+      samples.length - trimCount,
+    );
+  }
+
+  /* ==========================
+       COMPLETE GEOMETRY
     ========================== */
 
-    function buildOpenPointPath(
-        points
-    ) {
-
-        if (!points.length) {
-            return "";
-        }
-
-        const builder =
-            new PathBuilder();
-
-        builder.moveTo(
-            points[0]
-        );
-
-        for (
-            let index = 1;
-            index < points.length;
-            index += 1
-        ) {
-
-            builder.lineTo(
-                points[index]
-            );
-        }
-
-        return builder.build();
+  function buildMouthGeometry() {
+    if (!dependenciesAvailable()) {
+      return buildEmptyGeometry();
     }
 
+    const landmarks = buildMouthLandmarks();
 
-    /* ==========================
-       ROUNDED LIP SURFACE PATH
+    const seamSpline = buildMouthSeam(landmarks);
+
+    const seamSamples = sampleMouthSeam(seamSpline);
+
+    const anatomySamples = buildLipAnatomy(seamSamples);
+
+    const surfaceSamples = getLipSurfaceSamples(anatomySamples);
+
+    return {
+      landmarks: landmarks,
+
+      seamSpline: seamSpline,
+
+      seamSamples: seamSamples,
+
+      anatomySamples: anatomySamples,
+
+      surfaceSamples: surfaceSamples,
+
+      upperPoints: getUpperPoints(anatomySamples),
+
+      lowerPoints: getLowerPoints(anatomySamples),
+
+      seamPoints: getSeamPoints(anatomySamples),
+    };
+  }
+
+  /* ==========================
+       OPEN POINT PATH
     ========================== */
 
-    function buildRoundedLipSurfacePath(
-        samples,
-        borderProperty,
-        borderFirst
-    ) {
-
-        const surfaceSamples =
-            getLipSurfaceSamples(samples);
-
-        if (surfaceSamples.length < 2) {
-            return "";
-        }
-
-        const settings =
-            window.mouthEngineSettings;
-
-        const roundness =
-            clamp01(
-                safeNumber(
-                    settings.cornerRoundness,
-                    defaultMouthEngineSettings.cornerRoundness
-                )
-            );
-
-        const fullLeftCorner =
-            samples[0].seamPoint;
-
-        const fullRightCorner =
-            samples[
-                samples.length - 1
-            ].seamPoint;
-
-        const leftSample =
-            surfaceSamples[0];
-
-        const rightSample =
-            surfaceSamples[
-                surfaceSamples.length - 1
-            ];
-
-        const leftBorder =
-            leftSample[borderProperty];
-
-        const rightBorder =
-            rightSample[borderProperty];
-
-        const leftSeam =
-            leftSample.seamPoint;
-
-        const rightSeam =
-            rightSample.seamPoint;
-
-        /*
-           Moving the control points toward the
-           true seam endpoints creates a soft,
-           outward-facing cap.
-
-           At roundness 0, the cap is nearly direct.
-           At roundness 1, it reaches strongly toward
-           the true anatomical mouth corner.
-        */
-
-        const rightControl =
-            mixPoints(
-                rightSeam,
-                fullRightCorner,
-                roundness
-            );
-
-        const leftControl =
-            mixPoints(
-                leftSeam,
-                fullLeftCorner,
-                roundness
-            );
-
-        const commands = [];
-
-        if (borderFirst) {
-
-            commands.push(
-                "M " +
-                formatPoint(leftBorder)
-            );
-
-            for (
-                let index = 1;
-                index < surfaceSamples.length;
-                index += 1
-            ) {
-
-                commands.push(
-                    "L " +
-                    formatPoint(
-                        surfaceSamples[index][borderProperty]
-                    )
-                );
-            }
-
-            commands.push(
-                "Q " +
-                formatPoint(rightControl) +
-                " " +
-                formatPoint(rightSeam)
-            );
-
-            for (
-                let index =
-                    surfaceSamples.length - 2;
-                index >= 0;
-                index -= 1
-            ) {
-
-                commands.push(
-                    "L " +
-                    formatPoint(
-                        surfaceSamples[index].seamPoint
-                    )
-                );
-            }
-
-            commands.push(
-                "Q " +
-                formatPoint(leftControl) +
-                " " +
-                formatPoint(leftBorder)
-            );
-
-        } else {
-
-            commands.push(
-                "M " +
-                formatPoint(leftSeam)
-            );
-
-            for (
-                let index = 1;
-                index < surfaceSamples.length;
-                index += 1
-            ) {
-
-                commands.push(
-                    "L " +
-                    formatPoint(
-                        surfaceSamples[index].seamPoint
-                    )
-                );
-            }
-
-            commands.push(
-                "Q " +
-                formatPoint(rightControl) +
-                " " +
-                formatPoint(rightBorder)
-            );
-
-            for (
-                let index =
-                    surfaceSamples.length - 2;
-                index >= 0;
-                index -= 1
-            ) {
-
-                commands.push(
-                    "L " +
-                    formatPoint(
-                        surfaceSamples[index][borderProperty]
-                    )
-                );
-            }
-
-            commands.push(
-                "Q " +
-                formatPoint(leftControl) +
-                " " +
-                formatPoint(leftSeam)
-            );
-        }
-
-        commands.push("Z");
-
-        return commands.join(" ");
+  function buildOpenPointPath(points) {
+    if (!Array.isArray(points) || !points.length) {
+      return "";
     }
 
+    const builder = new PathBuilder();
 
-    /* ==========================
-       BUILD UPPER LIP PATH
+    builder.moveTo(points[0]);
+
+    for (let index = 1; index < points.length; index += 1) {
+      builder.lineTo(points[index]);
+    }
+
+    return builder.build();
+  }
+
+  /* ==========================
+       ROUNDED LIP SURFACE
     ========================== */
 
-    function buildUpperLipPath(
-        samples
-    ) {
-
-        return buildRoundedLipSurfacePath(
-            samples,
-            "upperBorder",
-            true
-        );
+  function buildRoundedLipSurfacePath(samples, borderProperty, borderFirst) {
+    if (!Array.isArray(samples) || samples.length < 2) {
+      return "";
     }
 
+    const surfaceSamples = getLipSurfaceSamples(samples);
 
-    /* ==========================
-       BUILD LOWER LIP PATH
+    if (surfaceSamples.length < 2) {
+      return "";
+    }
+
+    const settings = window.mouthEngineSettings;
+
+    const roundness = clamp01(
+      safeNumber(
+        settings.cornerRoundness,
+
+        defaultMouthEngineSettings.cornerRoundness,
+      ),
+    );
+
+    const fullLeftCorner = samples[0].seamPoint;
+
+    const fullRightCorner = samples[samples.length - 1].seamPoint;
+
+    const leftSample = surfaceSamples[0];
+
+    const rightSample = surfaceSamples[surfaceSamples.length - 1];
+
+    const leftBorder = leftSample[borderProperty];
+
+    const rightBorder = rightSample[borderProperty];
+
+    const leftSeam = leftSample.seamPoint;
+
+    const rightSeam = rightSample.seamPoint;
+
+    const rightControl = mixPoints(
+      rightSeam,
+
+      fullRightCorner,
+
+      roundness,
+    );
+
+    const leftControl = mixPoints(
+      leftSeam,
+
+      fullLeftCorner,
+
+      roundness,
+    );
+
+    const commands = [];
+
+    if (borderFirst) {
+      commands.push("M " + formatPoint(leftBorder));
+
+      for (let index = 1; index < surfaceSamples.length; index += 1) {
+        commands.push(
+          "L " + formatPoint(surfaceSamples[index][borderProperty]),
+        );
+      }
+
+      commands.push(
+        "Q " + formatPoint(rightControl) + " " + formatPoint(rightSeam),
+      );
+
+      for (let index = surfaceSamples.length - 2; index >= 0; index -= 1) {
+        commands.push("L " + formatPoint(surfaceSamples[index].seamPoint));
+      }
+
+      commands.push(
+        "Q " + formatPoint(leftControl) + " " + formatPoint(leftBorder),
+      );
+    } else {
+      commands.push("M " + formatPoint(leftSeam));
+
+      for (let index = 1; index < surfaceSamples.length; index += 1) {
+        commands.push("L " + formatPoint(surfaceSamples[index].seamPoint));
+      }
+
+      commands.push(
+        "Q " + formatPoint(rightControl) + " " + formatPoint(rightBorder),
+      );
+
+      for (let index = surfaceSamples.length - 2; index >= 0; index -= 1) {
+        commands.push(
+          "L " + formatPoint(surfaceSamples[index][borderProperty]),
+        );
+      }
+
+      commands.push(
+        "Q " + formatPoint(leftControl) + " " + formatPoint(leftSeam),
+      );
+    }
+
+    commands.push("Z");
+
+    return commands.join(" ");
+  }
+
+  function buildUpperLipPath(samples) {
+    return buildRoundedLipSurfacePath(
+      samples,
+
+      "upperBorder",
+
+      true,
+    );
+  }
+
+  function buildLowerLipPath(samples) {
+    return buildRoundedLipSurfacePath(
+      samples,
+
+      "lowerBorder",
+
+      false,
+    );
+  }
+
+  /* ==========================
+       DRAW LIP SURFACES
     ========================== */
 
-    function buildLowerLipPath(
-        samples
-    ) {
+  function drawLipShapes(group, samples) {
+    const settings = window.mouthEngineSettings;
 
-        return buildRoundedLipSurfacePath(
-            samples,
-            "lowerBorder",
-            false
-        );
+    const upperPathData = buildUpperLipPath(samples);
+
+    const lowerPathData = buildLowerLipPath(samples);
+
+    if (upperPathData) {
+      group.appendChild(
+        createPath(
+          upperPathData,
+
+          {
+            id: "upperLipShape",
+
+            className: "upperLipShape",
+
+            fill: settings.upperLipColor,
+
+            stroke: "none",
+          },
+        ),
+      );
     }
 
+    if (lowerPathData) {
+      group.appendChild(
+        createPath(
+          lowerPathData,
 
-    /* ==========================
-       CREATE SVG PATH
-    ========================== */
+          {
+            id: "lowerLipShape",
 
-    function createPath(
-        pathData,
-        options
-    ) {
+            className: "lowerLipShape",
 
-        const values =
-            options || {};
+            fill: settings.lowerLipColor,
 
-        const path =
-            document.createElementNS(
-                SVG_NAMESPACE,
-                "path"
-            );
-
-        path.setAttribute(
-            "d",
-            pathData
-        );
-
-        path.setAttribute(
-            "fill",
-            values.fill || "none"
-        );
-
-        path.setAttribute(
-            "stroke",
-            values.stroke || "none"
-        );
-
-        path.setAttribute(
-            "stroke-width",
-            values.strokeWidth || "1"
-        );
-
-        path.setAttribute(
-            "stroke-linecap",
-            values.lineCap || "round"
-        );
-
-        path.setAttribute(
-            "stroke-linejoin",
-            values.lineJoin || "round"
-        );
-
-        if (values.id) {
-
-            path.setAttribute(
-                "id",
-                values.id
-            );
-        }
-
-        if (values.className) {
-
-            path.setAttribute(
-                "class",
-                values.className
-            );
-        }
-
-        return path;
+            stroke: "none",
+          },
+        ),
+      );
     }
+  }
 
-
-    /* ==========================
-       DRAW LIP SHAPES
-    ========================== */
-
-    function drawLipShapes(
-        group,
-        samples
-    ) {
-
-        const settings =
-            window.mouthEngineSettings;
-
-        const upperLip =
-            createPath(
-
-                buildUpperLipPath(samples),
-
-                {
-
-                    id:
-                        "upperLipShape",
-
-                    className:
-                        "upperLipShape",
-
-                    fill:
-                        settings.upperLipColor,
-
-                    stroke:
-                        "none"
-
-                }
-
-            );
-
-        const lowerLip =
-            createPath(
-
-                buildLowerLipPath(samples),
-
-                {
-
-                    id:
-                        "lowerLipShape",
-
-                    className:
-                        "lowerLipShape",
-
-                    fill:
-                        settings.lowerLipColor,
-
-                    stroke:
-                        "none"
-
-                }
-
-            );
-
-        group.appendChild(
-            upperLip
-        );
-
-        group.appendChild(
-            lowerLip
-        );
-    }
-
-
-    /* ==========================
+  /* ==========================
        DRAW SEAM
     ========================== */
 
-    function drawSeam(
-        group,
-        seamPoints
-    ) {
+  function drawSeam(group, seamPoints) {
+    const settings = window.mouthEngineSettings;
 
-        const settings =
-            window.mouthEngineSettings;
+    const pathData = buildOpenPointPath(seamPoints);
 
-        const seamPath =
-            createPath(
-
-                buildOpenPointPath(
-                    seamPoints
-                ),
-
-                {
-
-                    id:
-                        "mouthSeam",
-
-                    className:
-                        "mouthSeam",
-
-                    fill:
-                        "none",
-
-                    stroke:
-                        settings.seamColor,
-
-                    strokeWidth:
-                        settings.seamWidth
-
-                }
-
-            );
-
-        group.appendChild(
-            seamPath
-        );
+    if (!pathData) {
+      return;
     }
 
+    group.appendChild(
+      createPath(
+        pathData,
 
-    /* ==========================
-       DRAW GUIDE CURVE
+        {
+          id: "mouthSeam",
+
+          className: "mouthSeam",
+
+          fill: "none",
+
+          stroke: settings.seamColor,
+
+          strokeWidth: settings.seamWidth,
+        },
+      ),
+    );
+  }
+
+  /* ==========================
+       DRAW MOUTH ENGINE
     ========================== */
 
-    function drawGuideCurve(
-        group,
-        points,
-        options
-    ) {
+  function drawMouthEngine() {
+    /*
+            Confirm dependencies before trying
+            to build any geometry.
+        */
 
-        const path =
-            createPath(
+    if (!dependenciesAvailable()) {
+      currentMouthGeometry = buildEmptyGeometry();
 
-                buildOpenPointPath(
-                    points
-                ),
-
-                {
-
-                    id:
-                        options.id,
-
-                    className:
-                        options.className,
-
-                    fill:
-                        "none",
-
-                    stroke:
-                        options.stroke,
-
-                    strokeWidth:
-                        options.strokeWidth || 2
-
-                }
-
-            );
-
-        group.appendChild(
-            path
-        );
+      return currentMouthGeometry;
     }
 
+    /*
+            Locate or create the SVG group used
+            for the procedural mouth.
+        */
 
-    /* ==========================
-       DRAW POINT COLLECTION
+    const group = getMouthEngineGroup();
+
+    if (!group) {
+      currentMouthGeometry = buildEmptyGeometry();
+
+      return currentMouthGeometry;
+    }
+
+    /*
+            Remove the previous mouth rendering.
+        */
+
+    clearElement(group);
+
+    /*
+            Build and store the newest mouth
+            geometry before drawing or refreshing
+            external tools.
+        */
+
+    const geometry = buildMouthGeometry();
+
+    currentMouthGeometry = geometry;
+
+    const settings = window.mouthEngineSettings;
+
+    /*
+            Draw the completed lip surfaces.
+        */
+
+    if (settings.showLipShapes !== false) {
+      drawLipShapes(
+        group,
+
+        geometry.anatomySamples,
+      );
+    }
+
+    /*
+            Draw the central mouth seam.
+        */
+
+    if (settings.showSeam !== false) {
+      drawSeam(
+        group,
+
+        geometry.seamPoints,
+      );
+    }
+
+    /*
+            MouthDebug owns all diagnostic
+            rendering.
+
+            It redraws only after the current
+            geometry has been stored.
+        */
+
+    if (window.MouthDebug && typeof window.MouthDebug.draw === "function") {
+      window.MouthDebug.draw();
+    }
+
+    /*
+            Refresh any existing inspector
+            selection after geometry changes.
+
+            FaceInspector.initialize() must only
+            run once from app.js.
+        */
+
+    if (
+      window.FaceInspector &&
+      typeof window.FaceInspector.refresh === "function"
+    ) {
+      window.FaceInspector.refresh();
+    }
+
+    return geometry;
+  }
+
+  /* ==========================
+       GEOMETRY CLONING
     ========================== */
 
-    function drawPointCollection(
-        group,
-        points,
-        options
-    ) {
-
-        points.forEach(
-
-            function (point) {
-
-                const circle =
-                    document.createElementNS(
-                        SVG_NAMESPACE,
-                        "circle"
-                    );
-
-                circle.setAttribute(
-                    "cx",
-                    point.x
-                );
-
-                circle.setAttribute(
-                    "cy",
-                    point.y
-                );
-
-                circle.setAttribute(
-                    "r",
-                    options.radius || 2
-                );
-
-                circle.setAttribute(
-                    "fill",
-                    options.fill || "#ffffff"
-                );
-
-                circle.setAttribute(
-                    "class",
-                    options.className || ""
-                );
-
-                group.appendChild(
-                    circle
-                );
-            }
-
-        );
+  function cloneSampleArray(samples) {
+    if (!Array.isArray(samples)) {
+      return [];
     }
 
+    return samples.slice();
+  }
 
-    /* ==========================
-       DRAW LANDMARKS
-    ========================== */
+  function getCurrentGeometry() {
+    return {
+      landmarks: cloneSampleArray(currentMouthGeometry.landmarks),
 
-    function drawLandmarks(
-        group,
-        landmarks
-    ) {
+      seamSpline: currentMouthGeometry.seamSpline,
 
-        landmarks.forEach(
+      seamSamples: cloneSampleArray(currentMouthGeometry.seamSamples),
 
-            function (
-                point,
-                index
-            ) {
+      anatomySamples: cloneSampleArray(currentMouthGeometry.anatomySamples),
 
-                const circle =
-                    document.createElementNS(
-                        SVG_NAMESPACE,
-                        "circle"
-                    );
+      surfaceSamples: cloneSampleArray(currentMouthGeometry.surfaceSamples),
 
-                circle.setAttribute(
-                    "cx",
-                    point.x
-                );
+      upperPoints: cloneSampleArray(currentMouthGeometry.upperPoints),
 
-                circle.setAttribute(
-                    "cy",
-                    point.y
-                );
+      lowerPoints: cloneSampleArray(currentMouthGeometry.lowerPoints),
 
-                circle.setAttribute(
-                    "r",
-                    index === 2
-                        ? 3.5
-                        : 3
-                );
+      seamPoints: cloneSampleArray(currentMouthGeometry.seamPoints),
+    };
+  }
 
-                circle.setAttribute(
-                    "fill",
-                    index === 2
-                        ? "#ffcc00"
-                        : "#00b7ff"
-                );
+  function getCurrentMouthSurfaceSamples() {
+    return cloneSampleArray(currentMouthGeometry.anatomySamples);
+  }
 
-                circle.setAttribute(
-                    "stroke",
-                    "#111"
-                );
+  function getCurrentTrimmedSurfaceSamples() {
+    return cloneSampleArray(currentMouthGeometry.surfaceSamples);
+  }
 
-                circle.setAttribute(
-                    "stroke-width",
-                    "1"
-                );
+  function getCurrentMouthLandmarks() {
+    return cloneSampleArray(currentMouthGeometry.landmarks);
+  }
 
-                circle.setAttribute(
-                    "class",
-                    "mouthLandmark"
-                );
+  function getCurrentMouthSeamSamples() {
+    return cloneSampleArray(currentMouthGeometry.seamSamples);
+  }
 
-                group.appendChild(
-                    circle
-                );
-            }
+  function getCurrentUpperPoints() {
+    return cloneSampleArray(currentMouthGeometry.upperPoints);
+  }
 
-        );
-    }
+  function getCurrentLowerPoints() {
+    return cloneSampleArray(currentMouthGeometry.lowerPoints);
+  }
 
+  function getCurrentSeamPoints() {
+    return cloneSampleArray(currentMouthGeometry.seamPoints);
+  }
 
-    /* ==========================
-       DRAW VECTOR LINE
-    ========================== */
-
-    function drawVectorLine(
-        group,
-        point,
-        vector,
-        length,
-        color,
-        strokeWidth,
-        className
-    ) {
-
-        const line =
-            document.createElementNS(
-                SVG_NAMESPACE,
-                "line"
-            );
-
-        line.setAttribute(
-            "x1",
-            point.x
-        );
-
-        line.setAttribute(
-            "y1",
-            point.y
-        );
-
-        line.setAttribute(
-            "x2",
-            point.x +
-            vector.x *
-            length
-        );
-
-        line.setAttribute(
-            "y2",
-            point.y +
-            vector.y *
-            length
-        );
-
-        line.setAttribute(
-            "stroke",
-            color
-        );
-
-        line.setAttribute(
-            "stroke-width",
-            strokeWidth
-        );
-
-        line.setAttribute(
-            "stroke-linecap",
-            "round"
-        );
-
-        if (className) {
-
-            line.setAttribute(
-                "class",
-                className
-            );
-        }
-
-        group.appendChild(
-            line
-        );
-    }
-
-
-    /* ==========================
-       DRAW SAMPLE POINT
-    ========================== */
-
-    function drawSamplePoint(
-        group,
-        point
-    ) {
-
-        const circle =
-            document.createElementNS(
-                SVG_NAMESPACE,
-                "circle"
-            );
-
-        circle.setAttribute(
-            "cx",
-            point.x
-        );
-
-        circle.setAttribute(
-            "cy",
-            point.y
-        );
-
-        circle.setAttribute(
-            "r",
-            "2.5"
-        );
-
-        circle.setAttribute(
-            "fill",
-            "#00a8ff"
-        );
-
-        circle.setAttribute(
-            "class",
-            "mouthSamplePoint"
-        );
-
-        group.appendChild(
-            circle
-        );
-    }
-
-
-    /* ==========================
-       DRAW DEBUG GEOMETRY
-    ========================== */
-
-    function drawDebugGeometry(
-        group,
-        samples
-    ) {
-
-        const settings =
-            window.mouthEngineSettings;
-
-        samples.forEach(
-
-            function (sample) {
-
-                if (settings.showNormals) {
-
-                    drawVectorLine(
-
-                        group,
-
-                        sample.seamPoint,
-
-                        sample.seamNormal,
-
-                        settings.normalLength,
-
-                        "#00ff66",
-
-                        1.5,
-
-                        "mouthNormal"
-
-                    );
-                }
-
-                if (settings.showTangents) {
-
-                    drawVectorLine(
-
-                        group,
-
-                        sample.seamPoint,
-
-                        sample.seamTangent,
-
-                        settings.tangentLength,
-
-                        "#ff4040",
-
-                        1,
-
-                        "mouthTangent"
-
-                    );
-                }
-
-                if (
-                    settings.showUpperDirections
-                ) {
-
-                    drawVectorLine(
-
-                        group,
-
-                        sample.seamPoint,
-
-                        sample.upperDirection,
-
-                        settings.directionLength,
-
-                        "#ff9b30",
-
-                        1.5,
-
-                        "upperLipDirection"
-
-                    );
-                }
-
-                if (
-                    settings.showLowerDirections
-                ) {
-
-                    drawVectorLine(
-
-                        group,
-
-                        sample.seamPoint,
-
-                        sample.lowerDirection,
-
-                        settings.directionLength,
-
-                        "#30baff",
-
-                        1.5,
-
-                        "lowerLipDirection"
-
-                    );
-                }
-
-                if (settings.showSamples) {
-
-                    drawSamplePoint(
-
-                        group,
-
-                        sample.seamPoint
-
-                    );
-                }
-            }
-
-        );
-    }
-
-
-    /* ==========================
-       DRAW MOUTH
-    ========================== */
-
-    function drawMouthEngine() {
-
-        if (!dependenciesAvailable()) {
-            return;
-        }
-
-        const group =
-            getMouthEngineGroup();
-
-        if (!group) {
-            return;
-        }
-
-        clearMouthEngineGroup(
-            group
-        );
-
-        const settings =
-            window.mouthEngineSettings;
-
-        const landmarks =
-            buildMouthLandmarks();
-
-        const seamSpline =
-            Spline.fromPoints(
-
-                landmarks,
-
-                settings.tension
-
-            );
-
-        const seamSamples =
-            sampleMouthSeam(
-                seamSpline
-            );
-
-        const anatomySamples =
-            buildLipAnatomy(
-                seamSamples
-            );
-
-        const seamPoints =
-            getSeamPoints(
-                anatomySamples
-            );
-
-        const upperPoints =
-            getUpperPoints(
-                anatomySamples
-            );
-
-        const lowerPoints =
-            getLowerPoints(
-                anatomySamples
-            );
-
-        if (settings.showLipShapes) {
-
-            drawLipShapes(
-
-                group,
-
-                anatomySamples
-
-            );
-        }
-
-        if (settings.showUpperCurve) {
-
-            drawGuideCurve(
-
-                group,
-
-                upperPoints,
-
-                {
-
-                    id:
-                        "upperLipCurve",
-
-                    className:
-                        "upperLipCurve",
-
-                    stroke:
-                        "#ff3030",
-
-                    strokeWidth:
-                        2
-
-                }
-
-            );
-        }
-
-        if (settings.showLowerCurve) {
-
-            drawGuideCurve(
-
-                group,
-
-                lowerPoints,
-
-                {
-
-                    id:
-                        "lowerLipCurve",
-
-                    className:
-                        "lowerLipCurve",
-
-                    stroke:
-                        "#30ff70",
-
-                    strokeWidth:
-                        2
-
-                }
-
-            );
-        }
-
-        if (
-            settings.showUpperProfilePoints
-        ) {
-
-            drawPointCollection(
-
-                group,
-
-                upperPoints,
-
-                {
-
-                    radius:
-                        2,
-
-                    fill:
-                        "#ff3030",
-
-                    className:
-                        "upperLipProfilePoint"
-
-                }
-
-            );
-        }
-
-        if (
-            settings.showLowerProfilePoints
-        ) {
-
-            drawPointCollection(
-
-                group,
-
-                lowerPoints,
-
-                {
-
-                    radius:
-                        2,
-
-                    fill:
-                        "#30ff70",
-
-                    className:
-                        "lowerLipProfilePoint"
-
-                }
-
-            );
-        }
-
-        drawSeam(
-
-            group,
-
-            seamPoints
-
-        );
-
-        drawDebugGeometry(
-
-            group,
-
-            anatomySamples
-
-        );
-
-        if (settings.showLandmarks) {
-
-            drawLandmarks(
-
-                group,
-
-                landmarks
-
-            );
-        }
-    }
-
-
-    /* ==========================
+  /* ==========================
        UPDATE SETTINGS
     ========================== */
 
-    function updateMouthEngineSettings(
-        updates
-    ) {
+  function updateMouthEngineSettings(updates) {
+    window.mouthEngineSettings = {
+      ...window.mouthEngineSettings,
 
-        window.mouthEngineSettings = {
+      ...(updates || {}),
+    };
 
-            ...window.mouthEngineSettings,
+    return drawMouthEngine();
+  }
 
-            ...(updates || {})
-
-        };
-
-        drawMouthEngine();
-    }
-
-
-    /* ==========================
+  /* ==========================
        RESET
     ========================== */
 
-    function resetMouthEngine() {
-
-        window.mouthEngineSettings = {
-
-            ...defaultMouthEngineSettings
-
-        };
-
-        drawMouthEngine();
-    }
-
-
-    /* ==========================
-       PUBLIC API
-    ========================== */
-
-    window.getMouthProfileSettings =
-        getMouthProfileSettings;
-
-    window.getMouthDirectionSettings =
-        getMouthDirectionSettings;
-
-    window.buildMouthLandmarks =
-        buildMouthLandmarks;
-
-    window.buildMouthSeam =
-        buildMouthSeam;
-
-    window.sampleMouthSeam =
-        sampleMouthSeam;
-
-    window.buildLipAnatomy =
-        buildLipAnatomy;
-
-    window.buildMouthSamples =
-        buildMouthSamples;
-
-    window.getSeamPoints =
-        getSeamPoints;
-
-    window.getUpperPoints =
-        getUpperPoints;
-
-    window.getLowerPoints =
-        getLowerPoints;
-
-    window.getLipSurfaceSamples =
-        getLipSurfaceSamples;
-
-    window.buildUpperLipPath =
-        buildUpperLipPath;
-
-    window.buildLowerLipPath =
-        buildLowerLipPath;
-
-    window.drawDebugGeometry =
-        drawDebugGeometry;
-
-    window.drawMouthEngine =
-        drawMouthEngine;
-
-    window.updateMouthEngineSettings =
-        updateMouthEngineSettings;
-
-    window.resetMouthEngine =
-        resetMouthEngine;
-
-    window.MouthEngine = {
-
-        defaults:
-
-            Object.freeze({
-
-                ...defaultMouthEngineSettings
-
-            }),
-
-        getProfileSettings:
-            getMouthProfileSettings,
-
-        getDirectionSettings:
-            getMouthDirectionSettings,
-
-        buildLandmarks:
-            buildMouthLandmarks,
-
-        buildSeam:
-            buildMouthSeam,
-
-        sampleSeam:
-            sampleMouthSeam,
-
-        buildAnatomy:
-            buildLipAnatomy,
-
-        getSurfaceSamples:
-            getLipSurfaceSamples,
-
-        draw:
-            drawMouthEngine,
-
-        update:
-            updateMouthEngineSettings,
-
-        reset:
-            resetMouthEngine
-
+  function resetMouthEngine() {
+    window.mouthEngineSettings = {
+      ...defaultMouthEngineSettings,
     };
 
+    return drawMouthEngine();
+  }
+
+  /* ==========================
+       GLOBAL COMPATIBILITY API
+    ========================== */
+
+  window.getMouthProfileSettings = getMouthProfileSettings;
+
+  window.getMouthDirectionSettings = getMouthDirectionSettings;
+
+  window.buildMouthLandmarks = buildMouthLandmarks;
+
+  window.buildMouthSeam = buildMouthSeam;
+
+  window.sampleMouthSeam = sampleMouthSeam;
+
+  window.buildLipAnatomy = buildLipAnatomy;
+
+  window.buildMouthSamples = buildMouthSamples;
+
+  window.buildMouthGeometry = buildMouthGeometry;
+
+  window.getSeamPoints = getSeamPoints;
+
+  window.getUpperPoints = getUpperPoints;
+
+  window.getLowerPoints = getLowerPoints;
+
+  /*
+        This helper still accepts an explicit
+        samples array and returns the corner-
+        trimmed lip surface samples.
+    */
+
+  window.getLipSurfaceSamples = getLipSurfaceSamples;
+
+  window.getCurrentMouthGeometry = getCurrentGeometry;
+
+  window.getCurrentMouthSurfaceSamples = getCurrentMouthSurfaceSamples;
+
+  window.getCurrentTrimmedMouthSurfaceSamples = getCurrentTrimmedSurfaceSamples;
+
+  window.getCurrentMouthLandmarks = getCurrentMouthLandmarks;
+
+  window.getCurrentMouthSeamSamples = getCurrentMouthSeamSamples;
+
+  window.buildUpperLipPath = buildUpperLipPath;
+
+  window.buildLowerLipPath = buildLowerLipPath;
+
+  window.drawMouthEngine = drawMouthEngine;
+
+  window.updateMouthEngineSettings = updateMouthEngineSettings;
+
+  window.resetMouthEngine = resetMouthEngine;
+
+  /* ==========================
+       MOUTH ENGINE API
+    ========================== */
+
+  window.MouthEngine = {
+    defaults: Object.freeze({
+      ...defaultMouthEngineSettings,
+    }),
+
+    getProfileSettings: getMouthProfileSettings,
+
+    getDirectionSettings: getMouthDirectionSettings,
+
+    buildLandmarks: buildMouthLandmarks,
+
+    buildSeam: buildMouthSeam,
+
+    sampleSeam: sampleMouthSeam,
+
+    buildAnatomy: buildLipAnatomy,
+
+    build: buildMouthGeometry,
+
+    getGeometry: getCurrentGeometry,
+
+    /*
+            Returns the complete anatomy samples.
+
+            This is what MouthDebug and
+            FaceInspector should use.
+        */
+
+    getSurfaceSamples: getCurrentMouthSurfaceSamples,
+
+    /*
+            Returns the corner-trimmed samples
+            used by the visible lip surfaces.
+        */
+
+    getTrimmedSurfaceSamples: getCurrentTrimmedSurfaceSamples,
+
+    getLandmarks: getCurrentMouthLandmarks,
+
+    getSeamSamples: getCurrentMouthSeamSamples,
+
+    getUpperPoints: getCurrentUpperPoints,
+
+    getLowerPoints: getCurrentLowerPoints,
+
+    getSeamPoints: getCurrentSeamPoints,
+
+    draw: drawMouthEngine,
+
+    update: updateMouthEngineSettings,
+
+    reset: resetMouthEngine,
+  };
+
+  console.log("mouthEngine.js V4.3 loaded");
 })();
-
-
-console.log(
-    "mouthEngine.js V4.0 loaded"
-);
