@@ -117,24 +117,34 @@
     ========================== */
 
   function buildEmptyGeometry() {
-    return {
-      landmarks: [],
+  return {
+    /*
+      Complete editable Landmark collection.
+    */
 
-      seamSpline: null,
+    namedLandmarks: {},
 
-      seamSamples: [],
+    /*
+      Five Point objects used by the seam spline.
+    */
 
-      anatomySamples: [],
+    landmarks: [],
 
-      surfaceSamples: [],
+    seamSpline: null,
 
-      upperPoints: [],
+    seamSamples: [],
 
-      lowerPoints: [],
+    anatomySamples: [],
 
-      seamPoints: [],
-    };
-  }
+    surfaceSamples: [],
+
+    upperPoints: [],
+
+    lowerPoints: [],
+
+    seamPoints: [],
+  };
+}
 
   /* ==========================
        CURRENT GEOMETRY
@@ -151,6 +161,14 @@
 
     if (!window.Point) {
       missing.push("Point");
+    }
+
+    if (!window.Landmark) {
+      missing.push("Landmark");
+    }
+
+    if (!window.MouthLandmarks) {
+      missing.push("MouthLandmarks");
     }
 
     if (!window.Spline) {
