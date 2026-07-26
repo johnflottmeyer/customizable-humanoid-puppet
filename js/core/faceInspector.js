@@ -112,6 +112,8 @@
 
   let panelContent = null;
 
+  let reopenButton = null;
+
   /* ==========================
        NUMBER HELPERS
     ========================== */
@@ -516,27 +518,147 @@
 
             .faceInspectorHelp {
 
-                margin-top: 0.75rem;
+    margin-top: 0.75rem;
 
-                padding: 0.65rem;
+    padding: 0.65rem;
 
-                color:
-                    rgba(255, 255, 255, 0.65);
+    color:
+        rgba(255,255,255,.65);
 
-                background-color:
-                    rgba(255, 255, 255, 0.05);
+    background-color:
+        rgba(255,255,255,.05);
 
-                border-radius: 0.4rem;
+    border-radius:.4rem;
 
-                line-height: 1.45;
+    line-height:1.45;
 
-            }
+}
 
+
+/* ==========================
+   FLOATING REOPEN BUTTON
+========================== */
+
+#faceInspectorReopen{
+
+    position:fixed;
+
+    right:1rem;
+    bottom:1rem;
+
+    z-index:10001;
+
+    display:flex;
+    align-items:center;
+    gap:.45rem;
+
+    padding:.7rem 1rem;
+
+    border:none;
+
+    border-radius:999px;
+
+    background:#1c2129;
+
+    color:white;
+
+    cursor:pointer;
+
+    font-size:.85rem;
+
+    font-weight:600;
+
+    box-shadow:
+        0 8px 24px rgba(0,0,0,.35);
+
+    transition:
+        transform .15s ease,
+        background .15s ease;
+
+}
+
+#faceInspectorReopen:hover{
+
+    background:#28303b;
+
+    transform:translateY(-2px);
+
+}
+
+#faceInspectorReopen[hidden]{
+
+    display:none;
+
+}
         `;
 
     document.head.appendChild(style);
   }
+/* ==========================
+   CREATE REOPEN BUTTON
+========================== */
 
+function createReopenButton() {
+
+    const existingButton =
+        document.getElementById(
+            "faceInspectorReopen"
+        );
+
+
+    if (existingButton) {
+
+        reopenButton =
+            existingButton;
+
+        return;
+    }
+
+
+    reopenButton =
+        document.createElement(
+            "button"
+        );
+
+
+    reopenButton.type =
+        "button";
+
+
+    reopenButton.id =
+        "faceInspectorReopen";
+
+
+    reopenButton.textContent =
+        "✦ Inspector";
+
+
+    reopenButton.setAttribute(
+        "aria-label",
+        "Open Face Inspector"
+    );
+
+
+    reopenButton.addEventListener(
+        "click",
+
+        function () {
+
+            showInspector();
+
+        }
+    );
+
+
+    reopenButton.hidden =
+        true;
+
+
+    document.body.appendChild(
+        reopenButton
+    );
+
+}
   /* ==========================
        CREATE PANEL
     ========================== */
@@ -632,14 +754,18 @@
     }
 
     if (closeButton) {
-      closeButton.addEventListener(
-        "click",
 
-        function () {
-          disable();
-        },
-      );
-    }
+       closeButton.addEventListener(
+           "click",
+
+           function () {
+
+               hideInspector();
+
+           }
+       );
+
+   }
 
     panel.hidden = !window.faceInspectorSettings.showPanel;
   }
@@ -1603,61 +1729,122 @@
   }
 
   /* ==========================
-       ENABLE / DISABLE
-    ========================== */
+   ENABLE / DISABLE
+========================== */
 
-  function enable() {
+function showInspector() {
+
     state.enabled = true;
 
     window.faceInspectorSettings.enabled = true;
 
+    window.faceInspectorSettings.showPanel = true;
+
+
     if (panel) {
-      panel.hidden = !window.faceInspectorSettings.showPanel;
+
+        panel.hidden = false;
+
     }
 
-    refresh();
-  }
 
-  function disable() {
+    if (reopenButton) {
+
+        reopenButton.hidden = true;
+
+    }
+
+if (handleLayer) {
+    handleLayer.style.display = "";
+}
+
+if (guideLayer) {
+    guideLayer.style.display = "";
+}
+
+    refresh();
+
+}
+
+
+function hideInspector() {
+
     state.enabled = false;
 
     window.faceInspectorSettings.enabled = false;
 
-    clearElement(handleLayer);
-
-    clearElement(guideLayer);
-
-    if (panel) {
-      panel.hidden = true;
-    }
-  }
-
-  function toggle() {
-    if (state.enabled) {
-      disable();
-    } else {
-      enable();
-    }
-
-    return state.enabled;
-  }
-
-  function showPanel() {
-    window.faceInspectorSettings.showPanel = true;
-
-    if (panel) {
-      panel.hidden = false;
-    }
-  }
-
-  function hidePanel() {
     window.faceInspectorSettings.showPanel = false;
 
-    if (panel) {
-      panel.hidden = true;
-    }
-  }
 
+    if (handleLayer) {
+    handleLayer.style.display = "none";
+}
+
+if (guideLayer) {
+    guideLayer.style.display = "none";
+}
+
+
+    if (panel) {
+
+        panel.hidden = true;
+
+    }
+
+
+    if (reopenButton) {
+
+        reopenButton.hidden = false;
+
+    }
+
+}
+
+
+function enable() {
+
+    showInspector();
+
+}
+
+
+function disable() {
+
+    hideInspector();
+
+}
+
+
+function toggle() {
+
+    if (state.enabled) {
+
+        hideInspector();
+
+    } else {
+
+        showInspector();
+
+    }
+
+
+    return state.enabled;
+
+}
+
+
+function showPanel() {
+
+    showInspector();
+
+}
+
+
+function hidePanel() {
+
+    hideInspector();
+
+}
   /* ==========================
        INITIALIZE
     ========================== */
@@ -1679,12 +1866,15 @@
 
     createPanelStyles();
 
-    createPanel();
+createPanel();
 
-    createInspectorLayers();
+createReopenButton();
+
+createInspectorLayers();
 
     state.initialized = true;
-
+    
+    
     if (state.enabled) {
       enable();
     } else {
@@ -1709,11 +1899,12 @@
 
     toggle: toggle,
 
+    show: showInspector,
+
+    hide: hideInspector,
+
     showPanel: showPanel,
-
-    hidePanel: hidePanel,
-
-    clear: clearSelection,
+hidePanel: hidePanel,
 
     getHandles: function () {
       return state.handles.slice();
@@ -1747,5 +1938,5 @@
 
   window.FaceLab.Inspector = window.FaceInspector;
 
-  console.log("faceInspector.js V2.0 loaded");
+  console.log("faceInspector.js V2.1 loaded");
 })();
