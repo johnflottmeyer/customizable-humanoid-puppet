@@ -1,5 +1,5 @@
 /* ==========================
-   MOUTH GEOMETRY — VERSION 2.0
+   MOUTH GEOMETRY — VERSION 2.1
 
    Responsibilities:
 
@@ -16,907 +16,2030 @@
 ========================== */
 
 (function () {
-  "use strict";
+    "use strict";
 
-  /* ==========================
+
+    /* ==========================
        DEFAULT GEOMETRY SETTINGS
     ========================== */
 
-  const defaultGeometrySettings = {
-    /* Position */
+    const defaultGeometrySettings = {
 
-    centerX: 250,
-    centerY: 381,
+        /* ==========================
+           POSITION
+        ========================== */
 
-    /* Mouth seam */
+        centerX: 250,
+        centerY: 381,
 
-    width: 150,
 
-    cornerY: 0,
-    peakY: -1.5,
-    cupidY: -0.5,
+        /* ==========================
+           MOUTH SEAM
+        ========================== */
 
-    tension: 0.25,
+        width: 150,
 
-    /* Upper lip */
+        cornerY: 0,
+        peakY: -1.5,
+        cupidY: -0.5,
 
-    upperLipThickness: 6.5,
+        /*
+            Retained for compatibility with
+            the previous spline system.
+        */
 
-    cupidBowHeight: 3.2,
-    cupidBowWidth: 0.16,
+        tension: 0.25,
 
-    philtrumDip: 2.4,
-    upperCenterFullness: 0.5,
 
-    upperAsymmetry: 0,
+        /* ==========================
+           BÉZIER SEAM HANDLES
+        ========================== */
 
-    /* Lower lip */
+        seamHandleStrength: 0.27,
+        seamCornerHandleScale: 0.72,
+        seamCenterHandleScale: 0.82,
+        seamMaximumHandleRatio: 0.42,
 
-    lowerLipThickness: 8.5,
 
-    lowerCenterFullness: 2.5,
-    lowerLobeWidth: 0.34,
+        /* ==========================
+           UPPER LIP
+        ========================== */
 
-    lowerAsymmetry: 0,
+        upperLipThickness: 6.5,
 
-    /* Corners */
+        cupidBowHeight: 3.2,
+        cupidBowWidth: 0.16,
 
-    cornerTaper: 1.9,
-    cornerThickness: 0.02,
+        philtrumDip: 2.4,
+        upperCenterFullness: 0.5,
 
-    cornerInset: 0.04,
-    cornerRoundness: 0.7,
+        upperAsymmetry: 0,
 
-    /* Direction field */
 
-    upperVerticalBias: 0.88,
-    lowerVerticalBias: 0.94,
+        /* ==========================
+           LOWER LIP
+        ========================== */
 
-    upperCornerFlare: 0.34,
-    lowerCornerFlare: 0.18,
+        lowerLipThickness: 8.5,
 
-    cornerFlareWidth: 0.28,
+        lowerCenterFullness: 2.5,
+        lowerLobeWidth: 0.34,
 
-    smile: 0,
+        lowerAsymmetry: 0,
 
-    upperExpressionStrength: 0.28,
-    lowerExpressionStrength: 0.18,
 
-    directionAsymmetry: 0,
+        /* ==========================
+           CORNERS
+        ========================== */
 
-    /* Sampling */
+        cornerTaper: 1.9,
+        cornerThickness: 0.02,
 
-    sampleCount: 40,
-  };
+        cornerInset: 0.04,
+        cornerRoundness: 0.7,
 
-  /* ==========================
+
+        /* ==========================
+           DIRECTION FIELD
+        ========================== */
+
+        upperVerticalBias: 0.88,
+        lowerVerticalBias: 0.94,
+
+        upperCornerFlare: 0.34,
+        lowerCornerFlare: 0.18,
+
+        cornerFlareWidth: 0.28,
+
+        smile: 0,
+
+        upperExpressionStrength: 0.28,
+        lowerExpressionStrength: 0.18,
+
+        directionAsymmetry: 0,
+
+
+        /* ==========================
+           SAMPLING
+        ========================== */
+
+        sampleCount: 40
+    };
+
+
+    /* ==========================
        DEPENDENCIES
     ========================== */
 
-  function dependenciesAvailable() {
-    const missing = [];
+    function dependenciesAvailable() {
 
-    if (!window.Point) {
-      missing.push("Point");
+        const missing = [];
+
+
+        if (!window.Point) {
+
+            missing.push("Point");
+        }
+
+
+        /*
+            The old window.Spline dependency
+            has been replaced by the new cubic
+            Bézier seam implementation.
+        */
+
+        if (
+            !window.MouthBezierSpline ||
+            typeof window.MouthBezierSpline.create !==
+                "function"
+        ) {
+
+            missing.push("MouthBezierSpline");
+        }
+
+
+        if (!window.PathBuilder) {
+
+            missing.push("PathBuilder");
+        }
+
+
+        if (
+            !window.MouthLandmarks ||
+            typeof window.MouthLandmarks.build !==
+                "function"
+        ) {
+
+            missing.push("MouthLandmarks");
+        }
+
+
+        if (
+            !window.MouthProfiles ||
+            typeof window.MouthProfiles.sample !==
+                "function"
+        ) {
+
+            missing.push("MouthProfiles");
+        }
+
+
+        if (
+            !window.MouthDirections ||
+            typeof window.MouthDirections.sample !==
+                "function"
+        ) {
+
+            missing.push("MouthDirections");
+        }
+
+
+        if (
+            !window.MouthPads ||
+            typeof window.MouthPads.sample !==
+                "function"
+        ) {
+
+            missing.push("MouthPads");
+        }
+
+
+        if (missing.length > 0) {
+
+            console.error(
+                "mouthGeometry.js is missing dependencies:",
+                missing.join(", ")
+            );
+
+            return false;
+        }
+
+
+        return true;
     }
 
-    if (!window.Spline) {
-      missing.push("Spline");
-    }
 
-    if (!window.PathBuilder) {
-      missing.push("PathBuilder");
-    }
-
-    if (!window.MouthLandmarks) {
-      missing.push("MouthLandmarks");
-    }
-
-    if (!window.MouthProfiles) {
-      missing.push("MouthProfiles");
-    }
-
-    if (!window.MouthDirections) {
-      missing.push("MouthDirections");
-    }
-
-    if (!window.MouthPads) {
-      missing.push("MouthPads");
-    }
-
-    if (missing.length > 0) {
-      console.error(
-        "mouthGeometry.js is missing dependencies:",
-        missing.join(", "),
-      );
-
-      return false;
-    }
-
-    return true;
-  }
-
-  /* ==========================
+    /* ==========================
        NUMBER HELPERS
     ========================== */
 
-  function safeNumber(value, fallback) {
-    const number = Number(value);
+    function safeNumber(value, fallback) {
 
-    return Number.isFinite(number) ? number : fallback;
-  }
+        const number = Number(value);
 
-  function clamp(value, minimum, maximum) {
-    return Math.max(minimum, Math.min(maximum, value));
-  }
 
-  function clamp01(value) {
-    return clamp(value, 0, 1);
-  }
+        return Number.isFinite(number)
+            ? number
+            : fallback;
+    }
 
-  function mix(start, end, amount) {
-    return start + (end - start) * amount;
-  }
 
-  /* ==========================
+    function clamp(
+        value,
+        minimum,
+        maximum
+    ) {
+
+        return Math.max(
+            minimum,
+            Math.min(maximum, value)
+        );
+    }
+
+
+    function clamp01(value) {
+
+        return clamp(value, 0, 1);
+    }
+
+
+    function mix(
+        start,
+        end,
+        amount
+    ) {
+
+        return start +
+            (end - start) * amount;
+    }
+
+
+    /* ==========================
        POINT HELPERS
     ========================== */
 
-  function createPoint(x, y) {
-    return new window.Point(safeNumber(x, 0), safeNumber(y, 0));
-  }
+    function createPoint(x, y) {
 
-  function movePoint(point, direction, distance) {
-    return createPoint(
-      point.x + direction.x * distance,
-      point.y + direction.y * distance,
-    );
-  }
+        return new window.Point(
+            safeNumber(x, 0),
+            safeNumber(y, 0)
+        );
+    }
 
-  function mixPoints(first, second, amount) {
-    const blend = clamp01(amount);
 
-    return createPoint(
-      mix(first.x, second.x, blend),
-      mix(first.y, second.y, blend),
-    );
-  }
+    function movePoint(
+        point,
+        direction,
+        distance
+    ) {
 
-  function formatPoint(point) {
-    return [safeNumber(point.x, 0), safeNumber(point.y, 0)].join(" ");
-  }
+        return createPoint(
 
-  /* ==========================
+            point.x +
+                direction.x * distance,
+
+            point.y +
+                direction.y * distance
+        );
+    }
+
+
+    function mixPoints(
+        first,
+        second,
+        amount
+    ) {
+
+        const blend =
+            clamp01(amount);
+
+
+        return createPoint(
+
+            mix(
+                first.x,
+                second.x,
+                blend
+            ),
+
+            mix(
+                first.y,
+                second.y,
+                blend
+            )
+        );
+    }
+
+
+    function formatPoint(point) {
+
+        return [
+
+            safeNumber(point.x, 0),
+
+            safeNumber(point.y, 0)
+
+        ].join(" ");
+    }
+
+
+    /* ==========================
        EMPTY GEOMETRY
     ========================== */
 
-  function buildEmptyGeometry(settings) {
-    return {
-      settings: settings || {},
+    function buildEmptyGeometry(settings) {
 
-      namedLandmarks: {},
-      landmarks: [],
+        return {
 
-      seamSpline: null,
+            settings:
+                settings || {},
 
-      seamSamples: [],
-      anatomySamples: [],
-      surfaceSamples: [],
+            namedLandmarks: {},
+            landmarks: [],
 
-      upperPoints: [],
-      lowerPoints: [],
-      seamPoints: [],
+            seamSpline: null,
+            seamHandles: [],
 
-      upperPath: "",
-      lowerPath: "",
-      seamPath: "",
-    };
-  }
+            seamSamples: [],
+            anatomySamples: [],
+            surfaceSamples: [],
 
-  /* ==========================
+            upperPoints: [],
+            lowerPoints: [],
+            seamPoints: [],
+
+            upperPath: "",
+            lowerPath: "",
+            seamPath: ""
+        };
+    }
+
+
+    /* ==========================
        SETTINGS
     ========================== */
 
-  function resolveSettings(overrides) {
-    return {
-      ...defaultGeometrySettings,
-      ...(window.mouthEngineSettings || {}),
-      ...(overrides || {}),
-    };
-  }
+    function resolveSettings(overrides) {
 
-  function getProfileSettings(settings) {
-    return {
-      upperLipThickness: settings.upperLipThickness,
+        return {
 
-      lowerLipThickness: settings.lowerLipThickness,
+            ...defaultGeometrySettings,
 
-      cupidBowHeight: settings.cupidBowHeight,
+            ...(window.mouthEngineSettings || {}),
 
-      cupidBowWidth: settings.cupidBowWidth,
+            ...(overrides || {})
+        };
+    }
 
-      philtrumDip: settings.philtrumDip,
 
-      upperCenterFullness: settings.upperCenterFullness,
+    function getProfileSettings(settings) {
 
-      lowerCenterFullness: settings.lowerCenterFullness,
+        return {
 
-      lowerLobeWidth: settings.lowerLobeWidth,
+            upperLipThickness:
+                settings.upperLipThickness,
 
-      cornerTaper: settings.cornerTaper,
+            lowerLipThickness:
+                settings.lowerLipThickness,
 
-      cornerThickness: settings.cornerThickness,
+            cupidBowHeight:
+                settings.cupidBowHeight,
 
-      upperAsymmetry: settings.upperAsymmetry,
+            cupidBowWidth:
+                settings.cupidBowWidth,
 
-      lowerAsymmetry: settings.lowerAsymmetry,
-    };
-  }
+            philtrumDip:
+                settings.philtrumDip,
 
-  function getDirectionSettings(settings) {
-    return {
-      upperVerticalBias: settings.upperVerticalBias,
+            upperCenterFullness:
+                settings.upperCenterFullness,
 
-      lowerVerticalBias: settings.lowerVerticalBias,
+            lowerCenterFullness:
+                settings.lowerCenterFullness,
 
-      upperCornerFlare: settings.upperCornerFlare,
+            lowerLobeWidth:
+                settings.lowerLobeWidth,
 
-      lowerCornerFlare: settings.lowerCornerFlare,
+            cornerTaper:
+                settings.cornerTaper,
 
-      cornerFlareWidth: settings.cornerFlareWidth,
+            cornerThickness:
+                settings.cornerThickness,
 
-      smile: settings.smile,
+            upperAsymmetry:
+                settings.upperAsymmetry,
 
-      upperExpressionStrength: settings.upperExpressionStrength,
+            lowerAsymmetry:
+                settings.lowerAsymmetry
+        };
+    }
 
-      lowerExpressionStrength: settings.lowerExpressionStrength,
 
-      asymmetry: settings.directionAsymmetry,
-    };
-  }
+    function getDirectionSettings(settings) {
 
-  /* ==========================
+        return {
+
+            upperVerticalBias:
+                settings.upperVerticalBias,
+
+            lowerVerticalBias:
+                settings.lowerVerticalBias,
+
+            upperCornerFlare:
+                settings.upperCornerFlare,
+
+            lowerCornerFlare:
+                settings.lowerCornerFlare,
+
+            cornerFlareWidth:
+                settings.cornerFlareWidth,
+
+            smile:
+                settings.smile,
+
+            upperExpressionStrength:
+                settings.upperExpressionStrength,
+
+            lowerExpressionStrength:
+                settings.lowerExpressionStrength,
+
+            asymmetry:
+                settings.directionAsymmetry
+        };
+    }
+
+
+    /* ==========================
        LANDMARK COLLECTION
     ========================== */
 
-  function buildNamedLandmarks(settings) {
-    if (
-      !window.MouthLandmarks ||
-      typeof window.MouthLandmarks.build !== "function"
+    function buildNamedLandmarks(settings) {
+
+        if (
+            !window.MouthLandmarks ||
+            typeof window.MouthLandmarks.build !==
+                "function"
+        ) {
+
+            console.error(
+                "MouthGeometry requires MouthLandmarks.build()."
+            );
+
+            return {};
+        }
+
+
+        return (
+            window.MouthLandmarks.build(
+                settings
+            ) ||
+            {}
+        );
+    }
+
+
+    function collectionToArray(collection) {
+
+        if (!collection) {
+
+            return [];
+        }
+
+
+        if (Array.isArray(collection)) {
+
+            return collection.filter(Boolean);
+        }
+
+
+        if (collection instanceof Map) {
+
+            return Array
+                .from(collection.values())
+                .filter(Boolean);
+        }
+
+
+        return Object
+            .keys(collection)
+
+            .map(function (key) {
+
+                return collection[key];
+            })
+
+            .filter(Boolean);
+    }
+
+
+    function getLandmarkId(landmark) {
+
+        if (!landmark) {
+
+            return "";
+        }
+
+
+        return (
+            landmark.id ||
+            landmark.name ||
+            landmark.key ||
+            landmark.label ||
+            ""
+        );
+    }
+
+
+    function findLandmark(
+        collection,
+        possibleIds
     ) {
-      console.error("MouthGeometry requires MouthLandmarks.build().");
 
-      return {};
+        if (!collection) {
+
+            return null;
+        }
+
+
+        for (
+            let index = 0;
+            index < possibleIds.length;
+            index += 1
+        ) {
+
+            const id =
+                possibleIds[index];
+
+
+            if (
+                collection instanceof Map &&
+                collection.has(id)
+            ) {
+
+                return collection.get(id);
+            }
+
+
+            if (
+                !Array.isArray(collection) &&
+                collection[id]
+            ) {
+
+                return collection[id];
+            }
+        }
+
+
+        const landmarks =
+            collectionToArray(collection);
+
+
+        return (
+            landmarks.find(
+                function (landmark) {
+
+                    const id =
+                        getLandmarkId(landmark);
+
+
+                    return possibleIds.includes(id);
+                }
+            ) ||
+            null
+        );
     }
 
-    return window.MouthLandmarks.build(settings) || {};
-  }
 
-  function collectionToArray(collection) {
-    if (!collection) {
-      return [];
+    function landmarkToPoint(landmark) {
+
+        if (!landmark) {
+
+            return null;
+        }
+
+
+        if (
+            typeof landmark.toPoint ===
+            "function"
+        ) {
+
+            const point =
+                landmark.toPoint();
+
+
+            if (point) {
+
+                return createPoint(
+                    point.x,
+                    point.y
+                );
+            }
+        }
+
+
+        return createPoint(
+            landmark.x,
+            landmark.y
+        );
     }
 
-    if (Array.isArray(collection)) {
-      return collection.filter(Boolean);
-    }
 
-    if (collection instanceof Map) {
-      return Array.from(collection.values()).filter(Boolean);
-    }
-
-    return Object.keys(collection)
-      .map(function (key) {
-        return collection[key];
-      })
-      .filter(Boolean);
-  }
-
-  function getLandmarkId(landmark) {
-    if (!landmark) {
-      return "";
-    }
-
-    return landmark.id || landmark.name || landmark.key || landmark.label || "";
-  }
-
-  function findLandmark(collection, possibleIds) {
-    if (!collection) {
-      return null;
-    }
-
-    for (let index = 0; index < possibleIds.length; index += 1) {
-      const id = possibleIds[index];
-
-      if (collection instanceof Map && collection.has(id)) {
-        return collection.get(id);
-      }
-
-      if (!Array.isArray(collection) && collection[id]) {
-        return collection[id];
-      }
-    }
-
-    const landmarks = collectionToArray(collection);
-
-    return (
-      landmarks.find(function (landmark) {
-        const id = getLandmarkId(landmark);
-
-        return possibleIds.includes(id);
-      }) || null
-    );
-  }
-
-  function landmarkToPoint(landmark) {
-    if (!landmark) {
-      return null;
-    }
-
-    if (typeof landmark.toPoint === "function") {
-      const point = landmark.toPoint();
-
-      if (point) {
-        return createPoint(point.x, point.y);
-      }
-    }
-
-    return createPoint(landmark.x, landmark.y);
-  }
-
-  /* ==========================
+    /* ==========================
        SEAM CONTROL POINTS
     ========================== */
 
-  function buildSeamPoints(namedLandmarks) {
-    const leftCorner = findLandmark(namedLandmarks, [
-      "leftCorner",
-      "mouthLeftCorner",
-    ]);
-
-    const seamLeftCenter = findLandmark(namedLandmarks, ["seamLeftCenter"]);
-
-    const seamCenter = findLandmark(namedLandmarks, ["seamCenter"]);
-
-    const seamRightCenter = findLandmark(namedLandmarks, ["seamRightCenter"]);
-
-    const rightCorner = findLandmark(namedLandmarks, [
-      "rightCorner",
-      "mouthRightCorner",
-    ]);
-
-    const seamLandmarks = [
-      leftCorner,
-      seamLeftCenter,
-      seamCenter,
-      seamRightCenter,
-      rightCorner,
-    ];
-
-    if (
-      seamLandmarks.some(function (landmark) {
-        return !landmark;
-      })
+    function buildSeamPoints(
+        namedLandmarks
     ) {
-      console.error(
-        "MouthGeometry could not resolve all five seam landmarks.",
-        {
-          leftCorner: leftCorner,
 
-          seamLeftCenter: seamLeftCenter,
+        const leftCorner =
+            findLandmark(
+                namedLandmarks,
+                [
+                    "leftCorner",
+                    "mouthLeftCorner"
+                ]
+            );
 
-          seamCenter: seamCenter,
 
-          seamRightCenter: seamRightCenter,
+        const seamLeftCenter =
+            findLandmark(
+                namedLandmarks,
+                [
+                    "seamLeftCenter"
+                ]
+            );
 
-          rightCorner: rightCorner,
-        },
-      );
 
-      return [];
+        const seamCenter =
+            findLandmark(
+                namedLandmarks,
+                [
+                    "seamCenter"
+                ]
+            );
+
+
+        const seamRightCenter =
+            findLandmark(
+                namedLandmarks,
+                [
+                    "seamRightCenter"
+                ]
+            );
+
+
+        const rightCorner =
+            findLandmark(
+                namedLandmarks,
+                [
+                    "rightCorner",
+                    "mouthRightCorner"
+                ]
+            );
+
+
+        const seamLandmarks = [
+
+            leftCorner,
+
+            seamLeftCenter,
+
+            seamCenter,
+
+            seamRightCenter,
+
+            rightCorner
+        ];
+
+
+        if (
+            seamLandmarks.some(
+                function (landmark) {
+
+                    return !landmark;
+                }
+            )
+        ) {
+
+            console.error(
+                "MouthGeometry could not resolve all five seam landmarks.",
+                {
+                    leftCorner:
+                        leftCorner,
+
+                    seamLeftCenter:
+                        seamLeftCenter,
+
+                    seamCenter:
+                        seamCenter,
+
+                    seamRightCenter:
+                        seamRightCenter,
+
+                    rightCorner:
+                        rightCorner
+                }
+            );
+
+
+            return [];
+        }
+
+
+        return seamLandmarks
+            .map(landmarkToPoint)
+            .filter(Boolean);
     }
 
-    return seamLandmarks.map(landmarkToPoint).filter(Boolean);
-  }
 
-  /* ==========================
+    /* ==========================
        SEAM SPLINE
     ========================== */
 
-  function buildSeamSpline(seamControlPoints, settings) {
-    if (!Array.isArray(seamControlPoints) || seamControlPoints.length < 2) {
-      return null;
+    function buildSeamSpline(
+        seamControlPoints,
+        settings
+    ) {
+
+        if (
+            !Array.isArray(seamControlPoints) ||
+            seamControlPoints.length < 2
+        ) {
+
+            return null;
+        }
+
+
+        if (
+            !window.MouthBezierSpline ||
+            typeof window.MouthBezierSpline.create !==
+                "function"
+        ) {
+
+            console.error(
+                "MouthGeometry requires MouthBezierSpline.create()."
+            );
+
+            return null;
+        }
+
+
+        return window.MouthBezierSpline.create(
+
+            seamControlPoints,
+
+            {
+                handleStrength:
+                    safeNumber(
+                        settings.seamHandleStrength,
+                        defaultGeometrySettings
+                            .seamHandleStrength
+                    ),
+
+                cornerHandleScale:
+                    safeNumber(
+                        settings.seamCornerHandleScale,
+                        defaultGeometrySettings
+                            .seamCornerHandleScale
+                    ),
+
+                centerHandleScale:
+                    safeNumber(
+                        settings.seamCenterHandleScale,
+                        defaultGeometrySettings
+                            .seamCenterHandleScale
+                    ),
+
+                maximumHandleRatio:
+                    safeNumber(
+                        settings.seamMaximumHandleRatio,
+                        defaultGeometrySettings
+                            .seamMaximumHandleRatio
+                    )
+            }
+        );
     }
 
-    return window.Spline.fromPoints(
-      seamControlPoints,
 
-      safeNumber(settings.tension, defaultGeometrySettings.tension),
-    );
-  }
+    /* ==========================
+       SEAM HANDLES
+    ========================== */
 
-  /* ==========================
+    function getSeamHandles(seamSpline) {
+
+        if (!seamSpline) {
+
+            return [];
+        }
+
+
+        /*
+            Preferred public API from
+            mouthBezierSpline.js.
+        */
+
+        if (
+            typeof seamSpline.getHandles ===
+            "function"
+        ) {
+
+            const handles =
+                seamSpline.getHandles();
+
+
+            return Array.isArray(handles)
+                ? handles
+                : [];
+        }
+
+
+        /*
+            Compatibility fallback.
+
+            If a spline exposes its segments but
+            not getHandles(), extract the two
+            control points from each segment.
+        */
+
+        let segments = [];
+
+
+        if (
+            typeof seamSpline.getSegments ===
+            "function"
+        ) {
+
+            segments =
+                seamSpline.getSegments();
+        } else if (
+            Array.isArray(seamSpline.segments)
+        ) {
+
+            segments =
+                seamSpline.segments;
+        }
+
+
+        if (!Array.isArray(segments)) {
+
+            return [];
+        }
+
+
+        const handles = [];
+
+
+        segments.forEach(
+            function (segment, segmentIndex) {
+
+                if (!segment) {
+
+                    return;
+                }
+
+
+                if (segment.control1) {
+
+                    handles.push({
+                        segmentIndex:
+                            segmentIndex,
+
+                        type:
+                            "outgoing",
+
+                        point:
+                            segment.control1,
+
+                        x:
+                            segment.control1.x,
+
+                        y:
+                            segment.control1.y
+                    });
+                }
+
+
+                if (segment.control2) {
+
+                    handles.push({
+                        segmentIndex:
+                            segmentIndex,
+
+                        type:
+                            "incoming",
+
+                        point:
+                            segment.control2,
+
+                        x:
+                            segment.control2.x,
+
+                        y:
+                            segment.control2.y
+                    });
+                }
+            }
+        );
+
+
+        return handles;
+    }
+
+
+    /* ==========================
        SAMPLE SEAM
     ========================== */
 
-  function sampleSeam(seamSpline, settings) {
-    if (!seamSpline) {
-      return [];
+    function sampleSeam(
+        seamSpline,
+        settings
+    ) {
+
+        if (!seamSpline) {
+
+            return [];
+        }
+
+
+        if (
+            typeof seamSpline.getPoint !==
+                "function" ||
+            typeof seamSpline.getTangent !==
+                "function" ||
+            typeof seamSpline.getNormal !==
+                "function"
+        ) {
+
+            console.error(
+                "MouthGeometry received an invalid seam spline."
+            );
+
+            return [];
+        }
+
+
+        const sampleCount =
+            Math.max(
+
+                8,
+
+                Math.floor(
+                    safeNumber(
+                        settings.sampleCount,
+                        defaultGeometrySettings
+                            .sampleCount
+                    )
+                )
+            );
+
+
+        const samples = [];
+
+
+        for (
+            let index = 0;
+            index <= sampleCount;
+            index += 1
+        ) {
+
+            const t =
+                index / sampleCount;
+
+
+            samples.push({
+
+                t:
+                    t,
+
+                seamPoint:
+                    seamSpline.getPoint(t),
+
+                seamTangent:
+                    seamSpline.getTangent(t),
+
+                seamNormal:
+                    seamSpline.getNormal(t)
+            });
+        }
+
+
+        return samples;
     }
 
-    const sampleCount = Math.max(
-      8,
 
-      Math.floor(
-        safeNumber(settings.sampleCount, defaultGeometrySettings.sampleCount),
-      ),
-    );
-
-    const samples = [];
-
-    for (let index = 0; index <= sampleCount; index += 1) {
-      const t = index / sampleCount;
-
-      samples.push({
-        t: t,
-
-        seamPoint: seamSpline.getPoint(t),
-
-        seamTangent: seamSpline.getTangent(t),
-
-        seamNormal: seamSpline.getNormal(t),
-      });
-    }
-
-    return samples;
-  }
-
-  /* ==========================
+    /* ==========================
        LIP ANATOMY
     ========================== */
 
-  function buildAnatomy(seamSamples, settings) {
-    if (!Array.isArray(seamSamples)) {
-      return [];
+    function buildAnatomy(
+        seamSamples,
+        settings
+    ) {
+
+        if (!Array.isArray(seamSamples)) {
+
+            return [];
+        }
+
+
+        const profileSettings =
+            getProfileSettings(settings);
+
+
+        const directionSettings =
+            getDirectionSettings(settings);
+
+
+        const defaultUpperThickness =
+            6.5;
+
+
+        const defaultLowerThickness =
+            7.2;
+
+
+        const upperThickness =
+            safeNumber(
+                settings.upperLipThickness,
+                defaultUpperThickness
+            );
+
+
+        const lowerThickness =
+            safeNumber(
+                settings.lowerLipThickness,
+                defaultLowerThickness
+            );
+
+
+        const upperThicknessScale =
+            clamp(
+                upperThickness /
+                    defaultUpperThickness,
+
+                0,
+
+                4
+            );
+
+
+        const lowerThicknessScale =
+            clamp(
+                lowerThickness /
+                    defaultLowerThickness,
+
+                0,
+
+                4
+            );
+
+
+        const cupidBowHeight =
+            safeNumber(
+                settings.cupidBowHeight,
+                2.5
+            );
+
+
+        const philtrumDip =
+            safeNumber(
+                settings.philtrumDip,
+                1.5
+            );
+
+
+        const upperCenterFullness =
+            safeNumber(
+                settings.upperCenterFullness,
+                0
+            );
+
+
+        const lowerCenterFullness =
+            safeNumber(
+                settings.lowerCenterFullness,
+                1.8
+            );
+
+
+        return seamSamples.map(
+            function (seamSample) {
+
+                const profile =
+                    window.MouthProfiles.sample(
+                        seamSample.t,
+                        profileSettings
+                    );
+
+
+                const pads =
+                    window.MouthPads.sample(
+                        seamSample.t
+                    );
+
+
+                const directions =
+                    window.MouthDirections.sample(
+
+                        seamSample.t,
+
+                        seamSample.seamTangent,
+
+                        seamSample.seamNormal,
+
+                        directionSettings
+                    );
+
+
+                let upperHeight =
+                    pads.upperHeight *
+                    upperThicknessScale;
+
+
+                let lowerHeight =
+                    pads.lowerHeight *
+                    lowerThicknessScale;
+
+
+                upperHeight +=
+                    profile.cupidWeight *
+                    cupidBowHeight *
+                    0.45;
+
+
+                upperHeight -=
+                    profile.philtrumWeight *
+                    philtrumDip *
+                    0.4;
+
+
+                upperHeight +=
+                    directions.centerWeight *
+                    upperCenterFullness *
+                    0.25;
+
+
+                lowerHeight +=
+                    profile.lowerLobeWeight *
+                    lowerCenterFullness *
+                    0.4;
+
+
+                upperHeight =
+                    clamp(
+                        upperHeight,
+                        0,
+                        30
+                    );
+
+
+                lowerHeight =
+                    clamp(
+                        lowerHeight,
+                        0,
+                        35
+                    );
+
+
+                const upperBorder =
+                    movePoint(
+
+                        seamSample.seamPoint,
+
+                        directions.upper,
+
+                        upperHeight
+                    );
+
+
+                const lowerBorder =
+                    movePoint(
+
+                        seamSample.seamPoint,
+
+                        directions.lower,
+
+                        lowerHeight
+                    );
+
+
+                return {
+
+                    t:
+                        seamSample.t,
+
+                    seamPoint:
+                        seamSample.seamPoint,
+
+                    seamTangent:
+                        seamSample.seamTangent,
+
+                    seamNormal:
+                        seamSample.seamNormal,
+
+                    upperDirection:
+                        directions.upper,
+
+                    lowerDirection:
+                        directions.lower,
+
+                    upperHeight:
+                        upperHeight,
+
+                    lowerHeight:
+                        lowerHeight,
+
+                    upperPads:
+                        pads.upper,
+
+                    lowerPads:
+                        pads.lower,
+
+                    upperBorder:
+                        upperBorder,
+
+                    lowerBorder:
+                        lowerBorder,
+
+                    cornerWeight:
+                        profile.cornerWeight,
+
+                    cupidWeight:
+                        profile.cupidWeight,
+
+                    philtrumWeight:
+                        profile.philtrumWeight,
+
+                    lowerLobeWeight:
+                        profile.lowerLobeWeight,
+
+                    directionCornerWeight:
+                        directions.cornerWeight,
+
+                    directionCenterWeight:
+                        directions.centerWeight
+                };
+            }
+        );
     }
 
-    const profileSettings = getProfileSettings(settings);
 
-    const directionSettings = getDirectionSettings(settings);
-
-    const defaultUpperThickness = 6.5;
-    const defaultLowerThickness = 7.2;
-
-    const upperThickness = safeNumber(
-      settings.upperLipThickness,
-      defaultUpperThickness,
-    );
-
-    const lowerThickness = safeNumber(
-      settings.lowerLipThickness,
-      defaultLowerThickness,
-    );
-
-    const upperThicknessScale = clamp(
-      upperThickness / defaultUpperThickness,
-      0,
-      4,
-    );
-
-    const lowerThicknessScale = clamp(
-      lowerThickness / defaultLowerThickness,
-      0,
-      4,
-    );
-
-    const cupidBowHeight = safeNumber(settings.cupidBowHeight, 2.5);
-
-    const philtrumDip = safeNumber(settings.philtrumDip, 1.5);
-
-    const upperCenterFullness = safeNumber(settings.upperCenterFullness, 0);
-
-    const lowerCenterFullness = safeNumber(settings.lowerCenterFullness, 1.8);
-
-    return seamSamples.map(function (seamSample) {
-      const profile = window.MouthProfiles.sample(
-        seamSample.t,
-        profileSettings,
-      );
-
-      const pads = window.MouthPads.sample(seamSample.t);
-
-      const directions = window.MouthDirections.sample(
-        seamSample.t,
-        seamSample.seamTangent,
-        seamSample.seamNormal,
-        directionSettings,
-      );
-
-      let upperHeight = pads.upperHeight * upperThicknessScale;
-
-      let lowerHeight = pads.lowerHeight * lowerThicknessScale;
-
-      upperHeight += profile.cupidWeight * cupidBowHeight * 0.45;
-
-      upperHeight -= profile.philtrumWeight * philtrumDip * 0.4;
-
-      upperHeight += directions.centerWeight * upperCenterFullness * 0.25;
-
-      lowerHeight += profile.lowerLobeWeight * lowerCenterFullness * 0.4;
-
-      upperHeight = clamp(upperHeight, 0, 30);
-
-      lowerHeight = clamp(lowerHeight, 0, 35);
-
-      const upperBorder = movePoint(
-        seamSample.seamPoint,
-        directions.upper,
-        upperHeight,
-      );
-
-      const lowerBorder = movePoint(
-        seamSample.seamPoint,
-        directions.lower,
-        lowerHeight,
-      );
-
-      return {
-        t: seamSample.t,
-
-        seamPoint: seamSample.seamPoint,
-
-        seamTangent: seamSample.seamTangent,
-
-        seamNormal: seamSample.seamNormal,
-
-        upperDirection: directions.upper,
-
-        lowerDirection: directions.lower,
-
-        upperHeight: upperHeight,
-
-        lowerHeight: lowerHeight,
-
-        upperPads: pads.upper,
-
-        lowerPads: pads.lower,
-
-        upperBorder: upperBorder,
-
-        lowerBorder: lowerBorder,
-
-        cornerWeight: profile.cornerWeight,
-
-        cupidWeight: profile.cupidWeight,
-
-        philtrumWeight: profile.philtrumWeight,
-
-        lowerLobeWeight: profile.lowerLobeWeight,
-
-        directionCornerWeight: directions.cornerWeight,
-
-        directionCenterWeight: directions.centerWeight,
-      };
-    });
-  }
-
-  /* ==========================
+    /* ==========================
        POINT COLLECTION
     ========================== */
 
-  function collectPoints(samples, propertyName) {
-    if (!Array.isArray(samples)) {
-      return [];
+    function collectPoints(
+        samples,
+        propertyName
+    ) {
+
+        if (!Array.isArray(samples)) {
+
+            return [];
+        }
+
+
+        return samples
+
+            .map(function (sample) {
+
+                return sample[propertyName];
+            })
+
+            .filter(Boolean);
     }
 
-    return samples
-      .map(function (sample) {
-        return sample[propertyName];
-      })
-      .filter(Boolean);
-  }
 
-  function getSeamPoints(samples) {
-    return collectPoints(samples, "seamPoint");
-  }
+    function getSeamPoints(samples) {
 
-  function getUpperPoints(samples) {
-    return collectPoints(samples, "upperBorder");
-  }
+        return collectPoints(
+            samples,
+            "seamPoint"
+        );
+    }
 
-  function getLowerPoints(samples) {
-    return collectPoints(samples, "lowerBorder");
-  }
 
-  /* ==========================
+    function getUpperPoints(samples) {
+
+        return collectPoints(
+            samples,
+            "upperBorder"
+        );
+    }
+
+
+    function getLowerPoints(samples) {
+
+        return collectPoints(
+            samples,
+            "lowerBorder"
+        );
+    }
+
+
+    /* ==========================
        SURFACE CORNER INSET
     ========================== */
 
-  function getSurfaceSamples(anatomySamples, settings) {
-    if (!Array.isArray(anatomySamples)) {
-      return [];
+    function getSurfaceSamples(
+        anatomySamples,
+        settings
+    ) {
+
+        if (!Array.isArray(anatomySamples)) {
+
+            return [];
+        }
+
+
+        if (anatomySamples.length <= 4) {
+
+            return anatomySamples.slice();
+        }
+
+
+        const inset =
+            clamp(
+
+                safeNumber(
+                    settings.cornerInset,
+                    defaultGeometrySettings
+                        .cornerInset
+                ),
+
+                0,
+
+                0.22
+            );
+
+
+        const maximumTrim =
+            Math.max(
+
+                0,
+
+                Math.floor(
+                    (
+                        anatomySamples.length -
+                        3
+                    ) /
+                    2
+                )
+            );
+
+
+        const trimCount =
+            clamp(
+
+                Math.round(
+                    (
+                        anatomySamples.length -
+                        1
+                    ) *
+                    inset
+                ),
+
+                0,
+
+                maximumTrim
+            );
+
+
+        if (trimCount === 0) {
+
+            return anatomySamples.slice();
+        }
+
+
+        return anatomySamples.slice(
+
+            trimCount,
+
+            anatomySamples.length -
+                trimCount
+        );
     }
 
-    if (anatomySamples.length <= 4) {
-      return anatomySamples.slice();
-    }
 
-    const inset = clamp(
-      safeNumber(settings.cornerInset, defaultGeometrySettings.cornerInset),
-      0,
-      0.22,
-    );
-
-    const maximumTrim = Math.max(
-      0,
-
-      Math.floor((anatomySamples.length - 3) / 2),
-    );
-
-    const trimCount = clamp(
-      Math.round((anatomySamples.length - 1) * inset),
-      0,
-      maximumTrim,
-    );
-
-    if (trimCount === 0) {
-      return anatomySamples.slice();
-    }
-
-    return anatomySamples.slice(trimCount, anatomySamples.length - trimCount);
-  }
-
-  /* ==========================
+    /* ==========================
        OPEN POINT PATH
     ========================== */
 
-  function buildOpenPointPath(points) {
-    if (!Array.isArray(points) || points.length === 0) {
-      return "";
+    function buildOpenPointPath(points) {
+
+        if (
+            !Array.isArray(points) ||
+            points.length === 0
+        ) {
+
+            return "";
+        }
+
+
+        const builder =
+            new window.PathBuilder();
+
+
+        builder.moveTo(
+            points[0]
+        );
+
+
+        for (
+            let index = 1;
+            index < points.length;
+            index += 1
+        ) {
+
+            builder.lineTo(
+                points[index]
+            );
+        }
+
+
+        return builder.build();
     }
 
-    const builder = new window.PathBuilder();
 
-    builder.moveTo(points[0]);
-
-    for (let index = 1; index < points.length; index += 1) {
-      builder.lineTo(points[index]);
-    }
-
-    return builder.build();
-  }
-
-  /* ==========================
+    /* ==========================
        ROUNDED LIP SURFACE PATH
     ========================== */
 
-  function buildRoundedLipSurfacePath(
-    samples,
-    borderProperty,
-    borderFirst,
-    settings,
-  ) {
-    if (!Array.isArray(samples) || samples.length < 2) {
-      return "";
+    function buildRoundedLipSurfacePath(
+        samples,
+        borderProperty,
+        borderFirst,
+        settings
+    ) {
+
+        if (
+            !Array.isArray(samples) ||
+            samples.length < 2
+        ) {
+
+            return "";
+        }
+
+
+        const surfaceSamples =
+            getSurfaceSamples(
+                samples,
+                settings
+            );
+
+
+        if (surfaceSamples.length < 2) {
+
+            return "";
+        }
+
+
+        const roundness =
+            clamp01(
+                safeNumber(
+                    settings.cornerRoundness,
+                    defaultGeometrySettings
+                        .cornerRoundness
+                )
+            );
+
+
+        const fullLeftCorner =
+            samples[0].seamPoint;
+
+
+        const fullRightCorner =
+            samples[
+                samples.length - 1
+            ].seamPoint;
+
+
+        const leftSample =
+            surfaceSamples[0];
+
+
+        const rightSample =
+            surfaceSamples[
+                surfaceSamples.length - 1
+            ];
+
+
+        const leftBorder =
+            leftSample[
+                borderProperty
+            ];
+
+
+        const rightBorder =
+            rightSample[
+                borderProperty
+            ];
+
+
+        const leftSeam =
+            leftSample.seamPoint;
+
+
+        const rightSeam =
+            rightSample.seamPoint;
+
+
+        const rightControl =
+            mixPoints(
+                rightSeam,
+                fullRightCorner,
+                roundness
+            );
+
+
+        const leftControl =
+            mixPoints(
+                leftSeam,
+                fullLeftCorner,
+                roundness
+            );
+
+
+        const commands = [];
+
+
+        if (borderFirst) {
+
+            commands.push(
+                "M " +
+                formatPoint(leftBorder)
+            );
+
+
+            for (
+                let index = 1;
+                index < surfaceSamples.length;
+                index += 1
+            ) {
+
+                commands.push(
+
+                    "L " +
+
+                    formatPoint(
+                        surfaceSamples[index][
+                            borderProperty
+                        ]
+                    )
+                );
+            }
+
+
+            commands.push(
+
+                "Q " +
+
+                formatPoint(
+                    rightControl
+                ) +
+
+                " " +
+
+                formatPoint(
+                    rightSeam
+                )
+            );
+
+
+            for (
+                let index =
+                    surfaceSamples.length - 2;
+
+                index >= 0;
+
+                index -= 1
+            ) {
+
+                commands.push(
+
+                    "L " +
+
+                    formatPoint(
+                        surfaceSamples[index]
+                            .seamPoint
+                    )
+                );
+            }
+
+
+            commands.push(
+
+                "Q " +
+
+                formatPoint(
+                    leftControl
+                ) +
+
+                " " +
+
+                formatPoint(
+                    leftBorder
+                )
+            );
+
+        } else {
+
+            commands.push(
+                "M " +
+                formatPoint(leftSeam)
+            );
+
+
+            for (
+                let index = 1;
+                index < surfaceSamples.length;
+                index += 1
+            ) {
+
+                commands.push(
+
+                    "L " +
+
+                    formatPoint(
+                        surfaceSamples[index]
+                            .seamPoint
+                    )
+                );
+            }
+
+
+            commands.push(
+
+                "Q " +
+
+                formatPoint(
+                    rightControl
+                ) +
+
+                " " +
+
+                formatPoint(
+                    rightBorder
+                )
+            );
+
+
+            for (
+                let index =
+                    surfaceSamples.length - 2;
+
+                index >= 0;
+
+                index -= 1
+            ) {
+
+                commands.push(
+
+                    "L " +
+
+                    formatPoint(
+                        surfaceSamples[index][
+                            borderProperty
+                        ]
+                    )
+                );
+            }
+
+
+            commands.push(
+
+                "Q " +
+
+                formatPoint(
+                    leftControl
+                ) +
+
+                " " +
+
+                formatPoint(
+                    leftSeam
+                )
+            );
+        }
+
+
+        commands.push("Z");
+
+
+        return commands.join(" ");
     }
 
-    const surfaceSamples = getSurfaceSamples(samples, settings);
 
-    if (surfaceSamples.length < 2) {
-      return "";
-    }
+    function buildUpperLipPath(
+        samples,
+        settings
+    ) {
 
-    const roundness = clamp01(
-      safeNumber(
-        settings.cornerRoundness,
-        defaultGeometrySettings.cornerRoundness,
-      ),
-    );
+        return buildRoundedLipSurfacePath(
 
-    const fullLeftCorner = samples[0].seamPoint;
+            samples,
 
-    const fullRightCorner = samples[samples.length - 1].seamPoint;
+            "upperBorder",
 
-    const leftSample = surfaceSamples[0];
+            true,
 
-    const rightSample = surfaceSamples[surfaceSamples.length - 1];
-
-    const leftBorder = leftSample[borderProperty];
-
-    const rightBorder = rightSample[borderProperty];
-
-    const leftSeam = leftSample.seamPoint;
-
-    const rightSeam = rightSample.seamPoint;
-
-    const rightControl = mixPoints(rightSeam, fullRightCorner, roundness);
-
-    const leftControl = mixPoints(leftSeam, fullLeftCorner, roundness);
-
-    const commands = [];
-
-    if (borderFirst) {
-      commands.push("M " + formatPoint(leftBorder));
-
-      for (let index = 1; index < surfaceSamples.length; index += 1) {
-        commands.push(
-          "L " + formatPoint(surfaceSamples[index][borderProperty]),
+            settings
         );
-      }
-
-      commands.push(
-        "Q " + formatPoint(rightControl) + " " + formatPoint(rightSeam),
-      );
-
-      for (let index = surfaceSamples.length - 2; index >= 0; index -= 1) {
-        commands.push("L " + formatPoint(surfaceSamples[index].seamPoint));
-      }
-
-      commands.push(
-        "Q " + formatPoint(leftControl) + " " + formatPoint(leftBorder),
-      );
-    } else {
-      commands.push("M " + formatPoint(leftSeam));
-
-      for (let index = 1; index < surfaceSamples.length; index += 1) {
-        commands.push("L " + formatPoint(surfaceSamples[index].seamPoint));
-      }
-
-      commands.push(
-        "Q " + formatPoint(rightControl) + " " + formatPoint(rightBorder),
-      );
-
-      for (let index = surfaceSamples.length - 2; index >= 0; index -= 1) {
-        commands.push(
-          "L " + formatPoint(surfaceSamples[index][borderProperty]),
-        );
-      }
-
-      commands.push(
-        "Q " + formatPoint(leftControl) + " " + formatPoint(leftSeam),
-      );
     }
 
-    commands.push("Z");
 
-    return commands.join(" ");
-  }
+    function buildLowerLipPath(
+        samples,
+        settings
+    ) {
 
-  function buildUpperLipPath(samples, settings) {
-    return buildRoundedLipSurfacePath(samples, "upperBorder", true, settings);
-  }
+        return buildRoundedLipSurfacePath(
 
-  function buildLowerLipPath(samples, settings) {
-    return buildRoundedLipSurfacePath(samples, "lowerBorder", false, settings);
-  }
+            samples,
 
-  function buildSeamPath(seamPoints) {
-    return buildOpenPointPath(seamPoints);
-  }
+            "lowerBorder",
 
-  /* ==========================
+            false,
+
+            settings
+        );
+    }
+
+
+    function buildSeamPath(seamPoints) {
+
+        return buildOpenPointPath(
+            seamPoints
+        );
+    }
+
+
+    /* ==========================
        COMPLETE BUILD
     ========================== */
 
-  function build(overrides) {
-    const settings = resolveSettings(overrides);
+    function build(overrides) {
 
-    if (!dependenciesAvailable()) {
-      return buildEmptyGeometry(settings);
+        const settings =
+            resolveSettings(overrides);
+
+
+        if (!dependenciesAvailable()) {
+
+            return buildEmptyGeometry(
+                settings
+            );
+        }
+
+
+        const namedLandmarks =
+            buildNamedLandmarks(
+                settings
+            );
+
+
+        const landmarks =
+            buildSeamPoints(
+                namedLandmarks
+            );
+
+
+        if (landmarks.length !== 5) {
+
+            const emptyGeometry =
+                buildEmptyGeometry(
+                    settings
+                );
+
+
+            emptyGeometry.namedLandmarks =
+                namedLandmarks;
+
+
+            return emptyGeometry;
+        }
+
+
+        const seamSpline =
+            buildSeamSpline(
+                landmarks,
+                settings
+            );
+
+
+        if (!seamSpline) {
+
+            const emptyGeometry =
+                buildEmptyGeometry(
+                    settings
+                );
+
+
+            emptyGeometry.namedLandmarks =
+                namedLandmarks;
+
+
+            emptyGeometry.landmarks =
+                landmarks;
+
+
+            return emptyGeometry;
+        }
+
+
+        /*
+            Extract and store the eight hidden
+            cubic Bézier control handles.
+
+            Four segments × two controls.
+        */
+
+        const seamHandles =
+            getSeamHandles(
+                seamSpline
+            );
+
+
+        const seamSamples =
+            sampleSeam(
+                seamSpline,
+                settings
+            );
+
+
+        const anatomySamples =
+            buildAnatomy(
+                seamSamples,
+                settings
+            );
+
+
+        const surfaceSamples =
+            getSurfaceSamples(
+                anatomySamples,
+                settings
+            );
+
+
+        const upperPoints =
+            getUpperPoints(
+                anatomySamples
+            );
+
+
+        const lowerPoints =
+            getLowerPoints(
+                anatomySamples
+            );
+
+
+        const seamPoints =
+            getSeamPoints(
+                anatomySamples
+            );
+
+
+        const upperPath =
+            buildUpperLipPath(
+                anatomySamples,
+                settings
+            );
+
+
+        const lowerPath =
+            buildLowerLipPath(
+                anatomySamples,
+                settings
+            );
+
+
+        const seamPath =
+            buildSeamPath(
+                seamPoints
+            );
+
+
+        return {
+
+            settings:
+                settings,
+
+            namedLandmarks:
+                namedLandmarks,
+
+            landmarks:
+                landmarks,
+
+            seamSpline:
+                seamSpline,
+
+            seamHandles:
+                seamHandles,
+
+            seamSamples:
+                seamSamples,
+
+            anatomySamples:
+                anatomySamples,
+
+            surfaceSamples:
+                surfaceSamples,
+
+            upperPoints:
+                upperPoints,
+
+            lowerPoints:
+                lowerPoints,
+
+            seamPoints:
+                seamPoints,
+
+            upperPath:
+                upperPath,
+
+            lowerPath:
+                lowerPath,
+
+            seamPath:
+                seamPath
+        };
     }
 
-    const namedLandmarks = buildNamedLandmarks(settings);
 
-    const landmarks = buildSeamPoints(namedLandmarks);
-
-    if (landmarks.length !== 5) {
-      const emptyGeometry = buildEmptyGeometry(settings);
-
-      emptyGeometry.namedLandmarks = namedLandmarks;
-
-      return emptyGeometry;
-    }
-
-    const seamSpline = buildSeamSpline(landmarks, settings);
-
-    if (!seamSpline) {
-      const emptyGeometry = buildEmptyGeometry(settings);
-
-      emptyGeometry.namedLandmarks = namedLandmarks;
-
-      emptyGeometry.landmarks = landmarks;
-
-      return emptyGeometry;
-    }
-
-    const seamSamples = sampleSeam(seamSpline, settings);
-
-    const anatomySamples = buildAnatomy(seamSamples, settings);
-
-    const surfaceSamples = getSurfaceSamples(anatomySamples, settings);
-
-    const upperPoints = getUpperPoints(anatomySamples);
-
-    const lowerPoints = getLowerPoints(anatomySamples);
-
-    const seamPoints = getSeamPoints(anatomySamples);
-
-    const upperPath = buildUpperLipPath(anatomySamples, settings);
-
-    const lowerPath = buildLowerLipPath(anatomySamples, settings);
-
-    const seamPath = buildSeamPath(seamPoints);
-
-    return {
-      settings: settings,
-
-      namedLandmarks: namedLandmarks,
-
-      landmarks: landmarks,
-
-      seamSpline: seamSpline,
-
-      seamSamples: seamSamples,
-
-      anatomySamples: anatomySamples,
-
-      surfaceSamples: surfaceSamples,
-
-      upperPoints: upperPoints,
-
-      lowerPoints: lowerPoints,
-
-      seamPoints: seamPoints,
-
-      upperPath: upperPath,
-
-      lowerPath: lowerPath,
-
-      seamPath: seamPath,
-    };
-  }
-
-  /* ==========================
+    /* ==========================
        PUBLIC API
     ========================== */
 
-  window.MouthGeometry = {
-    defaults: Object.freeze({
-      ...defaultGeometrySettings,
-    }),
+    window.MouthGeometry = {
 
-    build: build,
+        defaults:
+            Object.freeze({
+                ...defaultGeometrySettings
+            }),
 
-    resolveSettings: resolveSettings,
 
-    buildNamedLandmarks: buildNamedLandmarks,
+        build:
+            build,
 
-    buildSeamPoints: buildSeamPoints,
 
-    buildSeamSpline: buildSeamSpline,
+        resolveSettings:
+            resolveSettings,
 
-    sampleSeam: sampleSeam,
 
-    buildAnatomy: buildAnatomy,
+        buildNamedLandmarks:
+            buildNamedLandmarks,
 
-    getSurfaceSamples: getSurfaceSamples,
 
-    getSeamPoints: getSeamPoints,
+        buildSeamPoints:
+            buildSeamPoints,
 
-    getUpperPoints: getUpperPoints,
 
-    getLowerPoints: getLowerPoints,
+        buildSeamSpline:
+            buildSeamSpline,
 
-    buildOpenPointPath: buildOpenPointPath,
 
-    buildUpperLipPath: buildUpperLipPath,
+        getSeamHandles:
+            getSeamHandles,
 
-    buildLowerLipPath: buildLowerLipPath,
 
-    buildSeamPath: buildSeamPath,
+        sampleSeam:
+            sampleSeam,
 
-    mixPoints: mixPoints,
-  };
 
-  console.log("mouthGeometry.js V2.0 loaded");
+        buildAnatomy:
+            buildAnatomy,
+
+
+        getSurfaceSamples:
+            getSurfaceSamples,
+
+
+        getSeamPoints:
+            getSeamPoints,
+
+
+        getUpperPoints:
+            getUpperPoints,
+
+
+        getLowerPoints:
+            getLowerPoints,
+
+
+        buildOpenPointPath:
+            buildOpenPointPath,
+
+
+        buildUpperLipPath:
+            buildUpperLipPath,
+
+
+        buildLowerLipPath:
+            buildLowerLipPath,
+
+
+        buildSeamPath:
+            buildSeamPath,
+
+
+        mixPoints:
+            mixPoints
+    };
+
+
+    console.log(
+        "mouthGeometry.js V2.1 loaded"
+    );
+
 })();
