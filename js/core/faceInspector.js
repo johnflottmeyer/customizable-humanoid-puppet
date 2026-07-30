@@ -1,23 +1,15 @@
 /* ==========================
    FACELAB
-   FACE INSPECTOR — VERSION 2.0
+   FACE INSPECTOR — VERSION 3.0
 
    Direct-editing inspector for procedural
    FaceLab feature engines.
 
-   Current editable feature:
-   - Mouth
-
-   Mouth handles:
-   - Left corner
-   - Right corner
-   - Cupid bow
-   - Upper lip
-   - Lower lip
+   Generic direct-editing inspector for
+   all FaceLab registered features.
 
    Requires:
-   - MouthEngine
-   - mouthEngineSettings
+   - FaceLab Core
    - Face SVG
 ========================== */
 
@@ -246,9 +238,9 @@
     }
 
     /*
-            Reappend both layers so they stay
-            above the rendered facial features.
-        */
+      Reappend both layers so they stay
+      above the rendered facial features.
+    */
 
     faceSvg.appendChild(guideLayer);
 
@@ -270,395 +262,372 @@
 
     style.textContent = `
 
-            #faceInspectorPanel {
+      #faceInspectorPanel {
 
-                position: fixed;
+        position: fixed;
 
-                bottom: 1rem;
-                right: 1rem;
+        bottom: 1rem;
+        right: 1rem;
 
-                width: min(22rem, calc(100vw - 2rem));
-                max-height: calc(100vh - 2rem);
+        width: min(22rem, calc(100vw - 2rem));
+        max-height: calc(100vh - 2rem);
 
-                overflow: auto;
+        overflow: auto;
 
-                z-index: 10000;
+        z-index: 10000;
 
-                color: #f4f7fa;
+        color: #f4f7fa;
 
-                background-color:
-                    rgba(20, 24, 30, 0.96);
+        background-color:
+          rgba(20, 24, 30, 0.96);
 
-                border:
-                    1px solid rgba(255, 255, 255, 0.18);
+        border:
+          1px solid rgba(255, 255, 255, 0.18);
 
-                border-radius: 0.75rem;
+        border-radius: 0.75rem;
 
-                box-shadow:
-                    0 0.75rem 2rem
-                    rgba(0, 0, 0, 0.42);
+        box-shadow:
+          0 0.75rem 2rem
+          rgba(0, 0, 0, 0.42);
 
-                font-family:
-                    Arial,
-                    Helvetica,
-                    sans-serif;
+        font-family:
+          Arial,
+          Helvetica,
+          sans-serif;
 
-                font-size: 0.84rem;
+        font-size: 0.84rem;
 
-                backdrop-filter:
-                    blur(0.5rem);
+        backdrop-filter:
+          blur(0.5rem);
 
-            }
+      }
 
 
-            #faceInspectorPanel[hidden] {
+      #faceInspectorPanel[hidden] {
 
-                display: none;
+        display: none;
 
-            }
+      }
 
 
-            .faceInspectorHeader {
+      .faceInspectorHeader {
 
-                position: sticky;
+        position: sticky;
 
-                top: 0;
+        top: 0;
 
-                display: flex;
+        display: flex;
 
-                align-items: flex-start;
-                justify-content: space-between;
+        align-items: flex-start;
+        justify-content: space-between;
 
-                gap: 1rem;
+        gap: 1rem;
 
-                padding: 0.85rem 1rem;
+        padding: 0.85rem 1rem;
 
-                background-color:
-                    rgba(28, 33, 41, 0.98);
+        background-color:
+          rgba(28, 33, 41, 0.98);
 
-                border-bottom:
-                    1px solid rgba(255, 255, 255, 0.12);
+        border-bottom:
+          1px solid rgba(255, 255, 255, 0.12);
 
-                z-index: 1;
+        z-index: 1;
 
-            }
+      }
 
 
-            .faceInspectorTitle {
+      .faceInspectorTitle {
 
-                font-size: 1rem;
+        font-size: 1rem;
 
-                font-weight: 700;
+        font-weight: 700;
 
-            }
+      }
 
 
-            .faceInspectorStatus {
+      .faceInspectorStatus {
 
-                margin-top: 0.2rem;
+        margin-top: 0.2rem;
 
-                color:
-                    rgba(255, 255, 255, 0.58);
+        color:
+          rgba(255, 255, 255, 0.58);
 
-                font-size: 0.72rem;
+        font-size: 0.72rem;
 
-            }
+      }
 
 
-            .faceInspectorHeaderButtons {
+      .faceInspectorHeaderButtons {
 
-                display: flex;
+        display: flex;
 
-                align-items: center;
+        align-items: center;
 
-                gap: 0.35rem;
+        gap: 0.35rem;
 
-            }
+      }
 
 
-            .faceInspectorHeader button {
+      .faceInspectorHeader button {
 
-                appearance: none;
+        appearance: none;
 
-                border:
-                    1px solid rgba(255, 255, 255, 0.16);
+        border:
+          1px solid rgba(255, 255, 255, 0.16);
 
-                border-radius: 0.35rem;
+        border-radius: 0.35rem;
 
-                background-color:
-                    rgba(255, 255, 255, 0.06);
+        background-color:
+          rgba(255, 255, 255, 0.06);
 
-                color: white;
+        color: white;
 
-                cursor: pointer;
+        cursor: pointer;
 
-                padding: 0.25rem 0.45rem;
+        padding: 0.25rem 0.45rem;
 
-                font-size: 0.78rem;
+        font-size: 0.78rem;
 
-            }
+      }
 
 
-            .faceInspectorHeader button:hover {
+      .faceInspectorHeader button:hover {
 
-                background-color:
-                    rgba(255, 255, 255, 0.12);
+        background-color:
+          rgba(255, 255, 255, 0.12);
 
-            }
+      }
 
 
-            #faceInspectorClose {
+      #faceInspectorClose {
 
-                border: 0;
+        border: 0;
 
-                background-color: transparent;
+        background-color: transparent;
 
-                font-size: 1.25rem;
+        font-size: 1.25rem;
 
-                line-height: 1;
+        line-height: 1;
 
-            }
+      }
 
 
-            .faceInspectorContent {
+      .faceInspectorContent {
 
-                padding: 1rem;
+        padding: 1rem;
 
-            }
+      }
 
 
-            .faceInspectorEmpty {
+      .faceInspectorEmpty {
 
-                padding: 1.2rem 0.5rem;
+        padding: 1.2rem 0.5rem;
 
-                text-align: center;
+        text-align: center;
 
-                color:
-                    rgba(255, 255, 255, 0.58);
+        color:
+          rgba(255, 255, 255, 0.58);
 
-                line-height: 1.55;
+        line-height: 1.55;
 
-            }
+      }
 
 
-            .faceInspectorSection {
+      .faceInspectorSection {
 
-                margin-bottom: 1rem;
+        margin-bottom: 1rem;
 
-            }
+      }
 
 
-            .faceInspectorSection:last-child {
+      .faceInspectorSection:last-child {
 
-                margin-bottom: 0;
+        margin-bottom: 0;
 
-            }
+      }
 
 
-            .faceInspectorSectionTitle {
+      .faceInspectorSectionTitle {
 
-                margin-bottom: 0.5rem;
+        margin-bottom: 0.5rem;
 
-                padding-bottom: 0.35rem;
+        padding-bottom: 0.35rem;
 
-                color: #83e9ff;
+        color: #83e9ff;
 
-                border-bottom:
-                    1px solid rgba(255, 255, 255, 0.12);
+        border-bottom:
+          1px solid rgba(255, 255, 255, 0.12);
 
-                font-size: 0.68rem;
+        font-size: 0.68rem;
 
-                font-weight: 700;
+        font-weight: 700;
 
-                letter-spacing: 0.07em;
+        letter-spacing: 0.07em;
 
-                text-transform: uppercase;
+        text-transform: uppercase;
 
-            }
+      }
 
 
-            .faceInspectorRow {
+      .faceInspectorRow {
 
-                display: grid;
+        display: grid;
 
-                grid-template-columns:
-                    minmax(0, 1fr)
-                    auto;
+        grid-template-columns:
+          minmax(0, 1fr)
+          auto;
 
-                gap: 1rem;
+        gap: 1rem;
 
-                padding: 0.27rem 0;
+        padding: 0.27rem 0;
 
-            }
+      }
 
 
-            .faceInspectorLabel {
+      .faceInspectorLabel {
 
-                color:
-                    rgba(255, 255, 255, 0.63);
+        color:
+          rgba(255, 255, 255, 0.63);
 
-            }
+      }
 
 
-            .faceInspectorValue {
+      .faceInspectorValue {
 
-                color: white;
+        color: white;
 
-                text-align: right;
+        text-align: right;
 
-                font-family:
-                    ui-monospace,
-                    SFMono-Regular,
-                    Menlo,
-                    Consolas,
-                    monospace;
+        font-family:
+          ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          Consolas,
+          monospace;
 
-            }
+      }
 
 
-            .faceInspectorHelp {
+      .faceInspectorHelp {
 
-    margin-top: 0.75rem;
+        margin-top: 0.75rem;
 
-    padding: 0.65rem;
+        padding: 0.65rem;
 
-    color:
-        rgba(255,255,255,.65);
+        color:
+          rgba(255, 255, 255, 0.65);
 
-    background-color:
-        rgba(255,255,255,.05);
+        background-color:
+          rgba(255, 255, 255, 0.05);
 
-    border-radius:.4rem;
+        border-radius: 0.4rem;
 
-    line-height:1.45;
+        line-height: 1.45;
 
-}
+      }
 
 
-/* ==========================
-   FLOATING REOPEN BUTTON
-========================== */
+      /* ==========================
+         FLOATING REOPEN BUTTON
+      ========================== */
 
-#faceInspectorReopen{
+      #faceInspectorReopen {
 
-    position:fixed;
+        position: fixed;
 
-    right:1rem;
-    bottom:1rem;
+        right: 1rem;
+        bottom: 1rem;
 
-    z-index:10001;
+        z-index: 10001;
 
-    display:flex;
-    align-items:center;
-    gap:.45rem;
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
 
-    padding:.7rem 1rem;
+        padding: 0.7rem 1rem;
 
-    border:none;
+        border: none;
 
-    border-radius:999px;
+        border-radius: 999px;
 
-    background:#1c2129;
+        background: #1c2129;
 
-    color:white;
+        color: white;
 
-    cursor:pointer;
+        cursor: pointer;
 
-    font-size:.85rem;
+        font-size: 0.85rem;
 
-    font-weight:600;
+        font-weight: 600;
 
-    box-shadow:
-        0 8px 24px rgba(0,0,0,.35);
+        box-shadow:
+          0 8px 24px rgba(0, 0, 0, 0.35);
 
-    transition:
-        transform .15s ease,
-        background .15s ease;
+        transition:
+          transform 0.15s ease,
+          background 0.15s ease;
 
-}
+      }
 
-#faceInspectorReopen:hover{
 
-    background:#28303b;
+      #faceInspectorReopen:hover {
 
-    transform:translateY(-2px);
+        transform:
+          translateY(-2px);
 
-}
+        background:
+          #252c36;
 
-#faceInspectorReopen[hidden]{
+      }
 
-    display:none;
 
-}
-        `;
+      #faceInspectorReopen[hidden] {
+
+        display: none;
+
+      }
+
+    `;
 
     document.head.appendChild(style);
   }
-/* ==========================
-   CREATE REOPEN BUTTON
-========================== */
 
-function createReopenButton() {
+  /* ==========================
+     CREATE REOPEN BUTTON
+  ========================== */
 
-    const existingButton =
-        document.getElementById(
-            "faceInspectorReopen"
-        );
-
+  function createReopenButton() {
+    const existingButton = document.getElementById("faceInspectorReopen");
 
     if (existingButton) {
+      reopenButton = existingButton;
 
-        reopenButton =
-            existingButton;
-
-        return;
+      return;
     }
 
+    reopenButton = document.createElement("button");
 
-    reopenButton =
-        document.createElement(
-            "button"
-        );
+    reopenButton.type = "button";
 
+    reopenButton.id = "faceInspectorReopen";
 
-    reopenButton.type =
-        "button";
+    reopenButton.textContent = "✦ Inspector";
 
-
-    reopenButton.id =
-        "faceInspectorReopen";
-
-
-    reopenButton.textContent =
-        "✦ Inspector";
-
-
-    reopenButton.setAttribute(
-        "aria-label",
-        "Open Face Inspector"
-    );
-
+    reopenButton.setAttribute("aria-label", "Open Face Inspector");
 
     reopenButton.addEventListener(
-        "click",
+      "click",
 
-        function () {
-
-            showInspector();
-
-        }
+      function () {
+        showInspector();
+      },
     );
 
+    reopenButton.hidden = true;
 
-    reopenButton.hidden =
-        true;
+    document.body.appendChild(reopenButton);
+  }
 
-
-    document.body.appendChild(
-        reopenButton
-    );
-
-}
   /* ==========================
        CREATE PANEL
     ========================== */
@@ -667,9 +636,9 @@ function createReopenButton() {
     let existingPanel = document.getElementById("faceInspectorPanel");
 
     /*
-            Replace the old inspector panel if
-            Face Inspector V1 created it.
-        */
+      Replace an older inspector panel
+      if one already exists.
+    */
 
     if (existingPanel) {
       existingPanel.remove();
@@ -681,57 +650,57 @@ function createReopenButton() {
 
     panel.innerHTML = `
 
-            <div class="faceInspectorHeader">
+      <div class="faceInspectorHeader">
 
-                <div>
+        <div>
 
-                    <div class="faceInspectorTitle">
-                        Face Inspector 2
-                    </div>
+          <div class="faceInspectorTitle">
+            Face Inspector 3
+          </div>
 
-                    <div class="faceInspectorStatus">
-                        Direct Editing
-                    </div>
+          <div class="faceInspectorStatus">
+            Direct Editing
+          </div>
 
-                </div>
+        </div>
 
-                <div class="faceInspectorHeaderButtons">
+        <div class="faceInspectorHeaderButtons">
 
-                    <button
-                        type="button"
-                        id="faceInspectorClear"
-                    >
-                        Clear
-                    </button>
+          <button
+            type="button"
+            id="faceInspectorClear"
+          >
+            Clear
+          </button>
 
-                    <button
-                        type="button"
-                        id="faceInspectorClose"
-                        aria-label="Close Face Inspector"
-                    >
-                        ×
-                    </button>
+          <button
+            type="button"
+            id="faceInspectorClose"
+            aria-label="Close Face Inspector"
+          >
+            ×
+          </button>
 
-                </div>
+        </div>
 
-            </div>
+      </div>
 
-            <div class="faceInspectorContent">
+      <div class="faceInspectorContent">
 
-                <div class="faceInspectorEmpty">
+        <div class="faceInspectorEmpty">
 
-                    Hover over a mouth handle.
+          Hover over a FaceLab handle.
 
-                    <br><br>
+          <br><br>
 
-                    Click and drag a handle to edit
-                    the procedural mouth directly.
+          Click and drag a handle to edit
+          the procedural feature directly.
 
-                </div>
+        </div>
 
-            </div>
+      </div>
 
-        `;
+    `;
 
     document.body.appendChild(panel);
 
@@ -754,18 +723,14 @@ function createReopenButton() {
     }
 
     if (closeButton) {
+      closeButton.addEventListener(
+        "click",
 
-       closeButton.addEventListener(
-           "click",
-
-           function () {
-
-               hideInspector();
-
-           }
-       );
-
-   }
+        function () {
+          hideInspector();
+        },
+      );
+    }
 
     panel.hidden = !window.faceInspectorSettings.showPanel;
   }
@@ -795,324 +760,64 @@ function createReopenButton() {
   }
 
   /* ==========================
-       CURRENT MOUTH GEOMETRY
+       FACELAB FEATURE HANDLES
     ========================== */
 
-  function getMouthGeometry() {
+  function collectFeatureHandles() {
+    if (!window.FaceLab || typeof window.FaceLab.getHandles !== "function") {
+      return [];
+    }
+
+    const handles = window.FaceLab.getHandles();
+
+    return Array.isArray(handles) ? handles : [];
+  }
+
+  /* ==========================
+       FEATURE SETTINGS
+    ========================== */
+
+  function getFeatureSettings(featureId) {
     if (
-      !window.MouthEngine ||
-      typeof window.MouthEngine.getGeometry !== "function"
+      window.FaceLab &&
+      window.FaceLab.Core &&
+      typeof window.FaceLab.Core.getFeatureSettings === "function"
     ) {
-      return null;
+      return window.FaceLab.Core.getFeatureSettings(featureId) || {};
     }
 
-    return window.MouthEngine.getGeometry();
-  }
-
-  function getMouthSamples() {
-    const geometry = getMouthGeometry();
-
-    if (!geometry || !Array.isArray(geometry.anatomySamples)) {
-      return [];
-    }
-
-    return geometry.anatomySamples;
-  }
-
-  function findNearestSample(targetT) {
-    const samples = getMouthSamples();
-
-    if (!samples.length) {
-      return null;
-    }
-
-    let nearest = samples[0];
-
-    let nearestDistance = Math.abs(safeNumber(nearest.t, 0) - targetT);
-
-    samples.forEach(function (sample) {
-      const distance = Math.abs(safeNumber(sample.t, 0) - targetT);
-
-      if (distance < nearestDistance) {
-        nearest = sample;
-
-        nearestDistance = distance;
-      }
-    });
-
-    return nearest;
-  }
-
-  /* ==========================
-       HANDLE DEFINITIONS
-    ========================== */
-
-  function createMouthHandles() {
-    const geometry = getMouthGeometry();
-
-    if (!geometry) {
-      return [];
-    }
-
-    const landmarks = Array.isArray(geometry.landmarks)
-      ? geometry.landmarks
-      : [];
-
-    const samples = getMouthSamples();
-
-    if (landmarks.length < 2 || !samples.length) {
-      return [];
-    }
-
-    const leftCorner = landmarks[0];
-
-    const rightCorner = landmarks[landmarks.length - 1];
-
-    const upperSample = findNearestSample(0.28);
-    const cupidPeakSample = findNearestSample(0.4);
-    const centerSample = findNearestSample(0.5);
-
-    if (
-      !leftCorner ||
-      !rightCorner ||
-      !upperSample ||
-      !cupidPeakSample ||
-      !centerSample
-    ) {
-      return [];
-    }
-
-    return [
-      {
-        id: "mouthLeftCorner",
-
-        label: "Left Mouth Corner",
-
-        feature: "mouth",
-
-        point: leftCorner,
-
-        properties: ["width", "cornerY"],
-
-        help: "Drag horizontally to change mouth width. Drag vertically to change corner height.",
-
-        drag: dragLeftCorner,
-      },
-
-      {
-        id: "mouthRightCorner",
-
-        label: "Right Mouth Corner",
-
-        feature: "mouth",
-
-        point: rightCorner,
-
-        properties: ["width", "cornerY"],
-
-        help: "Drag horizontally to change mouth width. Drag vertically to change corner height.",
-
-        drag: dragRightCorner,
-      },
-
-      {
-        id: "mouthCupidBow",
-
-        label: "Cupid Bow",
-
-        feature: "mouth",
-
-        point: cupidPeakSample.upperBorder,
-
-        properties: ["cupidBowHeight", "cupidBowWidth", "philtrumDip"],
-
-        help: "Drag vertically to raise or lower the cupid bow. Drag horizontally to alter cupid-bow width.",
-
-        drag: dragCupidBow,
-      },
-
-      {
-        id: "mouthUpperLip",
-
-        label: "Upper Lip Fullness",
-
-        feature: "mouth",
-
-        point: upperSample.upperBorder,
-
-        properties: ["upperLipThickness", "upperCenterFullness"],
-
-        help: "Drag vertically to change upper-lip thickness. Drag horizontally to alter center fullness.",
-
-        drag: dragUpperLip,
-      },
-
-      {
-        id: "mouthLowerLip",
-
-        label: "Lower Lip Fullness",
-
-        feature: "mouth",
-
-        point: centerSample.lowerBorder,
-
-        properties: [
-          "lowerLipThickness",
-          "lowerCenterFullness",
-          "lowerLobeWidth",
-        ],
-
-        help: "Drag vertically to change lower-lip thickness. Drag horizontally to alter lower-lobe width.",
-
-        drag: dragLowerLip,
-      },
-    ];
-  }
-
-  /* ==========================
-       DRAG SETTING HELPERS
-    ========================== */
-
-  function getDragStartSetting(propertyName, fallback) {
-    if (!state.dragStartSettings) {
-      return fallback;
-    }
-
-    return safeNumber(
-      state.dragStartSettings[propertyName],
-
-      fallback,
-    );
-  }
-
-  function updateMouthSettings(updates) {
-    window.mouthEngineSettings = {
-      ...window.mouthEngineSettings,
-
-      ...(updates || {}),
-    };
-
-    syncControls(Object.keys(updates || {}));
-
-    if (window.MouthEngine && typeof window.MouthEngine.draw === "function") {
-      window.MouthEngine.draw();
-    } else if (typeof window.drawMouthEngine === "function") {
-      window.drawMouthEngine();
-    }
-
-    refresh();
-  }
-
-  /* ==========================
-       HANDLE DRAG MAPPINGS
-    ========================== */
-
-  function dragLeftCorner(deltaX, deltaY) {
-    const startWidth = getDragStartSetting("width", 150);
-
-    const startCornerY = getDragStartSetting("cornerY", 0);
-
-    updateMouthSettings({
-      width: clamp(
-        startWidth - deltaX * 2,
-
-        30,
-
-        300,
-      ),
-
-      cornerY: clamp(
-        startCornerY + deltaY,
-
-        -60,
-
-        60,
-      ),
-    });
-  }
-
-  function dragRightCorner(deltaX, deltaY) {
-    const startWidth = getDragStartSetting("width", 150);
-
-    const startCornerY = getDragStartSetting("cornerY", 0);
-
-    updateMouthSettings({
-      width: clamp(
-        startWidth + deltaX * 2,
-
-        30,
-
-        300,
-      ),
-
-      cornerY: clamp(
-        startCornerY + deltaY,
-
-        -60,
-
-        60,
-      ),
-    });
-  }
-
-  function dragCupidBow(deltaX, deltaY) {
-    const startHeight = getDragStartSetting("cupidBowHeight", 2.5);
-
-    const startWidth = getDragStartSetting("cupidBowWidth", 0.16);
-
-    updateMouthSettings({
-      cupidBowHeight: clamp(startHeight - deltaY, 0, 25),
-
-      cupidBowWidth: clamp(startWidth + deltaX * 0.003, 0.04, 0.45),
-    });
-  }
-
-  function dragUpperLip(deltaX, deltaY) {
-    const startThickness = getDragStartSetting("upperLipThickness", 6.5);
-
-    const startFullness = getDragStartSetting("upperCenterFullness", 0);
-
-    updateMouthSettings({
-      upperLipThickness: clamp(startThickness - deltaY * 0.6, 0, 35),
-
-      upperCenterFullness: clamp(startFullness + deltaX * 0.03, -10, 20),
-    });
-  }
-
-  function dragLowerLip(deltaX, deltaY) {
-    const startThickness = getDragStartSetting("lowerLipThickness", 7.2);
-
-    const startFullness = getDragStartSetting("lowerCenterFullness", 1.8);
-
-    const startLobeWidth = getDragStartSetting("lowerLobeWidth", 0.3);
-
-    updateMouthSettings({
-      lowerLipThickness: clamp(startThickness + deltaY * 0.6, 0, 40),
-
-      lowerCenterFullness: clamp(startFullness + deltaY * 0.35, -10, 25),
-
-      lowerLobeWidth: clamp(startLobeWidth + deltaX * 0.003, 0.05, 0.75),
-    });
+    return {};
   }
 
   /* ==========================
        CONTROL SYNCHRONIZATION
     ========================== */
 
-  function findSettingControls(propertyName) {
+  function findSettingControls(propertyName, featureId) {
     const controls = [];
 
-    const byId = document.getElementById(propertyName);
+    const possibleIds = [
+      propertyName,
 
-    if (byId) {
-      controls.push(byId);
-    }
+      featureId + propertyName.charAt(0).toUpperCase() + propertyName.slice(1),
+    ];
+
+    possibleIds.forEach(function (controlId) {
+      const control = document.getElementById(controlId);
+
+      if (control && !controls.includes(control)) {
+        controls.push(control);
+      }
+    });
 
     document
       .querySelectorAll(
-        `[data-setting="${propertyName}"],
-                 [data-mouth-setting="${propertyName}"],
-                 input[name="${propertyName}"]`,
+        [
+          `[data-setting="${propertyName}"]`,
+          `[data-feature-setting="${propertyName}"]`,
+          `[data-${featureId}-setting="${propertyName}"]`,
+          `input[name="${propertyName}"]`,
+        ].join(","),
       )
       .forEach(function (control) {
         if (!controls.includes(control)) {
@@ -1123,16 +828,16 @@ function createReopenButton() {
     return controls;
   }
 
-  function syncControl(propertyName) {
-    const settings = window.mouthEngineSettings;
-
-    if (!settings) {
-      return;
-    }
+  function syncControl(propertyName, featureId) {
+    const settings = getFeatureSettings(featureId);
 
     const value = settings[propertyName];
 
-    findSettingControls(propertyName).forEach(function (control) {
+    if (value === undefined) {
+      return;
+    }
+
+    findSettingControls(propertyName, featureId).forEach(function (control) {
       if ("value" in control) {
         control.value = value;
       }
@@ -1145,6 +850,8 @@ function createReopenButton() {
             bubbles: true,
 
             detail: {
+              feature: featureId,
+
               property: propertyName,
 
               value: value,
@@ -1154,13 +861,13 @@ function createReopenButton() {
       );
     });
 
+    const capitalizedProperty =
+      propertyName.charAt(0).toUpperCase() + propertyName.slice(1);
+
     const valueDisplayIds = [
       propertyName + "Value",
 
-      "mouth" +
-        propertyName.charAt(0).toUpperCase() +
-        propertyName.slice(1) +
-        "Value",
+      featureId + capitalizedProperty + "Value",
     ];
 
     valueDisplayIds.forEach(function (displayId) {
@@ -1172,12 +879,14 @@ function createReopenButton() {
     });
   }
 
-  function syncControls(propertyNames) {
+  function syncControls(propertyNames, featureId) {
     if (!Array.isArray(propertyNames)) {
       return;
     }
 
-    propertyNames.forEach(syncControl);
+    propertyNames.forEach(function (propertyName) {
+      syncControl(propertyName, featureId);
+    });
   }
 
   /* ==========================
@@ -1203,27 +912,50 @@ function createReopenButton() {
       return;
     }
 
-    const leftCorner = getHandleById("mouthLeftCorner");
+    const guideGroups = new Map();
 
-    const rightCorner = getHandleById("mouthRightCorner");
+    state.handles.forEach(function (handle) {
+      if (!handle.guideGroup) {
+        return;
+      }
 
-    if (leftCorner && rightCorner) {
-      guideLayer.appendChild(
-        createLine(
-          leftCorner.point,
+      if (!guideGroups.has(handle.guideGroup)) {
+        guideGroups.set(handle.guideGroup, []);
+      }
 
-          rightCorner.point,
+      guideGroups.get(handle.guideGroup).push(handle);
+    });
 
-          {
-            stroke: window.faceInspectorSettings.guideStroke,
+    guideGroups.forEach(function (handles) {
+      handles.sort(function (firstHandle, secondHandle) {
+        return (
+          safeNumber(firstHandle.guideOrder, 0) -
+          safeNumber(secondHandle.guideOrder, 0)
+        );
+      });
 
-            strokeWidth: window.faceInspectorSettings.guideStrokeWidth,
+      for (let index = 0; index < handles.length - 1; index += 1) {
+        const firstHandle = handles[index];
 
-            opacity: window.faceInspectorSettings.guideOpacity,
-          },
-        ),
-      );
-    }
+        const secondHandle = handles[index + 1];
+
+        guideLayer.appendChild(
+          createLine(
+            firstHandle.point,
+
+            secondHandle.point,
+
+            {
+              stroke: window.faceInspectorSettings.guideStroke,
+
+              strokeWidth: window.faceInspectorSettings.guideStrokeWidth,
+
+              opacity: window.faceInspectorSettings.guideOpacity,
+            },
+          ),
+        );
+      }
+    });
   }
 
   /* ==========================
@@ -1405,9 +1137,11 @@ function createReopenButton() {
       y: pointer.y,
     };
 
-    state.dragStartSettings = {
-      ...window.mouthEngineSettings,
-    };
+    if (typeof handle.beginDrag === "function") {
+      state.dragStartSettings = handle.beginDrag() || {};
+    } else {
+      state.dragStartSettings = getFeatureSettings(handle.feature);
+    }
 
     event.currentTarget.setPointerCapture(event.pointerId);
 
@@ -1463,7 +1197,21 @@ function createReopenButton() {
       return;
     }
 
-    handle.drag(deltaX, deltaY);
+    handle.drag(
+      deltaX,
+
+      deltaY,
+
+      state.dragStartSettings || {},
+
+      {
+        handle: handle,
+
+        feature: handle.feature,
+
+        inspector: window.FaceInspector,
+      },
+    );
   }
 
   /* ==========================
@@ -1512,58 +1260,55 @@ function createReopenButton() {
 
     renderSelectedHandle();
   }
-
   /* ==========================
        PANEL HTML HELPERS
     ========================== */
 
   function escapeHtml(value) {
-    return String(value)
+    return String(value === undefined || value === null ? "" : value)
       .replaceAll("&", "&amp;")
-
       .replaceAll("<", "&lt;")
-
       .replaceAll(">", "&gt;")
-
       .replaceAll('"', "&quot;")
-
       .replaceAll("'", "&#039;");
   }
 
   function panelRow(label, value) {
     return `
 
-            <div class="faceInspectorRow">
+      <div class="faceInspectorRow">
 
-                <span class="faceInspectorLabel">
-                    ${escapeHtml(label)}
-                </span>
+        <span class="faceInspectorLabel">
+          ${escapeHtml(label)}
+        </span>
 
-                <span class="faceInspectorValue">
-                    ${escapeHtml(value)}
-                </span>
+        <span class="faceInspectorValue">
+          ${escapeHtml(value)}
+        </span>
 
-            </div>
+      </div>
 
-        `;
+    `;
   }
 
   function formatPropertyName(propertyName) {
-    return propertyName
-
+    return String(propertyName || "")
       .replace(
         /([A-Z])/g,
 
         " $1",
       )
+      .replace(
+        /^./,
 
-      .replace(/^./, function (firstCharacter) {
-        return firstCharacter.toUpperCase();
-      });
+        function (firstCharacter) {
+          return firstCharacter.toUpperCase();
+        },
+      );
   }
 
   /* ==========================
-       RENDER PANEL
+       RENDER HANDLE PANEL
     ========================== */
 
   function renderHandlePanel(handle, status) {
@@ -1571,62 +1316,73 @@ function createReopenButton() {
       return;
     }
 
-    const settings = window.mouthEngineSettings || {};
+    const settings = getFeatureSettings(handle.feature);
 
-    const propertyRows = handle.properties
+    const properties = Array.isArray(handle.properties)
+      ? handle.properties
+      : [];
+
+    const propertyRows = properties
       .map(function (propertyName) {
+        const propertyValue = settings[propertyName];
+
         return panelRow(
           formatPropertyName(propertyName),
 
-          formatNumber(
-            settings[propertyName],
+          propertyValue === undefined
+            ? "—"
+            : formatNumber(
+                propertyValue,
 
-            3,
-          ),
+                3,
+              ),
         );
       })
       .join("");
 
+    const helpText = handle.help || "Drag this handle to edit the feature.";
+
     panelContent.innerHTML = `
 
-            <div class="faceInspectorSection">
+      <div class="faceInspectorSection">
 
-                <div class="faceInspectorSectionTitle">
-                    Selection
-                </div>
+        <div class="faceInspectorSectionTitle">
+          Selection
+        </div>
 
-                ${panelRow("Feature", handle.label)}
+        ${panelRow("Handle", handle.label || handle.localId || handle.id)}
 
-                ${panelRow("Engine", handle.feature)}
+        ${panelRow("Feature", handle.featureLabel || handle.feature)}
 
-                ${panelRow("X", formatNumber(handle.point.x, 2))}
+        ${panelRow("X", formatNumber(handle.point.x, 2))}
 
-                ${panelRow("Y", formatNumber(handle.point.y, 2))}
+        ${panelRow("Y", formatNumber(handle.point.y, 2))}
 
-            </div>
-
-
-            <div class="faceInspectorSection">
-
-                <div class="faceInspectorSectionTitle">
-                    Parameters
-                </div>
-
-                ${propertyRows}
-
-            </div>
+      </div>
 
 
-            <div class="faceInspectorHelp">
+      <div class="faceInspectorSection">
 
-                ${escapeHtml(handle.help)}
+        <div class="faceInspectorSectionTitle">
+          Parameters
+        </div>
 
-            </div>
+        ${propertyRows || panelRow("Properties", "None")}
 
-        `;
+      </div>
+
+
+      <div class="faceInspectorHelp">
+
+        ${escapeHtml(helpText)}
+
+      </div>
+
+    `;
 
     if (panelStatus) {
-      panelStatus.textContent = status + " · " + handle.label;
+      panelStatus.textContent =
+        status + " · " + (handle.label || handle.localId || handle.id);
     }
   }
 
@@ -1649,21 +1405,28 @@ function createReopenButton() {
 
     panelContent.innerHTML = `
 
-            <div class="faceInspectorEmpty">
+      <div class="faceInspectorEmpty">
 
-                Hover over a mouth handle.
+        Hover over a FaceLab handle.
 
-                <br><br>
+        <br><br>
 
-                Click and drag a handle to edit
-                the procedural mouth directly.
+        Click and drag a handle to edit
+        its procedural facial feature.
 
-            </div>
+      </div>
 
-        `;
+    `;
 
     if (panelStatus) {
-      panelStatus.textContent = "Direct Editing";
+      const featureCount =
+        window.FaceLab && typeof window.FaceLab.getFeatures === "function"
+          ? window.FaceLab.getFeatures().length
+          : 0;
+
+      panelStatus.textContent =
+        featureCount +
+        (featureCount === 1 ? " feature registered" : " features registered");
     }
   }
 
@@ -1684,6 +1447,24 @@ function createReopenButton() {
 
     state.dragStartSettings = null;
 
+    window.removeEventListener(
+      "pointermove",
+
+      handlePointerMove,
+    );
+
+    window.removeEventListener(
+      "pointerup",
+
+      handlePointerUp,
+    );
+
+    window.removeEventListener(
+      "pointercancel",
+
+      handlePointerUp,
+    );
+
     renderEmptyPanel();
 
     drawHandles();
@@ -1698,12 +1479,12 @@ function createReopenButton() {
       return;
     }
 
-    state.handles = createMouthHandles();
+    state.handles = collectFeatureHandles();
 
     /*
-            Remove selections that no longer
-            exist after an engine rebuild.
-        */
+      Remove a selection when its
+      feature no longer supplies it.
+    */
 
     if (state.selectedHandleId && !getHandleById(state.selectedHandleId)) {
       state.selectedHandleId = null;
@@ -1719,132 +1500,294 @@ function createReopenButton() {
 
     if (state.selectedHandleId) {
       renderSelectedHandle();
-    } else if (state.hoveredHandleId) {
+
+      return;
+    }
+
+    if (state.hoveredHandleId) {
       const hoveredHandle = getHandleById(state.hoveredHandleId);
 
       if (hoveredHandle) {
         renderHandlePanel(hoveredHandle, "Hover");
+
+        return;
       }
     }
+
+    renderEmptyPanel();
   }
 
   /* ==========================
-   ENABLE / DISABLE
-========================== */
+       SHOW INSPECTOR
+    ========================== */
 
-function showInspector() {
-
+  function showInspector() {
     state.enabled = true;
 
     window.faceInspectorSettings.enabled = true;
 
     window.faceInspectorSettings.showPanel = true;
 
-
     if (panel) {
-
-        panel.hidden = false;
-
+      panel.hidden = false;
     }
-
 
     if (reopenButton) {
-
-        reopenButton.hidden = true;
-
+      reopenButton.hidden = true;
     }
 
-if (handleLayer) {
-    handleLayer.style.display = "";
-}
+    if (handleLayer) {
+      handleLayer.style.display = "";
+    }
 
-if (guideLayer) {
-    guideLayer.style.display = "";
-}
+    if (guideLayer) {
+      guideLayer.style.display = "";
+    }
 
     refresh();
+  }
 
-}
+  /* ==========================
+       HIDE INSPECTOR
+    ========================== */
 
-
-function hideInspector() {
-
+  function hideInspector() {
     state.enabled = false;
+
+    state.dragging = false;
+
+    state.activePointerId = null;
+
+    state.dragStartPointer = null;
+
+    state.dragStartSettings = null;
 
     window.faceInspectorSettings.enabled = false;
 
     window.faceInspectorSettings.showPanel = false;
 
+    window.removeEventListener(
+      "pointermove",
+
+      handlePointerMove,
+    );
+
+    window.removeEventListener(
+      "pointerup",
+
+      handlePointerUp,
+    );
+
+    window.removeEventListener(
+      "pointercancel",
+
+      handlePointerUp,
+    );
 
     if (handleLayer) {
-    handleLayer.style.display = "none";
-}
+      handleLayer.style.display = "none";
+    }
 
-if (guideLayer) {
-    guideLayer.style.display = "none";
-}
-
+    if (guideLayer) {
+      guideLayer.style.display = "none";
+    }
 
     if (panel) {
-
-        panel.hidden = true;
-
+      panel.hidden = true;
     }
-
 
     if (reopenButton) {
-
-        reopenButton.hidden = false;
-
+      reopenButton.hidden = false;
     }
+  }
 
-}
+  /* ==========================
+       ENABLE / DISABLE
+    ========================== */
 
-
-function enable() {
-
+  function enable() {
     showInspector();
+  }
 
-}
-
-
-function disable() {
-
+  function disable() {
     hideInspector();
+  }
 
-}
-
-
-function toggle() {
-
+  function toggle() {
     if (state.enabled) {
-
-        hideInspector();
-
+      hideInspector();
     } else {
-
-        showInspector();
-
+      showInspector();
     }
-
 
     return state.enabled;
+  }
 
-}
-
-
-function showPanel() {
-
+  function showPanel() {
     showInspector();
+  }
 
-}
-
-
-function hidePanel() {
-
+  function hidePanel() {
     hideInspector();
+  }
+  /* ==========================
+       UPDATE SETTINGS
+    ========================== */
 
-}
+  function updateSettings(updates) {
+    if (!updates || typeof updates !== "object") {
+      return {
+        ...window.faceInspectorSettings,
+      };
+    }
+
+    Object.assign(
+      window.faceInspectorSettings,
+
+      updates,
+    );
+
+    state.enabled = window.faceInspectorSettings.enabled !== false;
+
+    if (window.faceInspectorSettings.showPanel === false) {
+      if (panel) {
+        panel.hidden = true;
+      }
+
+      if (reopenButton) {
+        reopenButton.hidden = false;
+      }
+    } else {
+      if (panel) {
+        panel.hidden = false;
+      }
+
+      if (reopenButton) {
+        reopenButton.hidden = true;
+      }
+    }
+
+    if (state.enabled) {
+      if (handleLayer) {
+        handleLayer.style.display = "";
+      }
+
+      if (guideLayer) {
+        guideLayer.style.display = "";
+      }
+
+      refresh();
+    } else {
+      if (handleLayer) {
+        handleLayer.style.display = "none";
+      }
+
+      if (guideLayer) {
+        guideLayer.style.display = "none";
+      }
+    }
+
+    return {
+      ...window.faceInspectorSettings,
+    };
+  }
+
+  /* ==========================
+       RESET SETTINGS
+    ========================== */
+
+  function resetSettings() {
+    window.faceInspectorSettings = {
+      ...defaultFaceInspectorSettings,
+    };
+
+    state.enabled = window.faceInspectorSettings.enabled;
+
+    if (state.enabled) {
+      showInspector();
+    } else {
+      hideInspector();
+    }
+
+    return {
+      ...window.faceInspectorSettings,
+    };
+  }
+
+  /* ==========================
+       SELECT HANDLE
+    ========================== */
+
+  function selectHandle(handleId) {
+    const handle = getHandleById(handleId);
+
+    if (!handle) {
+      return false;
+    }
+
+    state.selectedHandleId = handle.id;
+
+    state.hoveredHandleId = null;
+
+    renderSelectedHandle();
+
+    drawHandles();
+
+    return true;
+  }
+
+  /* ==========================
+       SELECT FEATURE HANDLE
+    ========================== */
+
+  function selectFeatureHandle(featureId, localHandleId) {
+    return selectHandle(featureId + ":" + localHandleId);
+  }
+
+  /* ==========================
+       GET CURRENT HANDLES
+    ========================== */
+
+  function getHandles() {
+    return state.handles.map(function (handle) {
+      return {
+        ...handle,
+
+        point: handle.point
+          ? {
+              x: safeNumber(handle.point.x, 0),
+
+              y: safeNumber(handle.point.y, 0),
+            }
+          : null,
+      };
+    });
+  }
+
+  /* ==========================
+       REFRESH AFTER FEATURE UPDATE
+    ========================== */
+
+  function handleFaceLabRefresh() {
+    if (!state.initialized || !state.enabled) {
+      return;
+    }
+
+    refresh();
+  }
+
+  /* ==========================
+       WINDOW RESIZE
+    ========================== */
+
+  function handleWindowResize() {
+    if (!state.initialized || !state.enabled) {
+      return;
+    }
+
+    refresh();
+  }
+
   /* ==========================
        INITIALIZE
     ========================== */
@@ -1859,29 +1802,124 @@ function hidePanel() {
     faceSvg = getFaceSvg();
 
     if (!faceSvg) {
-      console.warn("Face Inspector 2 could not find the face SVG.");
+      console.warn("Face Inspector could not find the face SVG.");
 
       return false;
     }
 
     createPanelStyles();
 
-createPanel();
+    createInspectorLayers();
 
-createReopenButton();
+    createReopenButton();
 
-createInspectorLayers();
+    createPanel();
+
+    window.addEventListener(
+      "resize",
+
+      handleWindowResize,
+    );
+
+    window.addEventListener(
+      "facelab-refresh",
+
+      handleFaceLabRefresh,
+    );
 
     state.initialized = true;
-    
-    
-    if (state.enabled) {
-      enable();
+
+    if (window.faceInspectorSettings.enabled === false) {
+      hideInspector();
     } else {
-      disable();
+      showInspector();
     }
 
+    console.log("Face Inspector initialized");
+
     return true;
+  }
+
+  /* ==========================
+       DESTROY
+    ========================== */
+
+  function destroy() {
+    window.removeEventListener(
+      "resize",
+
+      handleWindowResize,
+    );
+
+    window.removeEventListener(
+      "facelab-refresh",
+
+      handleFaceLabRefresh,
+    );
+
+    window.removeEventListener(
+      "pointermove",
+
+      handlePointerMove,
+    );
+
+    window.removeEventListener(
+      "pointerup",
+
+      handlePointerUp,
+    );
+
+    window.removeEventListener(
+      "pointercancel",
+
+      handlePointerUp,
+    );
+
+    if (handleLayer) {
+      handleLayer.remove();
+    }
+
+    if (guideLayer) {
+      guideLayer.remove();
+    }
+
+    if (panel) {
+      panel.remove();
+    }
+
+    if (reopenButton) {
+      reopenButton.remove();
+    }
+
+    handleLayer = null;
+
+    guideLayer = null;
+
+    panel = null;
+
+    panelStatus = null;
+
+    panelContent = null;
+
+    reopenButton = null;
+
+    faceSvg = null;
+
+    state.initialized = false;
+
+    state.dragging = false;
+
+    state.hoveredHandleId = null;
+
+    state.selectedHandleId = null;
+
+    state.activePointerId = null;
+
+    state.dragStartPointer = null;
+
+    state.dragStartSettings = null;
+
+    state.handles = [];
   }
 
   /* ==========================
@@ -1889,7 +1927,11 @@ createInspectorLayers();
     ========================== */
 
   window.FaceInspector = {
+    version: "3.0",
+
     initialize: initialize,
+
+    destroy: destroy,
 
     refresh: refresh,
 
@@ -1904,15 +1946,16 @@ createInspectorLayers();
     hide: hideInspector,
 
     showPanel: showPanel,
-hidePanel: hidePanel,
 
-    getHandles: function () {
-      return state.handles.slice();
-    },
+    hidePanel: hidePanel,
 
-    getSelectedHandle: function () {
-      return getHandleById(state.selectedHandleId);
-    },
+    clearSelection: clearSelection,
+
+    selectHandle: selectHandle,
+
+    selectFeatureHandle: selectFeatureHandle,
+
+    getHandles: getHandles,
 
     getState: function () {
       return {
@@ -1925,18 +1968,56 @@ hidePanel: hidePanel,
         hoveredHandleId: state.hoveredHandleId,
 
         selectedHandleId: state.selectedHandleId,
+
+        activePointerId: state.activePointerId,
+
+        handleCount: state.handles.length,
       };
     },
+
+    getSettings: function () {
+      return {
+        ...window.faceInspectorSettings,
+      };
+    },
+
+    updateSettings: updateSettings,
+
+    resetSettings: resetSettings,
   };
 
-  /*
-        Begin FaceLab namespace without
-        breaking existing global APIs.
+  /* ==========================
+       AUTOMATIC STARTUP
+    ========================== */
+
+  function startFaceInspector() {
+    /*
+      Wait until the other scripts and SVG
+      elements have finished loading.
     */
 
-  window.FaceLab = window.FaceLab || {};
+    window.setTimeout(
+      function () {
+        initialize();
+      },
 
-  window.FaceLab.Inspector = window.FaceInspector;
+      0,
+    );
+  }
 
-  console.log("faceInspector.js V2.1 loaded");
+  if (document.readyState === "loading") {
+    document.addEventListener(
+      "DOMContentLoaded",
+
+      startFaceInspector,
+
+      {
+        once: true,
+      },
+    );
+  } else {
+    startFaceInspector();
+  }
+
+  console.log("faceInspector.js V3.0 loaded");
 })();

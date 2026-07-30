@@ -112,6 +112,159 @@
 </radialGradient>
 
 <!-- ==========================
+     BROW RIDGE GRADIENTS
+========================== -->
+
+<radialGradient
+    id="leftBrowRidgeGradient"
+    gradientUnits="userSpaceOnUse"
+    cx="188"
+    cy="190"
+    r="70"
+    gradientTransform="translate(0 70) scale(1 0.64)"
+>
+    <stop
+        offset="0%"
+        stop-color="#925a3a"
+        stop-opacity="0.34"
+    />
+
+    <stop
+        offset="42%"
+        stop-color="#b67851"
+        stop-opacity="0.22"
+    />
+
+    <stop
+        offset="74%"
+        stop-color="#d99e74"
+        stop-opacity="0.09"
+    />
+
+    <stop
+        offset="100%"
+        stop-color="#edbb91"
+        stop-opacity="0"
+    />
+</radialGradient>
+
+
+<radialGradient
+    id="rightBrowRidgeGradient"
+    gradientUnits="userSpaceOnUse"
+    cx="312"
+    cy="190"
+    r="70"
+    gradientTransform="translate(0 70) scale(1 0.64)"
+>
+    <stop
+        offset="0%"
+        stop-color="#925a3a"
+        stop-opacity="0.34"
+    />
+
+    <stop
+        offset="42%"
+        stop-color="#b67851"
+        stop-opacity="0.22"
+    />
+
+    <stop
+        offset="74%"
+        stop-color="#d99e74"
+        stop-opacity="0.09"
+    />
+
+    <stop
+        offset="100%"
+        stop-color="#edbb91"
+        stop-opacity="0"
+    />
+</radialGradient>
+
+<radialGradient
+    id="glabellaGradient"
+    gradientUnits="userSpaceOnUse"
+    cx="250"
+    cy="196"
+    r="44"
+    gradientTransform="translate(0 54) scale(1 0.72)"
+>
+    <stop
+        offset="0%"
+        stop-color="#a56b49"
+        stop-opacity="0.22"
+    />
+
+    <stop
+        offset="52%"
+        stop-color="#c78c65"
+        stop-opacity="0.10"
+    />
+
+    <stop
+        offset="100%"
+        stop-color="#e8b185"
+        stop-opacity="0"
+    />
+</radialGradient>
+
+<linearGradient
+    id="leftForeheadTransitionGradient"
+    gradientUnits="userSpaceOnUse"
+    x1="175"
+    y1="115"
+    x2="196"
+    y2="210"
+>
+    <stop
+        offset="0%"
+        stop-color="#ffe0c2"
+        stop-opacity="0"
+    />
+
+    <stop
+        offset="60%"
+        stop-color="#c9855c"
+        stop-opacity="0.16"
+    />
+
+    <stop
+        offset="100%"
+        stop-color="#8c5134"
+        stop-opacity="0.38"
+    />
+</linearGradient>
+
+
+<linearGradient
+    id="rightForeheadTransitionGradient"
+    gradientUnits="userSpaceOnUse"
+    x1="325"
+    y1="115"
+    x2="304"
+    y2="210"
+>
+    <stop
+        offset="0%"
+        stop-color="#ffe0c2"
+        stop-opacity="0"
+    />
+
+    <stop
+        offset="60%"
+        stop-color="#c9855c"
+        stop-opacity="0.16"
+    />
+
+    <stop
+        offset="100%"
+        stop-color="#8c5134"
+        stop-opacity="0.38"
+    />
+</linearGradient>
+
+<!-- ==========================
      MAIN NOSE
 ========================== -->
 
@@ -494,16 +647,63 @@
     stroke="#2b211d"
     stroke-width="4"/></path>
 
-
 <!-- ==========================
-     EYES
+     BROW RIDGE ANATOMY
+========================== -->
+
+<g
+    id="browAnatomy"
+    pointer-events="none"
+>
+
+    <!-- Soft forehead planes -->
+
+    <path
+        id="leftForeheadTransition"
+        fill="url(#leftForeheadTransitionGradient)"
+    ></path>
+
+    <path
+        id="rightForeheadTransition"
+        fill="url(#rightForeheadTransitionGradient)"
+    ></path>
+
+
+    <!-- Central glabella -->
+
+    <path
+        id="glabella"
+        fill="url(#glabellaGradient)"
+    ></path>
+
+
+    <!-- Main brow shelves -->
+
+    <path
+        id="leftBrowRidge"
+        fill="url(#leftBrowRidgeGradient)"
+    ></path>
+
+    <path
+        id="rightBrowRidge"
+        fill="url(#rightBrowRidgeGradient)"
+    ></path>
+
+</g>
+<!-- ==========================
+     EYE ANATOMY ENGINE V2
 ========================== -->
 
 <defs>
 
+    <!-- LEFT EYE OPENING CLIP -->
+
     <clipPath id="leftEyeClip">
         <path id="leftEyeClipPath"></path>
     </clipPath>
+
+
+    <!-- RIGHT EYE OPENING CLIP -->
 
     <clipPath id="rightEyeClip">
         <path id="rightEyeClipPath"></path>
@@ -514,28 +714,47 @@
 
 <g id="eyes">
 
+
     <!-- ==========================
          LEFT EYE
     =========================== -->
 
     <g id="leftEyeGroup">
 
-	<path
-    id="leftEyeSocket"
-    fill="url(#leftEyeSocketGradient)"
-    opacity="0.8"
-    rx="18"
-    ry="18">
-</path>
+
+        <!-- ORBITAL SOCKET -->
+
+        <path
+            id="leftEyeSocket"
+            fill="url(#leftEyeSocketGradient)"
+            opacity="0.8"
+        ></path>
+
+
+        <!-- UPPER SOCKET / BROW-SHELF SHADOW -->
+
+        <path
+            id="leftUpperSocketShadow"
+            fill="none"
+            stroke="var(--skin-dark)"
+            stroke-width="7"
+            stroke-linecap="round"
+            opacity="0.12"
+        ></path>
+
+
+        <!-- EYE WHITE -->
 
         <path
             id="leftEyeWhite"
-             fill="url(#eyeGradient)"
-    stroke="#888"
-    stroke-width="1"
+            fill="url(#eyeGradient)"
+            stroke="#8b817b"
+            stroke-width="0.8"
             stroke-linejoin="round"
         ></path>
 
+
+        <!-- IRIS CONTENT CLIPPED TO EYE OPENING -->
 
         <g clip-path="url(#leftEyeClip)">
 
@@ -568,14 +787,63 @@
         </g>
 
 
+        <!-- TEAR DUCT -->
+
+        <path
+            id="leftTearDuct"
+            fill="#d99a91"
+            stroke="#8f655f"
+            stroke-width="0.55"
+            stroke-linejoin="round"
+            opacity="0.72"
+        ></path>
+
+
+        <!-- UPPER LID EDGE -->
+
         <path
             id="leftUpperLid"
             fill="none"
-            stroke="#2b211d"
-            stroke-width="3"
+            stroke="#3a2b26"
+            stroke-width="2.4"
             stroke-linecap="round"
         ></path>
 
+
+        <!-- LOWER LID EDGE -->
+
+        <path
+            id="leftLowerLid"
+            fill="none"
+            stroke="#5b4740"
+            stroke-width="1.25"
+            stroke-linecap="round"
+            opacity="0.72"
+        ></path>
+
+
+        <!-- UPPER LID CREASE -->
+
+        <path
+            id="leftUpperLidCrease"
+            fill="none"
+            stroke="#6f5146"
+            stroke-width="1.4"
+            stroke-linecap="round"
+            opacity="0.38"
+        ></path>
+
+
+        <!-- LOWER LID CREASE / UNDER-EYE LINE -->
+
+        <path
+            id="leftLowerLidCrease"
+            fill="none"
+            stroke="#8a6658"
+            stroke-width="1"
+            stroke-linecap="round"
+            opacity="0.18"
+        ></path>
 
     </g>
 
@@ -586,22 +854,40 @@
 
     <g id="rightEyeGroup">
 
-	<path
-        id="rightEyeSocket"
-        fill="url(#rightEyeSocketGradient)"
-    opacity="0.8"
-    rx="18"
-    ry="18">
-</path>
+
+        <!-- ORBITAL SOCKET -->
+
+        <path
+            id="rightEyeSocket"
+            fill="url(#rightEyeSocketGradient)"
+            opacity="0.8"
+        ></path>
+
+
+        <!-- UPPER SOCKET / BROW-SHELF SHADOW -->
+
+        <path
+            id="rightUpperSocketShadow"
+            fill="none"
+            stroke="var(--skin-dark)"
+            stroke-width="7"
+            stroke-linecap="round"
+            opacity="0.12"
+        ></path>
+
+
+        <!-- EYE WHITE -->
 
         <path
             id="rightEyeWhite"
-             fill="url(#eyeGradient)"
-    stroke="#888"
-    stroke-width="1"
+            fill="url(#eyeGradient)"
+            stroke="#8b817b"
+            stroke-width="0.8"
             stroke-linejoin="round"
         ></path>
 
+
+        <!-- IRIS CONTENT CLIPPED TO EYE OPENING -->
 
         <g clip-path="url(#rightEyeClip)">
 
@@ -634,14 +920,63 @@
         </g>
 
 
+        <!-- TEAR DUCT -->
+
+        <path
+            id="rightTearDuct"
+            fill="#d99a91"
+            stroke="#8f655f"
+            stroke-width="0.55"
+            stroke-linejoin="round"
+            opacity="0.72"
+        ></path>
+
+
+        <!-- UPPER LID EDGE -->
+
         <path
             id="rightUpperLid"
             fill="none"
-            stroke="#2b211d"
-            stroke-width="3"
+            stroke="#3a2b26"
+            stroke-width="2.4"
             stroke-linecap="round"
         ></path>
 
+
+        <!-- LOWER LID EDGE -->
+
+        <path
+            id="rightLowerLid"
+            fill="none"
+            stroke="#5b4740"
+            stroke-width="1.25"
+            stroke-linecap="round"
+            opacity="0.72"
+        ></path>
+
+
+        <!-- UPPER LID CREASE -->
+
+        <path
+            id="rightUpperLidCrease"
+            fill="none"
+            stroke="#6f5146"
+            stroke-width="1.4"
+            stroke-linecap="round"
+            opacity="0.38"
+        ></path>
+
+
+        <!-- LOWER LID CREASE / UNDER-EYE LINE -->
+
+        <path
+            id="rightLowerLidCrease"
+            fill="none"
+            stroke="#8a6658"
+            stroke-width="1"
+            stroke-linecap="round"
+            opacity="0.18"
+        ></path>
 
     </g>
 
@@ -955,6 +1290,341 @@
 
                         <p
                             id="saveStatus"
+                            aria-live="polite"
+                        ></p>
+
+                    </div>
+
+                </details>
+                <!-- ==========================
+                    BROW RIDGE CONTROLS
+                ========================== -->
+
+                <details>
+
+                    <summary>Brow Ridge</summary>
+
+                    <div
+                        id="browControls"
+                        class="panelBody"
+                    >
+
+                        <label>
+                            Vertical position
+
+                            <span id="browYValue"></span>
+
+                            <input
+                                type="range"
+                                id="browY"
+                                min="140"
+                                max="245"
+                                value="190"
+                            >
+                        </label>
+
+
+                        <label>
+                            Brow spacing
+
+                            <span id="browSpacingValue"></span>
+
+                            <input
+                                type="range"
+                                id="browSpacing"
+                                min="70"
+                                max="190"
+                                value="124"
+                            >
+                        </label>
+
+
+                        <label>
+                            Ridge width
+
+                            <span id="browWidthValue"></span>
+
+                            <input
+                                type="range"
+                                id="browWidth"
+                                min="55"
+                                max="145"
+                                value="102"
+                            >
+                        </label>
+
+
+                        <label>
+                            Ridge height
+
+                            <span id="browHeightValue"></span>
+
+                            <input
+                                type="range"
+                                id="browHeight"
+                                min="8"
+                                max="60"
+                                value="31"
+                            >
+                        </label>
+
+
+                        <label>
+                            Brow arch
+
+                            <span id="browArchValue"></span>
+
+                            <input
+                                type="range"
+                                id="browArch"
+                                min="0"
+                                max="40"
+                                value="15"
+                            >
+                        </label>
+
+
+                        <label>
+                            Inner brow height
+
+                            <span id="browInnerHeightValue"></span>
+
+                            <input
+                                type="range"
+                                id="browInnerHeight"
+                                min="-18"
+                                max="24"
+                                value="4"
+                            >
+                        </label>
+
+
+                        <label>
+                            Outer brow height
+
+                            <span id="browOuterHeightValue"></span>
+
+                            <input
+                                type="range"
+                                id="browOuterHeight"
+                                min="-18"
+                                max="24"
+                                value="1"
+                            >
+                        </label>
+
+
+                        <label>
+                            Inner reach
+
+                            <span id="browInnerReachValue"></span>
+
+                            <input
+                                type="range"
+                                id="browInnerReach"
+                                min="-10"
+                                max="30"
+                                value="12"
+                            >
+                        </label>
+
+
+                        <label>
+                            Outer reach
+
+                            <span id="browOuterReachValue"></span>
+
+                            <input
+                                type="range"
+                                id="browOuterReach"
+                                min="-10"
+                                max="35"
+                                value="10"
+                            >
+                        </label>
+
+
+                        <label>
+                            Ridge depth
+
+                            <span id="browDepthValue"></span>
+
+                            <input
+                                type="range"
+                                id="browDepth"
+                                min="0"
+                                max="1"
+                                step="0.01"
+                                value="0.72"
+                            >
+                        </label>
+
+
+                        <label>
+                            Glabella width
+
+                            <span id="glabellaWidthValue"></span>
+
+                            <input
+                                type="range"
+                                id="glabellaWidth"
+                                min="10"
+                                max="70"
+                                value="35"
+                            >
+                        </label>
+
+
+                        <label>
+                            Glabella height
+
+                            <span id="glabellaHeightValue"></span>
+
+                            <input
+                                type="range"
+                                id="glabellaHeight"
+                                min="15"
+                                max="90"
+                                value="47"
+                            >
+                        </label>
+
+
+                        <label>
+                            Glabella depth
+
+                            <span id="glabellaDepthValue"></span>
+
+                            <input
+                                type="range"
+                                id="glabellaDepth"
+                                min="0"
+                                max="1"
+                                step="0.01"
+                                value="0.55"
+                            >
+                        </label>
+
+
+                        <label>
+                            Forehead transition height
+
+                            <span id="foreheadTransitionHeightValue"></span>
+
+                            <input
+                                type="range"
+                                id="foreheadTransitionHeight"
+                                min="10"
+                                max="120"
+                                value="58"
+                            >
+                        </label>
+
+
+                        <label>
+                            Forehead transition strength
+
+                            <span id="foreheadTransitionOpacityValue"></span>
+
+                            <input
+                                type="range"
+                                id="foreheadTransitionOpacity"
+                                min="0"
+                                max="1"
+                                step="0.01"
+                                value="0.30"
+                            >
+                        </label>
+
+
+                        <label>
+                            Left ridge vertical offset
+
+                            <span id="leftBrowOffsetYValue"></span>
+
+                            <input
+                                type="range"
+                                id="leftBrowOffsetY"
+                                min="-20"
+                                max="20"
+                                value="0"
+                            >
+                        </label>
+
+
+                        <label>
+                            Right ridge vertical offset
+
+                            <span id="rightBrowOffsetYValue"></span>
+
+                            <input
+                                type="range"
+                                id="rightBrowOffsetY"
+                                min="-20"
+                                max="20"
+                                value="1"
+                            >
+                        </label>
+
+
+                        <label>
+                            Left ridge rotation
+
+                            <span id="leftBrowRotationValue"></span>
+
+                            <input
+                                type="range"
+                                id="leftBrowRotation"
+                                min="-20"
+                                max="20"
+                                value="-1"
+                            >
+                        </label>
+
+
+                        <label>
+                            Right ridge rotation
+
+                            <span id="rightBrowRotationValue"></span>
+
+                            <input
+                                type="range"
+                                id="rightBrowRotation"
+                                min="-20"
+                                max="20"
+                                value="1"
+                            >
+                        </label>
+
+
+                        <div class="control-buttons">
+
+                            <button
+                                type="button"
+                                id="saveBrows"
+                            >
+                                Save brow ridge
+                            </button>
+
+                            <button
+                                type="button"
+                                id="loadBrows"
+                            >
+                                Load saved
+                            </button>
+
+                            <button
+                                type="button"
+                                id="resetBrows"
+                            >
+                                Reset brow ridge
+                            </button>
+
+                        </div>
+
+
+                        <p
+                            id="browSaveStatus"
                             aria-live="polite"
                         ></p>
 
@@ -1495,6 +2165,17 @@
 <script src="js/geometry/spline.js"></script>
 <script src="js/geometry/pathBuilder.js"></script>
 
+<!-- FaceLab core -->
+<script src="js/core/faceLabCore.js"></script>
+
+<!-- Eye support -->
+<script src="js/eyes/eyeGeometry.js"></script>
+<script src="js/eyes/eyeSurface.js"></script>
+<script src="js/eyes/eyeRig.js"></script>
+<script src="js/eyes/eyeBuilder.js"></script>
+<script src="js/eyes/eyeRenderer.js"></script>
+<script src="js/eyes.js"></script>
+
 <!-- Mouth support -->
 <script src="js/mouth/mouthLandmarks.js"></script>
 <script src="js/mouth/mouthProfiles.js"></script>
@@ -1515,10 +2196,11 @@
 <script src="js/geometry/vector.js"></script>
 <script src="js/geometry/bezier.js"></script>
 <script src="js/head.js"></script>
-<script src="js/eyes.js"></script>
+<script src="js/brow.js"></script>
+
 <script src="js/nose.js"></script>
 <!--<script src="js/mouth.js"></script>-->
-<script src="js/idle.js"></script>
+<!--<script src="js/idle.js"></script>-->
 
 <script src="js/drawer.js"></script>
 

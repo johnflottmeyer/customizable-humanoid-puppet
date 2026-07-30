@@ -22,304 +22,262 @@
 ========================== */
 
 (function () {
-    "use strict";
+  "use strict";
 
-
-    /* ==========================
+  /* ==========================
        DEFAULT SETTINGS
     ========================== */
 
-    const defaultMouthEngineSettings = {
-
-        /* ==========================
+  const defaultMouthEngineSettings = {
+    /* ==========================
            POSITION
         ========================== */
 
-        centerX: 250,
-        centerY: 381,
+    centerX: 250,
+    centerY: 381,
 
-
-        /* ==========================
+    /* ==========================
            MOUTH SEAM
         ========================== */
 
-        width: 150,
+    width: 150,
 
-        cornerY: 0,
-        peakY: -1.5,
-        cupidY: -0.5,
+    cornerY: 0,
+    peakY: -1.5,
+    cupidY: -0.5,
 
-        /*
+    /*
             Retained for compatibility with
             the previous Spline system.
         */
 
-        tension: 0.25,
+    tension: 0.25,
 
-
-        /* ==========================
+    /* ==========================
            AUTOMATIC BÉZIER HANDLES
         ========================== */
 
-        /*
+    /*
             Overall length of the automatically
             generated seam handles.
         */
 
-        seamHandleStrength: 0.27,
+    seamHandleStrength: 0.27,
 
-
-        /*
+    /*
             Reduces handle length near the
             left and right mouth corners.
         */
 
-        seamCornerHandleScale: 0.72,
+    seamCornerHandleScale: 0.72,
 
-
-        /*
+    /*
             Controls handle length around the
             center seam landmark.
         */
 
-        seamCenterHandleScale: 0.82,
+    seamCenterHandleScale: 0.82,
 
-
-        /*
+    /*
             Prevents generated handles from
             becoming longer than their segment.
         */
 
-        seamMaximumHandleRatio: 0.42,
+    seamMaximumHandleRatio: 0.42,
 
-
-        /* ==========================
+    /* ==========================
            UPPER LIP
         ========================== */
 
-        upperLipThickness: 6.5,
+    upperLipThickness: 6.5,
 
-        cupidBowHeight: 3.2,
-        cupidBowWidth: 0.16,
+    cupidBowHeight: 3.2,
+    cupidBowWidth: 0.16,
 
-        philtrumDip: 2.4,
-        upperCenterFullness: 0.5,
+    philtrumDip: 2.4,
+    upperCenterFullness: 0.5,
 
-        upperAsymmetry: 0,
+    upperAsymmetry: 0,
 
-
-        /* ==========================
+    /* ==========================
            LOWER LIP
         ========================== */
 
-        lowerLipThickness: 8.5,
+    lowerLipThickness: 8.5,
 
-        lowerCenterFullness: 2.5,
-        lowerLobeWidth: 0.34,
+    lowerCenterFullness: 2.5,
+    lowerLobeWidth: 0.34,
 
-        lowerAsymmetry: 0,
+    lowerAsymmetry: 0,
 
-
-        /* ==========================
+    /* ==========================
            CORNERS
         ========================== */
 
-        cornerTaper: 1.9,
-        cornerThickness: 0.02,
+    cornerTaper: 1.9,
+    cornerThickness: 0.02,
 
-        cornerInset: 0.04,
-        cornerRoundness: 0.7,
+    cornerInset: 0.04,
+    cornerRoundness: 0.7,
 
-
-        /* ==========================
+    /* ==========================
            DIRECTION FIELD
         ========================== */
 
-        upperVerticalBias: 0.88,
-        lowerVerticalBias: 0.94,
+    upperVerticalBias: 0.88,
+    lowerVerticalBias: 0.94,
 
-        upperCornerFlare: 0.34,
-        lowerCornerFlare: 0.18,
+    upperCornerFlare: 0.34,
+    lowerCornerFlare: 0.18,
 
-        cornerFlareWidth: 0.28,
+    cornerFlareWidth: 0.28,
 
-        smile: 0,
+    smile: 0,
 
-        upperExpressionStrength: 0.28,
-        lowerExpressionStrength: 0.18,
+    upperExpressionStrength: 0.28,
+    lowerExpressionStrength: 0.18,
 
-        directionAsymmetry: 0,
+    directionAsymmetry: 0,
 
-
-        /* ==========================
+    /* ==========================
            APPEARANCE
         ========================== */
 
-        upperLipColor: "#b85f68",
-        lowerLipColor: "#ca7880",
+    upperLipColor: "#b85f68",
+    lowerLipColor: "#ca7880",
 
-        seamColor: "#8f2740",
-        seamWidth: 2,
+    seamColor: "#8f2740",
+    seamWidth: 2,
 
-
-        /* ==========================
+    /* ==========================
            VISIBILITY
         ========================== */
 
-        showLipShapes: true,
-        showSeam: true,
+    showLipShapes: true,
+    showSeam: true,
 
-
-        /* ==========================
+    /* ==========================
            SAMPLING
         ========================== */
 
-        sampleCount: 40
-    };
+    sampleCount: 40,
+  };
 
-
-    /* ==========================
+  /* ==========================
        GLOBAL SETTINGS
     ========================== */
 
-    window.mouthEngineSettings = {
+  window.mouthEngineSettings = {
+    ...defaultMouthEngineSettings,
 
-        ...defaultMouthEngineSettings,
+    ...(window.mouthEngineSettings || {}),
+  };
 
-        ...(window.mouthEngineSettings || {})
-    };
-
-
-    /* ==========================
+  /* ==========================
        EMPTY GEOMETRY
     ========================== */
 
-    function buildEmptyGeometry() {
+  function buildEmptyGeometry() {
+    return {
+      settings: {},
 
-        return {
-
-            settings: {},
-
-            /*
+      /*
                 Complete editable landmark
                 collection returned by
                 MouthLandmarks.
             */
 
-            namedLandmarks: {},
+      namedLandmarks: {},
 
-
-            /*
+      /*
                 Five Point objects used as
                 seam anchors.
             */
 
-            landmarks: [],
+      landmarks: [],
 
-
-            /*
+      /*
                 Bézier seam spline and its
                 generated control handles.
             */
 
-            seamSpline: null,
-            seamHandles: [],
+      seamSpline: null,
+      seamHandles: [],
 
-
-            /*
+      /*
                 Sampled geometry.
             */
 
-            seamSamples: [],
-            anatomySamples: [],
-            surfaceSamples: [],
+      seamSamples: [],
+      anatomySamples: [],
+      surfaceSamples: [],
 
-
-            /*
+      /*
                 Extracted border points.
             */
 
-            upperPoints: [],
-            lowerPoints: [],
-            seamPoints: [],
+      upperPoints: [],
+      lowerPoints: [],
+      seamPoints: [],
 
-
-            /*
+      /*
                 Completed SVG path data.
             */
 
-            upperPath: "",
-            lowerPath: "",
-            seamPath: ""
-        };
-    }
+      upperPath: "",
+      lowerPath: "",
+      seamPath: "",
+    };
+  }
 
-
-    /* ==========================
+  /* ==========================
        CURRENT GEOMETRY
     ========================== */
 
-    let currentMouthGeometry =
-        buildEmptyGeometry();
+  let currentMouthGeometry = buildEmptyGeometry();
 
-
-    /* ==========================
+  /* ==========================
        DEPENDENCIES
     ========================== */
 
-    function dependenciesAvailable() {
+  function dependenciesAvailable() {
+    const missing = [];
 
-        const missing = [];
-
-
-        if (
-            !window.MouthGeometry ||
-            typeof window.MouthGeometry.build !==
-                "function"
-        ) {
-
-            missing.push("MouthGeometry");
-        }
-
-
-        if (
-            !window.MouthRenderer ||
-            typeof window.MouthRenderer.draw !==
-                "function"
-        ) {
-
-            missing.push("MouthRenderer");
-        }
-
-
-        if (missing.length > 0) {
-
-            console.error(
-                "mouthEngine.js is missing dependencies:",
-                missing.join(", ")
-            );
-
-            return false;
-        }
-
-
-        return true;
+    if (
+      !window.MouthGeometry ||
+      typeof window.MouthGeometry.build !== "function"
+    ) {
+      missing.push("MouthGeometry");
     }
 
+    if (
+      !window.MouthRenderer ||
+      typeof window.MouthRenderer.draw !== "function"
+    ) {
+      missing.push("MouthRenderer");
+    }
 
-    /* ==========================
+    if (missing.length > 0) {
+      console.error(
+        "mouthEngine.js is missing dependencies:",
+        missing.join(", "),
+      );
+
+      return false;
+    }
+
+    return true;
+  }
+
+  /* ==========================
        COPY HELPERS
     ========================== */
 
-    function cloneArray(value) {
+  function cloneArray(value) {
+    return Array.isArray(value) ? value.slice() : [];
+  }
 
-        return Array.isArray(value)
-            ? value.slice()
-            : [];
-    }
-
-
-    /*
+  /*
         Keep the actual Landmark objects.
 
         This deliberately copies only the
@@ -328,327 +286,215 @@
         access to the editable Landmark objects.
     */
 
-    function cloneLandmarkCollection(collection) {
-
-        if (!collection) {
-            return {};
-        }
-
-
-        if (collection instanceof Map) {
-
-            return new Map(collection);
-        }
-
-
-        if (Array.isArray(collection)) {
-
-            return collection.slice();
-        }
-
-
-        return {
-            ...collection
-        };
+  function cloneLandmarkCollection(collection) {
+    if (!collection) {
+      return {};
     }
 
+    if (collection instanceof Map) {
+      return new Map(collection);
+    }
 
-    /* ==========================
+    if (Array.isArray(collection)) {
+      return collection.slice();
+    }
+
+    return {
+      ...collection,
+    };
+  }
+
+  /* ==========================
        PROFILE SETTINGS
     ========================== */
 
-    function getMouthProfileSettings() {
+  function getMouthProfileSettings() {
+    const settings = window.mouthEngineSettings;
 
-        const settings =
-            window.mouthEngineSettings;
+    return {
+      upperLipThickness: settings.upperLipThickness,
 
+      lowerLipThickness: settings.lowerLipThickness,
 
-        return {
+      cupidBowHeight: settings.cupidBowHeight,
 
-            upperLipThickness:
-                settings.upperLipThickness,
+      cupidBowWidth: settings.cupidBowWidth,
 
-            lowerLipThickness:
-                settings.lowerLipThickness,
+      philtrumDip: settings.philtrumDip,
 
-            cupidBowHeight:
-                settings.cupidBowHeight,
+      upperCenterFullness: settings.upperCenterFullness,
 
-            cupidBowWidth:
-                settings.cupidBowWidth,
+      lowerCenterFullness: settings.lowerCenterFullness,
 
-            philtrumDip:
-                settings.philtrumDip,
+      lowerLobeWidth: settings.lowerLobeWidth,
 
-            upperCenterFullness:
-                settings.upperCenterFullness,
+      cornerTaper: settings.cornerTaper,
 
-            lowerCenterFullness:
-                settings.lowerCenterFullness,
+      cornerThickness: settings.cornerThickness,
 
-            lowerLobeWidth:
-                settings.lowerLobeWidth,
+      upperAsymmetry: settings.upperAsymmetry,
 
-            cornerTaper:
-                settings.cornerTaper,
+      lowerAsymmetry: settings.lowerAsymmetry,
+    };
+  }
 
-            cornerThickness:
-                settings.cornerThickness,
-
-            upperAsymmetry:
-                settings.upperAsymmetry,
-
-            lowerAsymmetry:
-                settings.lowerAsymmetry
-        };
-    }
-
-
-    /* ==========================
+  /* ==========================
        DIRECTION SETTINGS
     ========================== */
 
-    function getMouthDirectionSettings() {
+  function getMouthDirectionSettings() {
+    const settings = window.mouthEngineSettings;
 
-        const settings =
-            window.mouthEngineSettings;
+    return {
+      upperVerticalBias: settings.upperVerticalBias,
 
+      lowerVerticalBias: settings.lowerVerticalBias,
 
-        return {
+      upperCornerFlare: settings.upperCornerFlare,
 
-            upperVerticalBias:
-                settings.upperVerticalBias,
+      lowerCornerFlare: settings.lowerCornerFlare,
 
-            lowerVerticalBias:
-                settings.lowerVerticalBias,
+      cornerFlareWidth: settings.cornerFlareWidth,
 
-            upperCornerFlare:
-                settings.upperCornerFlare,
+      smile: settings.smile,
 
-            lowerCornerFlare:
-                settings.lowerCornerFlare,
+      upperExpressionStrength: settings.upperExpressionStrength,
 
-            cornerFlareWidth:
-                settings.cornerFlareWidth,
+      lowerExpressionStrength: settings.lowerExpressionStrength,
 
-            smile:
-                settings.smile,
+      asymmetry: settings.directionAsymmetry,
+    };
+  }
 
-            upperExpressionStrength:
-                settings.upperExpressionStrength,
-
-            lowerExpressionStrength:
-                settings.lowerExpressionStrength,
-
-            asymmetry:
-                settings.directionAsymmetry
-        };
-    }
-
-
-    /* ==========================
+  /* ==========================
        BUILD COMPLETE GEOMETRY
     ========================== */
 
-    function buildMouthGeometry(overrides) {
+  function buildMouthGeometry(overrides) {
+    if (
+      !window.MouthGeometry ||
+      typeof window.MouthGeometry.build !== "function"
+    ) {
+      console.error(
+        "MouthEngine cannot build geometry because MouthGeometry is unavailable.",
+      );
 
-        if (
-            !window.MouthGeometry ||
-            typeof window.MouthGeometry.build !==
-                "function"
-        ) {
-
-            console.error(
-                "MouthEngine cannot build geometry because MouthGeometry is unavailable."
-            );
-
-            return buildEmptyGeometry();
-        }
-
-
-        return window.MouthGeometry.build(
-            overrides || window.mouthEngineSettings
-        );
+      return buildEmptyGeometry();
     }
 
+    return window.MouthGeometry.build(overrides || window.mouthEngineSettings);
+  }
 
-    /* ==========================
+  /* ==========================
        BUILD LANDMARKS
     ========================== */
 
-    function buildMouthLandmarks() {
-
-        if (
-            !window.MouthGeometry ||
-            typeof window.MouthGeometry
-                .buildNamedLandmarks !==
-                "function"
-        ) {
-
-            return {};
-        }
-
-
-        return window.MouthGeometry
-            .buildNamedLandmarks(
-                window.mouthEngineSettings
-            );
+  function buildMouthLandmarks() {
+    if (
+      !window.MouthGeometry ||
+      typeof window.MouthGeometry.buildNamedLandmarks !== "function"
+    ) {
+      return {};
     }
 
+    return window.MouthGeometry.buildNamedLandmarks(window.mouthEngineSettings);
+  }
 
-    /* ==========================
+  /* ==========================
        BUILD SEAM
     ========================== */
 
-    function buildMouthSeam(
-        seamControlPoints
+  function buildMouthSeam(seamControlPoints) {
+    if (
+      !window.MouthGeometry ||
+      typeof window.MouthGeometry.buildSeamSpline !== "function"
     ) {
-
-        if (
-            !window.MouthGeometry ||
-            typeof window.MouthGeometry
-                .buildSeamSpline !==
-                "function"
-        ) {
-
-            return null;
-        }
-
-
-        let points =
-            seamControlPoints;
-
-
-        if (
-            !Array.isArray(points) ||
-            points.length < 2
-        ) {
-
-            const namedLandmarks =
-                buildMouthLandmarks();
-
-
-            points =
-                window.MouthGeometry
-                    .buildSeamPoints(
-                        namedLandmarks
-                    );
-        }
-
-
-        return window.MouthGeometry
-            .buildSeamSpline(
-                points,
-                window.mouthEngineSettings
-            );
+      return null;
     }
 
+    let points = seamControlPoints;
 
-    /* ==========================
+    if (!Array.isArray(points) || points.length < 2) {
+      const namedLandmarks = buildMouthLandmarks();
+
+      points = window.MouthGeometry.buildSeamPoints(namedLandmarks);
+    }
+
+    return window.MouthGeometry.buildSeamSpline(
+      points,
+      window.mouthEngineSettings,
+    );
+  }
+
+  /* ==========================
        SAMPLE SEAM
     ========================== */
 
-    function sampleMouthSeam(seamSpline) {
-
-        if (
-            !window.MouthGeometry ||
-            typeof window.MouthGeometry
-                .sampleSeam !==
-                "function"
-        ) {
-
-            return [];
-        }
-
-
-        const spline =
-            seamSpline ||
-            buildMouthSeam();
-
-
-        return window.MouthGeometry
-            .sampleSeam(
-                spline,
-                window.mouthEngineSettings
-            );
+  function sampleMouthSeam(seamSpline) {
+    if (
+      !window.MouthGeometry ||
+      typeof window.MouthGeometry.sampleSeam !== "function"
+    ) {
+      return [];
     }
 
+    const spline = seamSpline || buildMouthSeam();
 
-    /* ==========================
+    return window.MouthGeometry.sampleSeam(spline, window.mouthEngineSettings);
+  }
+
+  /* ==========================
        BUILD LIP ANATOMY
     ========================== */
 
-    function buildLipAnatomy(seamSamples) {
-
-        if (
-            !window.MouthGeometry ||
-            typeof window.MouthGeometry
-                .buildAnatomy !==
-                "function"
-        ) {
-
-            return [];
-        }
-
-
-        return window.MouthGeometry
-            .buildAnatomy(
-                seamSamples || [],
-                window.mouthEngineSettings
-            );
+  function buildLipAnatomy(seamSamples) {
+    if (
+      !window.MouthGeometry ||
+      typeof window.MouthGeometry.buildAnatomy !== "function"
+    ) {
+      return [];
     }
 
+    return window.MouthGeometry.buildAnatomy(
+      seamSamples || [],
+      window.mouthEngineSettings,
+    );
+  }
 
-    /* ==========================
+  /* ==========================
        COMPATIBILITY SAMPLE BUILDER
     ========================== */
 
-    function buildMouthSamples(seamSpline) {
+  function buildMouthSamples(seamSpline) {
+    const seamSamples = sampleMouthSeam(seamSpline);
 
-        const seamSamples =
-            sampleMouthSeam(
-                seamSpline
-            );
+    return buildLipAnatomy(seamSamples);
+  }
 
-
-        return buildLipAnatomy(
-            seamSamples
-        );
-    }
-
-
-    /* ==========================
+  /* ==========================
        DRAW MOUTH
     ========================== */
 
-    function drawMouthEngine() {
-
-        /*
+  function drawMouthEngine() {
+    /*
             Confirm that both the geometry and
             renderer modules are available.
         */
 
-        if (!dependenciesAvailable()) {
+    if (!dependenciesAvailable()) {
+      currentMouthGeometry = buildEmptyGeometry();
 
-            currentMouthGeometry =
-                buildEmptyGeometry();
+      return currentMouthGeometry;
+    }
 
-            return currentMouthGeometry;
-        }
-
-
-        /*
+    /*
             Build the newest geometry from the
             current global settings.
         */
 
-        const geometry =
-            buildMouthGeometry(
-                window.mouthEngineSettings
-            );
+    const geometry = buildMouthGeometry(window.mouthEngineSettings);
 
-
-        /*
+    /*
             Store geometry before rendering or
             refreshing external tools.
 
@@ -656,22 +502,15 @@
             request it during their refresh.
         */
 
-        currentMouthGeometry =
-            geometry ||
-            buildEmptyGeometry();
+    currentMouthGeometry = geometry || buildEmptyGeometry();
 
-
-        /*
+    /*
             Draw the completed SVG path data.
         */
 
-        window.MouthRenderer.draw(
-            currentMouthGeometry,
-            window.mouthEngineSettings
-        );
+    window.MouthRenderer.draw(currentMouthGeometry, window.mouthEngineSettings);
 
-
-        /*
+    /*
             MouthDebug owns all diagnostic
             drawing.
 
@@ -679,17 +518,11 @@
             display is enabled.
         */
 
-        if (
-            window.MouthDebug &&
-            typeof window.MouthDebug.draw ===
-                "function"
-        ) {
+    if (window.MouthDebug && typeof window.MouthDebug.draw === "function") {
+      window.MouthDebug.draw();
+    }
 
-            window.MouthDebug.draw();
-        }
-
-
-        /*
+    /*
             FaceInspector.initialize() should
             run only once from app.js.
 
@@ -697,617 +530,625 @@
             refresh().
         */
 
-        if (
-            window.FaceInspector &&
-            typeof window.FaceInspector.refresh ===
-                "function"
-        ) {
-
-            window.FaceInspector.refresh();
-        }
-
-
-        return currentMouthGeometry;
+    if (
+      window.FaceInspector &&
+      typeof window.FaceInspector.refresh === "function"
+    ) {
+      window.FaceInspector.refresh();
     }
 
+    return currentMouthGeometry;
+  }
 
-    /* ==========================
+  /* ==========================
        CURRENT COMPLETE GEOMETRY
     ========================== */
 
-    function getCurrentGeometry() {
+  function getCurrentGeometry() {
+    return {
+      settings: currentMouthGeometry.settings || {},
 
-        return {
+      namedLandmarks: cloneLandmarkCollection(
+        currentMouthGeometry.namedLandmarks,
+      ),
 
-            settings:
-                currentMouthGeometry.settings ||
-                {},
+      landmarks: cloneArray(currentMouthGeometry.landmarks),
 
-            namedLandmarks:
-                cloneLandmarkCollection(
-                    currentMouthGeometry
-                        .namedLandmarks
-                ),
+      seamSpline: currentMouthGeometry.seamSpline || null,
 
-            landmarks:
-                cloneArray(
-                    currentMouthGeometry
-                        .landmarks
-                ),
+      seamHandles: cloneArray(currentMouthGeometry.seamHandles),
 
-            seamSpline:
-                currentMouthGeometry
-                    .seamSpline ||
-                null,
+      seamSamples: cloneArray(currentMouthGeometry.seamSamples),
 
-            seamHandles:
-                cloneArray(
-                    currentMouthGeometry
-                        .seamHandles
-                ),
+      anatomySamples: cloneArray(currentMouthGeometry.anatomySamples),
 
-            seamSamples:
-                cloneArray(
-                    currentMouthGeometry
-                        .seamSamples
-                ),
+      surfaceSamples: cloneArray(currentMouthGeometry.surfaceSamples),
 
-            anatomySamples:
-                cloneArray(
-                    currentMouthGeometry
-                        .anatomySamples
-                ),
+      upperPoints: cloneArray(currentMouthGeometry.upperPoints),
 
-            surfaceSamples:
-                cloneArray(
-                    currentMouthGeometry
-                        .surfaceSamples
-                ),
+      lowerPoints: cloneArray(currentMouthGeometry.lowerPoints),
 
-            upperPoints:
-                cloneArray(
-                    currentMouthGeometry
-                        .upperPoints
-                ),
+      seamPoints: cloneArray(currentMouthGeometry.seamPoints),
 
-            lowerPoints:
-                cloneArray(
-                    currentMouthGeometry
-                        .lowerPoints
-                ),
+      upperPath: currentMouthGeometry.upperPath || "",
 
-            seamPoints:
-                cloneArray(
-                    currentMouthGeometry
-                        .seamPoints
-                ),
+      lowerPath: currentMouthGeometry.lowerPath || "",
 
-            upperPath:
-                currentMouthGeometry
-                    .upperPath ||
-                "",
+      seamPath: currentMouthGeometry.seamPath || "",
+    };
+  }
 
-            lowerPath:
-                currentMouthGeometry
-                    .lowerPath ||
-                "",
-
-            seamPath:
-                currentMouthGeometry
-                    .seamPath ||
-                ""
-        };
-    }
-
-
-    /* ==========================
+  /* ==========================
        INDIVIDUAL GETTERS
     ========================== */
 
-    function getCurrentNamedLandmarks() {
+  function getCurrentNamedLandmarks() {
+    return cloneLandmarkCollection(currentMouthGeometry.namedLandmarks);
+  }
 
-        return cloneLandmarkCollection(
-            currentMouthGeometry
-                .namedLandmarks
-        );
-    }
+  function getCurrentMouthLandmarks() {
+    return cloneArray(currentMouthGeometry.landmarks);
+  }
 
+  function getCurrentMouthSeamSpline() {
+    return currentMouthGeometry.seamSpline || null;
+  }
 
-    function getCurrentMouthLandmarks() {
+  function getCurrentMouthSeamHandles() {
+    return cloneArray(currentMouthGeometry.seamHandles);
+  }
 
-        return cloneArray(
-            currentMouthGeometry
-                .landmarks
-        );
-    }
+  function getCurrentMouthSeamSamples() {
+    return cloneArray(currentMouthGeometry.seamSamples);
+  }
 
-
-    function getCurrentMouthSeamSpline() {
-
-        return (
-            currentMouthGeometry
-                .seamSpline ||
-            null
-        );
-    }
-
-
-    function getCurrentMouthSeamHandles() {
-
-        return cloneArray(
-            currentMouthGeometry
-                .seamHandles
-        );
-    }
-
-
-    function getCurrentMouthSeamSamples() {
-
-        return cloneArray(
-            currentMouthGeometry
-                .seamSamples
-        );
-    }
-
-
-    function getCurrentMouthSurfaceSamples() {
-
-        /*
+  function getCurrentMouthSurfaceSamples() {
+    /*
             Returns the complete anatomy samples.
 
             MouthDebug and FaceInspector should
             generally use this collection.
         */
 
-        return cloneArray(
-            currentMouthGeometry
-                .anatomySamples
-        );
-    }
+    return cloneArray(currentMouthGeometry.anatomySamples);
+  }
 
-
-    function getCurrentTrimmedSurfaceSamples() {
-
-        /*
+  function getCurrentTrimmedSurfaceSamples() {
+    /*
             Returns only the samples used by the
             visible upper and lower lip surfaces.
         */
 
-        return cloneArray(
-            currentMouthGeometry
-                .surfaceSamples
-        );
-    }
+    return cloneArray(currentMouthGeometry.surfaceSamples);
+  }
 
+  function getCurrentUpperPoints() {
+    return cloneArray(currentMouthGeometry.upperPoints);
+  }
 
-    function getCurrentUpperPoints() {
+  function getCurrentLowerPoints() {
+    return cloneArray(currentMouthGeometry.lowerPoints);
+  }
 
-        return cloneArray(
-            currentMouthGeometry
-                .upperPoints
-        );
-    }
+  function getCurrentSeamPoints() {
+    return cloneArray(currentMouthGeometry.seamPoints);
+  }
 
+  function getCurrentUpperPath() {
+    return currentMouthGeometry.upperPath || "";
+  }
 
-    function getCurrentLowerPoints() {
+  function getCurrentLowerPath() {
+    return currentMouthGeometry.lowerPath || "";
+  }
 
-        return cloneArray(
-            currentMouthGeometry
-                .lowerPoints
-        );
-    }
+  function getCurrentSeamPath() {
+    return currentMouthGeometry.seamPath || "";
+  }
 
-
-    function getCurrentSeamPoints() {
-
-        return cloneArray(
-            currentMouthGeometry
-                .seamPoints
-        );
-    }
-
-
-    function getCurrentUpperPath() {
-
-        return (
-            currentMouthGeometry
-                .upperPath ||
-            ""
-        );
-    }
-
-
-    function getCurrentLowerPath() {
-
-        return (
-            currentMouthGeometry
-                .lowerPath ||
-            ""
-        );
-    }
-
-
-    function getCurrentSeamPath() {
-
-        return (
-            currentMouthGeometry
-                .seamPath ||
-            ""
-        );
-    }
-
-
-    /* ==========================
+  /* ==========================
        UPDATE SETTINGS
     ========================== */
 
-    function updateMouthEngineSettings(
-        updates
-    ) {
+  function updateMouthEngineSettings(updates) {
+    window.mouthEngineSettings = {
+      ...window.mouthEngineSettings,
 
-        window.mouthEngineSettings = {
+      ...(updates || {}),
+    };
 
-            ...window.mouthEngineSettings,
+    return drawMouthEngine();
+  }
 
-            ...(updates || {})
-        };
-
-
-        return drawMouthEngine();
-    }
-
-
-    /* ==========================
+  /* ==========================
        REPLACE SETTINGS
     ========================== */
 
-    function setMouthEngineSettings(
-        settings
-    ) {
+  function setMouthEngineSettings(settings) {
+    window.mouthEngineSettings = {
+      ...defaultMouthEngineSettings,
 
-        window.mouthEngineSettings = {
+      ...(settings || {}),
+    };
 
-            ...defaultMouthEngineSettings,
+    return drawMouthEngine();
+  }
 
-            ...(settings || {})
-        };
-
-
-        return drawMouthEngine();
-    }
-
-
-    /* ==========================
+  /* ==========================
        RESET SETTINGS
     ========================== */
 
-    function resetMouthEngine() {
+  function resetMouthEngine() {
+    window.mouthEngineSettings = {
+      ...defaultMouthEngineSettings,
+    };
 
-        window.mouthEngineSettings = {
+    return drawMouthEngine();
+  }
 
-            ...defaultMouthEngineSettings
-        };
-
-
-        return drawMouthEngine();
-    }
-
-
-    /* ==========================
+  /* ==========================
        REDRAW ALIAS
     ========================== */
 
-    function refreshMouthEngine() {
+  function refreshMouthEngine() {
+    return drawMouthEngine();
+  }
 
-        return drawMouthEngine();
-    }
-
-
-    /* ==========================
+  /* ==========================
        GLOBAL COMPATIBILITY API
     ========================== */
 
-    window.getMouthProfileSettings =
-        getMouthProfileSettings;
+  window.getMouthProfileSettings = getMouthProfileSettings;
 
+  window.getMouthDirectionSettings = getMouthDirectionSettings;
 
-    window.getMouthDirectionSettings =
-        getMouthDirectionSettings;
+  window.buildMouthLandmarks = buildMouthLandmarks;
 
+  window.buildMouthSeam = buildMouthSeam;
 
-    window.buildMouthLandmarks =
-        buildMouthLandmarks;
+  window.sampleMouthSeam = sampleMouthSeam;
 
+  window.buildLipAnatomy = buildLipAnatomy;
 
-    window.buildMouthSeam =
-        buildMouthSeam;
+  window.buildMouthSamples = buildMouthSamples;
 
+  window.buildMouthGeometry = buildMouthGeometry;
 
-    window.sampleMouthSeam =
-        sampleMouthSeam;
+  window.getCurrentMouthGeometry = getCurrentGeometry;
 
+  window.getCurrentNamedMouthLandmarks = getCurrentNamedLandmarks;
 
-    window.buildLipAnatomy =
-        buildLipAnatomy;
+  window.getCurrentMouthLandmarks = getCurrentMouthLandmarks;
 
+  window.getCurrentMouthSeamSpline = getCurrentMouthSeamSpline;
 
-    window.buildMouthSamples =
-        buildMouthSamples;
+  window.getCurrentMouthSeamHandles = getCurrentMouthSeamHandles;
 
+  window.getCurrentMouthSeamSamples = getCurrentMouthSeamSamples;
 
-    window.buildMouthGeometry =
-        buildMouthGeometry;
+  window.getCurrentMouthSurfaceSamples = getCurrentMouthSurfaceSamples;
 
+  window.getCurrentTrimmedMouthSurfaceSamples = getCurrentTrimmedSurfaceSamples;
 
-    window.getCurrentMouthGeometry =
-        getCurrentGeometry;
+  window.getCurrentUpperPoints = getCurrentUpperPoints;
 
+  window.getCurrentLowerPoints = getCurrentLowerPoints;
 
-    window.getCurrentNamedMouthLandmarks =
-        getCurrentNamedLandmarks;
+  window.getCurrentSeamPoints = getCurrentSeamPoints;
 
+  window.getCurrentUpperLipPath = getCurrentUpperPath;
 
-    window.getCurrentMouthLandmarks =
-        getCurrentMouthLandmarks;
+  window.getCurrentLowerLipPath = getCurrentLowerPath;
 
+  window.getCurrentMouthSeamPath = getCurrentSeamPath;
 
-    window.getCurrentMouthSeamSpline =
-        getCurrentMouthSeamSpline;
-
-
-    window.getCurrentMouthSeamHandles =
-        getCurrentMouthSeamHandles;
-
-
-    window.getCurrentMouthSeamSamples =
-        getCurrentMouthSeamSamples;
-
-
-    window.getCurrentMouthSurfaceSamples =
-        getCurrentMouthSurfaceSamples;
-
-
-    window.getCurrentTrimmedMouthSurfaceSamples =
-        getCurrentTrimmedSurfaceSamples;
-
-
-    window.getCurrentUpperPoints =
-        getCurrentUpperPoints;
-
-
-    window.getCurrentLowerPoints =
-        getCurrentLowerPoints;
-
-
-    window.getCurrentSeamPoints =
-        getCurrentSeamPoints;
-
-
-    window.getCurrentUpperLipPath =
-        getCurrentUpperPath;
-
-
-    window.getCurrentLowerLipPath =
-        getCurrentLowerPath;
-
-
-    window.getCurrentMouthSeamPath =
-        getCurrentSeamPath;
-
-
-    /*
+  /*
         Geometry helpers retained for existing
         MouthDebug and FaceInspector code.
     */
 
-    window.getSeamPoints =
-        function (samples) {
+  window.getSeamPoints = function (samples) {
+    return window.MouthGeometry.getSeamPoints(samples);
+  };
 
-            return window.MouthGeometry
-                .getSeamPoints(
-                    samples
-                );
-        };
+  window.getUpperPoints = function (samples) {
+    return window.MouthGeometry.getUpperPoints(samples);
+  };
 
+  window.getLowerPoints = function (samples) {
+    return window.MouthGeometry.getLowerPoints(samples);
+  };
 
-    window.getUpperPoints =
-        function (samples) {
+  window.getLipSurfaceSamples = function (samples) {
+    return window.MouthGeometry.getSurfaceSamples(
+      samples,
+      window.mouthEngineSettings,
+    );
+  };
 
-            return window.MouthGeometry
-                .getUpperPoints(
-                    samples
-                );
-        };
+  window.buildUpperLipPath = function (samples) {
+    return window.MouthGeometry.buildUpperLipPath(
+      samples,
+      window.mouthEngineSettings,
+    );
+  };
 
+  window.buildLowerLipPath = function (samples) {
+    return window.MouthGeometry.buildLowerLipPath(
+      samples,
+      window.mouthEngineSettings,
+    );
+  };
 
-    window.getLowerPoints =
-        function (samples) {
+  window.drawMouthEngine = drawMouthEngine;
 
-            return window.MouthGeometry
-                .getLowerPoints(
-                    samples
-                );
-        };
+  window.refreshMouthEngine = refreshMouthEngine;
 
+  window.updateMouthEngineSettings = updateMouthEngineSettings;
 
-    window.getLipSurfaceSamples =
-        function (samples) {
+  window.setMouthEngineSettings = setMouthEngineSettings;
 
-            return window.MouthGeometry
-                .getSurfaceSamples(
-                    samples,
-                    window.mouthEngineSettings
-                );
-        };
+  window.resetMouthEngine = resetMouthEngine;
 
-
-    window.buildUpperLipPath =
-        function (samples) {
-
-            return window.MouthGeometry
-                .buildUpperLipPath(
-                    samples,
-                    window.mouthEngineSettings
-                );
-        };
-
-
-    window.buildLowerLipPath =
-        function (samples) {
-
-            return window.MouthGeometry
-                .buildLowerLipPath(
-                    samples,
-                    window.mouthEngineSettings
-                );
-        };
-
-
-    window.drawMouthEngine =
-        drawMouthEngine;
-
-
-    window.refreshMouthEngine =
-        refreshMouthEngine;
-
-
-    window.updateMouthEngineSettings =
-        updateMouthEngineSettings;
-
-
-    window.setMouthEngineSettings =
-        setMouthEngineSettings;
-
-
-    window.resetMouthEngine =
-        resetMouthEngine;
-
-
-    /* ==========================
+  /* ==========================
        MOUTH ENGINE API
     ========================== */
 
-    window.MouthEngine = {
+  window.MouthEngine = {
+    defaults: Object.freeze({
+      ...defaultMouthEngineSettings,
+    }),
 
-        defaults:
-            Object.freeze({
-                ...defaultMouthEngineSettings
-            }),
+    /* Settings */
 
+    getSettings: function () {
+      return {
+        ...window.mouthEngineSettings,
+      };
+    },
 
-        /* Settings */
+    getProfileSettings: getMouthProfileSettings,
 
-        getSettings:
-            function () {
+    getDirectionSettings: getMouthDirectionSettings,
 
-                return {
-                    ...window.mouthEngineSettings
-                };
-            },
+    update: updateMouthEngineSettings,
 
-        getProfileSettings:
-            getMouthProfileSettings,
+    set: setMouthEngineSettings,
 
-        getDirectionSettings:
-            getMouthDirectionSettings,
+    reset: resetMouthEngine,
 
-        update:
-            updateMouthEngineSettings,
+    /* Geometry construction */
 
-        set:
-            setMouthEngineSettings,
+    buildLandmarks: buildMouthLandmarks,
 
-        reset:
-            resetMouthEngine,
+    buildSeam: buildMouthSeam,
 
+    sampleSeam: sampleMouthSeam,
 
-        /* Geometry construction */
+    buildAnatomy: buildLipAnatomy,
 
-        buildLandmarks:
-            buildMouthLandmarks,
+    buildSamples: buildMouthSamples,
 
-        buildSeam:
-            buildMouthSeam,
+    build: buildMouthGeometry,
 
-        sampleSeam:
-            sampleMouthSeam,
+    /* Rendering */
 
-        buildAnatomy:
-            buildLipAnatomy,
+    draw: drawMouthEngine,
 
-        buildSamples:
-            buildMouthSamples,
+    refresh: refreshMouthEngine,
 
-        build:
-            buildMouthGeometry,
+    /* Complete geometry */
 
+    getGeometry: getCurrentGeometry,
 
-        /* Rendering */
+    /* Landmarks */
 
-        draw:
-            drawMouthEngine,
+    getNamedLandmarks: getCurrentNamedLandmarks,
 
-        refresh:
-            refreshMouthEngine,
+    getLandmarks: getCurrentMouthLandmarks,
 
+    /* Seam */
 
-        /* Complete geometry */
+    getSeamSpline: getCurrentMouthSeamSpline,
 
-        getGeometry:
-            getCurrentGeometry,
+    getSeamHandles: getCurrentMouthSeamHandles,
 
+    getSeamSamples: getCurrentMouthSeamSamples,
 
-        /* Landmarks */
+    getSeamPoints: getCurrentSeamPoints,
 
-        getNamedLandmarks:
-            getCurrentNamedLandmarks,
+    getSeamPath: getCurrentSeamPath,
 
-        getLandmarks:
-            getCurrentMouthLandmarks,
+    /* Lip surfaces */
 
+    getSurfaceSamples: getCurrentMouthSurfaceSamples,
 
-        /* Seam */
+    getTrimmedSurfaceSamples: getCurrentTrimmedSurfaceSamples,
 
-        getSeamSpline:
-            getCurrentMouthSeamSpline,
+    getUpperPoints: getCurrentUpperPoints,
 
-        getSeamHandles:
-            getCurrentMouthSeamHandles,
+    getLowerPoints: getCurrentLowerPoints,
 
-        getSeamSamples:
-            getCurrentMouthSeamSamples,
+    getUpperPath: getCurrentUpperPath,
 
-        getSeamPoints:
-            getCurrentSeamPoints,
+    getLowerPath: getCurrentLowerPath,
+  };
+  /* ==========================
+    FACELAB FEATURE ADAPTER
+    ========================== */
 
-        getSeamPath:
-            getCurrentSeamPath,
+  function createFaceLabMouthHandles() {
+    const geometry = getCurrentGeometry();
 
+    if (!geometry) {
+      return [];
+    }
 
-        /* Lip surfaces */
+    const landmarks = Array.isArray(geometry.landmarks)
+      ? geometry.landmarks
+      : [];
 
-        getSurfaceSamples:
-            getCurrentMouthSurfaceSamples,
+    const samples = Array.isArray(geometry.anatomySamples)
+      ? geometry.anatomySamples
+      : [];
 
-        getTrimmedSurfaceSamples:
-            getCurrentTrimmedSurfaceSamples,
+    if (landmarks.length < 2 || samples.length === 0) {
+      return [];
+    }
 
-        getUpperPoints:
-            getCurrentUpperPoints,
+    function findNearestSample(targetT) {
+      let nearest = samples[0];
 
-        getLowerPoints:
-            getCurrentLowerPoints,
+      let nearestDistance = Math.abs(Number(nearest.t || 0) - targetT);
 
-        getUpperPath:
-            getCurrentUpperPath,
+      samples.forEach(function (sample) {
+        const distance = Math.abs(Number(sample.t || 0) - targetT);
 
-        getLowerPath:
-            getCurrentLowerPath
-    };
+        if (distance < nearestDistance) {
+          nearest = sample;
 
+          nearestDistance = distance;
+        }
+      });
 
-    console.log(
-        "mouthEngine.js V5.1 loaded"
+      return nearest;
+    }
+
+    const leftCorner = landmarks[0];
+
+    const rightCorner = landmarks[landmarks.length - 1];
+
+    const upperSample = findNearestSample(0.28);
+
+    const cupidSample = findNearestSample(0.4);
+
+    const centerSample = findNearestSample(0.5);
+
+    return [
+      {
+        id: "leftCorner",
+
+        label: "Left Mouth Corner",
+
+        point: leftCorner,
+
+        properties: ["width", "cornerY"],
+
+        help: "Drag horizontally to change mouth width. Drag vertically to change corner height.",
+
+        beginDrag: function () {
+          return {
+            ...window.mouthEngineSettings,
+          };
+        },
+
+        drag: function (deltaX, deltaY, dragStart) {
+          const start = dragStart || {};
+
+          updateMouthEngineSettings({
+            width: Math.max(
+              30,
+              Math.min(300, Number(start.width || 150) - deltaX * 2),
+            ),
+
+            cornerY: Math.max(
+              -60,
+              Math.min(60, Number(start.cornerY || 0) + deltaY),
+            ),
+          });
+        },
+      },
+
+      {
+        id: "rightCorner",
+
+        label: "Right Mouth Corner",
+
+        point: rightCorner,
+
+        properties: ["width", "cornerY"],
+
+        help: "Drag horizontally to change mouth width. Drag vertically to change corner height.",
+
+        beginDrag: function () {
+          return {
+            ...window.mouthEngineSettings,
+          };
+        },
+
+        drag: function (deltaX, deltaY, dragStart) {
+          const start = dragStart || {};
+
+          updateMouthEngineSettings({
+            width: Math.max(
+              30,
+              Math.min(300, Number(start.width || 150) + deltaX * 2),
+            ),
+
+            cornerY: Math.max(
+              -60,
+              Math.min(60, Number(start.cornerY || 0) + deltaY),
+            ),
+          });
+        },
+      },
+
+      {
+        id: "cupidBow",
+
+        label: "Cupid Bow",
+
+        point: cupidSample.upperBorder,
+
+        properties: ["cupidBowHeight", "cupidBowWidth", "philtrumDip"],
+
+        help: "Drag vertically to change cupid-bow height. Drag horizontally to alter its width.",
+
+        beginDrag: function () {
+          return {
+            ...window.mouthEngineSettings,
+          };
+        },
+
+        drag: function (deltaX, deltaY, dragStart) {
+          const start = dragStart || {};
+
+          updateMouthEngineSettings({
+            cupidBowHeight: Math.max(
+              0,
+              Math.min(25, Number(start.cupidBowHeight || 3.2) - deltaY),
+            ),
+
+            cupidBowWidth: Math.max(
+              0.04,
+              Math.min(
+                0.45,
+                Number(start.cupidBowWidth || 0.16) + deltaX * 0.003,
+              ),
+            ),
+          });
+        },
+      },
+
+      {
+        id: "upperLip",
+
+        label: "Upper Lip Fullness",
+
+        point: upperSample.upperBorder,
+
+        properties: ["upperLipThickness", "upperCenterFullness"],
+
+        help: "Drag vertically to change upper-lip thickness. Drag horizontally to alter center fullness.",
+
+        beginDrag: function () {
+          return {
+            ...window.mouthEngineSettings,
+          };
+        },
+
+        drag: function (deltaX, deltaY, dragStart) {
+          const start = dragStart || {};
+
+          updateMouthEngineSettings({
+            upperLipThickness: Math.max(
+              0,
+              Math.min(
+                35,
+                Number(start.upperLipThickness || 6.5) - deltaY * 0.6,
+              ),
+            ),
+
+            upperCenterFullness: Math.max(
+              -10,
+              Math.min(
+                20,
+                Number(start.upperCenterFullness || 0) + deltaX * 0.03,
+              ),
+            ),
+          });
+        },
+      },
+
+      {
+        id: "lowerLip",
+
+        label: "Lower Lip Fullness",
+
+        point: centerSample.lowerBorder,
+
+        properties: [
+          "lowerLipThickness",
+          "lowerCenterFullness",
+          "lowerLobeWidth",
+        ],
+
+        help: "Drag vertically to alter lower-lip fullness. Drag horizontally to change lower-lobe width.",
+
+        beginDrag: function () {
+          return {
+            ...window.mouthEngineSettings,
+          };
+        },
+
+        drag: function (deltaX, deltaY, dragStart) {
+          const start = dragStart || {};
+
+          updateMouthEngineSettings({
+            lowerLipThickness: Math.max(
+              0,
+              Math.min(
+                40,
+                Number(start.lowerLipThickness || 8.5) + deltaY * 0.6,
+              ),
+            ),
+
+            lowerCenterFullness: Math.max(
+              -10,
+              Math.min(
+                25,
+                Number(start.lowerCenterFullness || 2.5) + deltaY * 0.35,
+              ),
+            ),
+
+            lowerLobeWidth: Math.max(
+              0.05,
+              Math.min(
+                0.75,
+                Number(start.lowerLobeWidth || 0.34) + deltaX * 0.003,
+              ),
+            ),
+          });
+        },
+      },
+    ];
+  }
+
+  if (window.FaceLab && typeof window.FaceLab.registerFeature === "function") {
+    window.FaceLab.registerFeature(
+      "mouth",
+
+      {
+        label: "Mouth",
+
+        getSettings: function () {
+          return {
+            ...window.mouthEngineSettings,
+          };
+        },
+
+        getHandles: createFaceLabMouthHandles,
+
+        update: updateMouthEngineSettings,
+
+        draw: drawMouthEngine,
+
+        refresh: refreshMouthEngine,
+
+        reset: resetMouthEngine,
+      },
     );
+  }
 
+  console.log("mouthEngine.js V5.1 loaded");
 })();
