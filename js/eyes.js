@@ -160,9 +160,9 @@ function buildEyeAnatomy(
   animatedEyeHeight,
   blinkAmount,
 ) {
-  if (!window.EyeBuilder || typeof window.EyeBuilder.build !== "function") {
+  if (!window.EyeAssembly || typeof window.EyeAssembly.build !== "function") {
     console.error(
-      "EyeBuilder is unavailable. Make sure js/eyes/eyeBuilder.js loads before js/eyes.js.",
+      "EyeAssembly is unavailable. Load js/eyes/eyeAssembly.js before js/eyes.js.",
     );
 
     return null;
@@ -214,7 +214,8 @@ function buildEyeAnatomy(
       left and right eye automatically.
   */
 
-  return window.EyeBuilder.build({
+  //return window.EyeBuilder.build({
+  return window.EyeAssembly.build({
     side: side,
 
     centerX: centerX,

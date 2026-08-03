@@ -1,6 +1,6 @@
 /* =========================================================
    FACELAB EYE RIG
-   Version 1.0.0
+   Version 5.0.0
 
    PURPOSE
 
@@ -200,12 +200,12 @@
   }
 
   window.EyeRig = {
-    version: "1.0.0",
+    version: "5.0.0",
     apply: apply,
     pose: pose,
     resolveState: resolveState,
     cloneLandmarks: cloneLandmarks,
   };
 
-  console.log("EyeRig 1.0 loaded");
+  console.log("EyeRig 5.0 loaded");
 })();

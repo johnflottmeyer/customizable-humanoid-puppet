@@ -1,6 +1,6 @@
 /* =========================================================
    FACELAB EYE RENDERER
-   Version 2.0.0
+   Version 5.0.0
 
    PURPOSE
 
@@ -71,14 +71,14 @@
           proportionate.
       */
 
-    upperSurfaceDepthScale: 0.052,
-    lowerSurfaceDepthScale: 0.012,
+    upperSurfaceDepthScale: 0.075,
+    lowerSurfaceDepthScale: 0.055,
 
-    upperSurfaceMinimum: 4,
-    upperSurfaceMaximum: 9,
+    upperSurfaceMinimum: 6,
+    upperSurfaceMaximum: 13,
 
-    lowerSurfaceMinimum: 1,
-    lowerSurfaceMaximum: 3,
+    lowerSurfaceMinimum: 4,
+    lowerSurfaceMaximum: 10,
 
     /*
           Surface appearance.
@@ -92,7 +92,7 @@
     lowerSurfaceFill: "url(#skinGradient)",
 
     upperSurfaceOpacity: 1,
-    lowerSurfaceOpacity: 0.32,
+    lowerSurfaceOpacity: 0.62,
 
     /*
           Lid creases.
@@ -263,6 +263,38 @@
     */
 
     insertBeforeElement(parent, element, edgeElement);
+
+    return element;
+  }
+
+  function ensureAnatomyElement(
+    side,
+    suffix,
+    referenceElement,
+  ) {
+    const id = `${side}${suffix}`;
+
+    let element = document.getElementById(id);
+
+    if (element) {
+      return element;
+    }
+
+    element = createSvgPath(id);
+
+    const parent =
+      referenceElement &&
+      referenceElement.parentNode;
+
+    if (!parent) {
+      return element;
+    }
+
+    insertBeforeElement(
+      parent,
+      element,
+      referenceElement,
+    );
 
     return element;
   }
@@ -851,42 +883,63 @@
 
   function getRequiredElements(side) {
     const elements = {
-      socket: getElement(side, "EyeSocket"),
+      socket:
+        getElement(side, "EyeSocket"),
 
-      white: getElement(side, "EyeWhite"),
+      white:
+        getElement(side, "EyeWhite"),
 
-      clipPath: getElement(side, "EyeClipPath"),
+      clipPath:
+        getElement(side, "EyeClipPath"),
 
-      iris: getElement(side, "Iris"),
+      iris:
+        getElement(side, "Iris"),
 
-      irisInner: getElement(side, "IrisInner"),
+      irisInner:
+        getElement(side, "IrisInner"),
 
-      pupil: getElement(side, "Pupil"),
+      pupil:
+        getElement(side, "Pupil"),
 
-      highlight: getElement(side, "EyeHighlight"),
+      highlight:
+        getElement(side, "EyeHighlight"),
 
-      upperLid: getElement(side, "UpperLid"),
+      upperLid:
+        getElement(side, "UpperLid"),
 
-      lowerLid: getElement(side, "LowerLid"),
+      lowerLid:
+        getElement(side, "LowerLid"),
 
-      upperCrease: getElement(side, "UpperLidCrease"),
+      upperCrease:
+        getElement(side, "UpperLidCrease"),
 
-      lowerCrease: getElement(side, "LowerLidCrease"),
+      lowerCrease:
+        getElement(side, "LowerLidCrease"),
 
-      tearDuct: getElement(side, "TearDuct"),
+      tearDuct:
+        getElement(side, "TearDuct"),
     };
 
-    elements.upperSurface = ensureSurfaceElement(
-      side,
-      "UpperLidSurface",
-      elements.upperLid,
-    );
+    elements.upperSurface =
+      ensureSurfaceElement(
+        side,
+        "UpperLidSurface",
+        elements.upperLid,
+      );
 
-    elements.lowerSurface = ensureSurfaceElement(
-      side,
-      "LowerLidSurface",
-      elements.lowerLid,
-    );
+    elements.lowerSurface =
+      ensureSurfaceElement(
+        side,
+        "LowerLidSurface",
+        elements.lowerLid,
+      );
+
+    elements.plica =
+      ensureAnatomyElement(
+        side,
+        "Plica",
+        elements.tearDuct,
+      );
 
     return elements;
   }
@@ -949,9 +1002,23 @@
      LID SURFACES
   ========================== */
 
-  function renderLidSurfaces(elements, surfaces, transform, options) {
+  function renderLidSurfaces(elements, surfaces, anatomy, transform, options) {
+    const upperComponent = anatomy.components && anatomy.components.upperLid;
+
+    const lowerComponent = anatomy.components && anatomy.components.lowerLid;
+
+    const upperPath =
+      upperComponent && upperComponent.tissuePath
+        ? upperComponent.tissuePath
+        : surfaces.upperSurfacePath;
+
+    const lowerPath =
+      lowerComponent && lowerComponent.tissuePath
+        ? lowerComponent.tissuePath
+        : surfaces.lowerSurfacePath;
+
     if (elements.upperSurface) {
-      setPath(elements.upperSurface, surfaces.upperSurfacePath, transform);
+      setPath(elements.upperSurface, upperPath, transform);
 
       styleSurface(
         elements.upperSurface,
@@ -961,7 +1028,7 @@
     }
 
     if (elements.lowerSurface) {
-      setPath(elements.lowerSurface, surfaces.lowerSurfacePath, transform);
+      setPath(elements.lowerSurface, lowerPath, transform);
 
       styleSurface(
         elements.lowerSurface,
@@ -975,15 +1042,97 @@
      LID EDGES
   ========================== */
 
-  function renderLidEdges(elements, anatomy, transform, options) {
-    setPath(elements.upperLid, anatomy.upperLid.path, transform);
+  function buildRenderedLidPath(
+    anatomy,
+    componentName,
+    isUpper,
+  ) {
+    const component =
+      anatomy.components &&
+      anatomy.components[componentName];
 
-    styleCurve(elements.upperLid, options.upperLidWidth, 0.95);
+    if (
+      !component ||
+      !Array.isArray(component.points) ||
+      component.points.length < 2
+    ) {
+      return anatomy[componentName]
+        ? anatomy[componentName].path
+        : "";
+    }
+
+    const points =
+      component.points.map(copyPoint);
+
+    const medial =
+      anatomy.components &&
+      anatomy.components.medialCanthus;
+
+    const lateral =
+      anatomy.components &&
+      anatomy.components.lateralCanthus;
+
+    if (medial) {
+      points[0] = copyPoint(
+        isUpper
+          ? medial.upperJoin
+          : medial.lowerJoin,
+      );
+    }
+
+    if (lateral && lateral.point) {
+      points[
+        points.length - 1
+      ] = copyPoint(lateral.point);
+    }
+
+    return createSmoothPath(points);
+  }
+
+  function renderLidEdges(
+    elements,
+    anatomy,
+    transform,
+    options,
+  ) {
+    const upperPath =
+      buildRenderedLidPath(
+        anatomy,
+        "upperLid",
+        true,
+      );
+
+    const lowerPath =
+      buildRenderedLidPath(
+        anatomy,
+        "lowerLid",
+        false,
+      );
+
+    setPath(
+      elements.upperLid,
+      upperPath,
+      transform,
+    );
+
+    styleCurve(
+      elements.upperLid,
+      options.upperLidWidth,
+      0.95,
+    );
 
     if (elements.lowerLid) {
-      setPath(elements.lowerLid, anatomy.lowerLid.path, transform);
+      setPath(
+        elements.lowerLid,
+        lowerPath,
+        transform,
+      );
 
-      styleCurve(elements.lowerLid, options.lowerLidWidth, 0.62);
+      styleCurve(
+        elements.lowerLid,
+        options.lowerLidWidth,
+        0.62,
+      );
     }
   }
 
@@ -1039,18 +1188,86 @@
      TEAR DUCT
   ========================== */
 
-  function renderTearDuct(elements, anatomy, side, transform, options) {
-    if (!elements.tearDuct) {
-      return;
+  function renderTearDuct(
+    elements,
+    anatomy,
+    side,
+    transform,
+    options,
+  ) {
+    const medial =
+      anatomy.components &&
+      anatomy.components.medialCanthus;
+
+    const carunclePath =
+      medial &&
+      medial.caruncle &&
+      medial.caruncle.path;
+
+    const fallbackPath =
+      anatomy.components &&
+      anatomy.components.tearDuct &&
+      anatomy.components.tearDuct.path;
+
+    const path =
+      carunclePath ||
+      fallbackPath ||
+      createTearDuctSurfacePath(
+        anatomy,
+        side,
+        options,
+      );
+
+    if (elements.tearDuct) {
+      setPath(
+        elements.tearDuct,
+        path,
+        transform,
+      );
+
+      elements.tearDuct.style.fill =
+        "#d99a91";
+
+      elements.tearDuct.style.stroke =
+        "#a6756e";
+
+      elements.tearDuct.style.strokeWidth =
+        "0.32px";
+
+      elements.tearDuct.style.strokeLinejoin =
+        "round";
+
+      elements.tearDuct.style.opacity =
+        "0.58";
+
+      elements.tearDuct.style.pointerEvents =
+        "none";
     }
 
-    const path = createTearDuctSurfacePath(anatomy, side, options);
+    const plicaPath =
+      medial &&
+      medial.plica &&
+      medial.plica.path;
 
-    setPath(elements.tearDuct, path, transform);
+    if (elements.plica) {
+      setPath(
+        elements.plica,
+        plicaPath || "",
+        transform,
+      );
 
-    elements.tearDuct.style.opacity = String(options.tearDuctOpacity);
+      elements.plica.style.fill =
+        "#efc0b4";
 
-    elements.tearDuct.style.pointerEvents = "none";
+      elements.plica.style.stroke =
+        "none";
+
+      elements.plica.style.opacity =
+        plicaPath ? "0.24" : "0";
+
+      elements.plica.style.pointerEvents =
+        "none";
+    }
   }
 
   /* ==========================
@@ -1254,7 +1471,7 @@
       options,
     );
 
-    renderLidSurfaces(elements, surfaces, transform, options);
+    renderLidSurfaces(elements, surfaces, anatomy, transform, options);
 
     renderLidEdges(elements, anatomy, transform, options);
 
@@ -1280,7 +1497,7 @@
   ========================== */
 
   window.EyeRenderer = {
-    version: "2.0.0",
+    version: "5.0.0",
 
     defaults: DEFAULT_RENDER_OPTIONS,
 
@@ -1291,5 +1508,5 @@
     createTearDuctSurfacePath: createTearDuctSurfacePath,
   };
 
-  console.log("EyeRenderer 2.0 loaded");
+  console.log("EyeRenderer 5.0 loaded");
 })();
