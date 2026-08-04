@@ -1,6 +1,6 @@
 /* =========================================================
    FACELAB EYE SYSTEM
-   EyeBuilder Renderer Migration
+   EyeBuilder Stable Controller
    Version 2.0
 
    REQUIRES:
@@ -160,9 +160,12 @@ function buildEyeAnatomy(
   animatedEyeHeight,
   blinkAmount,
 ) {
-  if (!window.EyeAssembly || typeof window.EyeAssembly.build !== "function") {
+  if (
+    !window.EyeBuilder ||
+    typeof window.EyeBuilder.build !== "function"
+  ) {
     console.error(
-      "EyeAssembly is unavailable. Load js/eyes/eyeAssembly.js before js/eyes.js.",
+      "EyeBuilder is unavailable. Load js/eyes/eyeBuilder.js before js/eyes.js.",
     );
 
     return null;
@@ -214,8 +217,7 @@ function buildEyeAnatomy(
       left and right eye automatically.
   */
 
-  //return window.EyeBuilder.build({
-  return window.EyeAssembly.build({
+  return window.EyeBuilder.build({
     side: side,
 
     centerX: centerX,
