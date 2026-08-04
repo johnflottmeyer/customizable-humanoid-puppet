@@ -1,6 +1,6 @@
 /* =========================================================
    FACELAB EYE SURFACE
-   Version 2.0.0
+   Version 2.0.1
 
    PURPOSE
 
@@ -35,7 +35,7 @@
     return;
   }
 
-  const originalBuild = window.EyeGeometry.build.bind(window.EyeGeometry);
+  const baseGeometryBuild = window.EyeGeometry.build.bind(window.EyeGeometry);
 
   /* ==========================
      HELPERS
@@ -240,7 +240,6 @@
     );
 
     /*
-        More open than EyeSurface 1.2.
         These limits prevent the eye from collapsing into a
         squint while still keeping the upper lid dominant.
     */
@@ -673,7 +672,7 @@
   ========================== */
 
   function build(landmarks, parameters) {
-    const legacyGeometry = originalBuild(landmarks, parameters);
+    const legacyGeometry = baseGeometryBuild(landmarks, parameters);
 
     if (
       !landmarks ||
@@ -737,7 +736,7 @@
   ========================== */
 
   window.EyeSurface = {
-    version: "2.0.0",
+    version: "2.0.1",
 
     build: buildSurface,
 
@@ -750,7 +749,6 @@
 
   window.EyeGeometry.build = build;
 
-  window.EyeGeometry.version = "1.2.0 + EyeSurface 2.0";
 
-  console.log("EyeSurface 2.0 loaded");
+  console.log("EyeSurface 2.0.1 loaded");
 })();
