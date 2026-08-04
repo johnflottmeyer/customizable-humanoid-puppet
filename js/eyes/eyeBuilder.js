@@ -1,6 +1,6 @@
 /* =========================================================
    FACELAB EYE BUILDER
-   Version 4.0.0
+   Version 4.0.1
 
    PURPOSE
 
@@ -196,10 +196,6 @@
 
   function perpendicularVector(vector) {
     return point(-vector.y, vector.x);
-  }
-
-  function dotProduct(first, second) {
-    return first.x * second.x + first.y * second.y;
   }
 
   /* ==========================
@@ -473,8 +469,6 @@
 
     const center = pointBetween(innerCanthus, outerCanthus, 0.5);
 
-    const halfWidth = vectorLength(axisVector) / 2;
-
     const globeRadiusX = Math.max(2, settings.width * settings.globeWidthScale);
 
     const globeRadiusY = Math.max(
@@ -487,7 +481,6 @@
       axis,
       upperNormal,
       lowerNormal,
-      halfWidth,
       globeRadiusX,
       globeRadiusY,
       innerCanthus,
@@ -901,7 +894,7 @@
   ========================== */
 
   window.EyeBuilder = {
-    version: "4.0.0",
+    version: "4.0.1",
 
     defaults: Object.freeze({
       ...defaultBuilderSettings,
@@ -922,5 +915,5 @@
     },
   };
 
-  console.log("EyeBuilder 4.0 loaded");
+  console.log("EyeBuilder 4.0.1 loaded");
 })();
