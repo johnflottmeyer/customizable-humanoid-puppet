@@ -1,6 +1,6 @@
 /* =========================================================
    FACELAB EYE RIG
-   Version 5.0.0
+   Version 5.0.1
 
    PURPOSE
 
@@ -103,7 +103,6 @@
       sleepy: clamp(number(input.sleepy, 0), 0, 1),
       gazeX: number(input.gazeX, 0),
       gazeY: number(input.gazeY, 0),
-      asymmetry: number(input.asymmetry, 0),
     };
   }
 
@@ -200,12 +199,12 @@
   }
 
   window.EyeRig = {
-    version: "5.0.0",
+    version: "5.0.1",
     apply: apply,
     pose: pose,
     resolveState: resolveState,
     cloneLandmarks: cloneLandmarks,
   };
 
-  console.log("EyeRig 5.0 loaded");
+  console.log("EyeRig 5.0.1 loaded");
 })();
