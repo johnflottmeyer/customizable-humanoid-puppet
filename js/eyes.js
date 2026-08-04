@@ -1,7 +1,7 @@
 /* =========================================================
    FACELAB EYE SYSTEM
    EyeBuilder Stable Controller
-   Version 2.0
+   Version 2.1
 
    REQUIRES:
 
@@ -149,6 +149,19 @@ function safeEyeNumber(value, fallback) {
 }
 
 /* ==========================
+   REFRESH FACE INSPECTOR
+========================== */
+
+function refreshFaceInspector() {
+  if (
+    window.FaceInspector &&
+    typeof window.FaceInspector.refresh === "function"
+  ) {
+    window.FaceInspector.refresh();
+  }
+}
+
+/* ==========================
    BUILD EYE ANATOMY
 ========================== */
 
@@ -157,7 +170,6 @@ function buildEyeAnatomy(
   centerX,
   centerY,
   rotation,
-  animatedEyeHeight,
   blinkAmount,
 ) {
   if (
@@ -324,42 +336,6 @@ function buildEyeAnatomy(
 }
 
 /* ==========================
-   CREATE TEAR DUCT SURFACE
-========================== */
-
-function createTearDuctSurfacePath(anatomy) {
-  if (!anatomy || !anatomy.landmarks) {
-    return "";
-  }
-
-  const tear = anatomy.landmarks.tearDuct;
-
-  const inner = anatomy.landmarks.innerCanthus;
-
-  if (!tear || !inner) {
-    return "";
-  }
-
-  const middleX = (tear.x + inner.x) / 2;
-
-  const ductHeight = Math.max(1.5, Math.abs(tear.y - inner.y) + 1.5);
-
-  return [
-    `M ${inner.x} ${inner.y}`,
-
-    `C ${middleX} ${inner.y - ductHeight}`,
-    `${tear.x} ${tear.y - ductHeight}`,
-    `${tear.x} ${tear.y}`,
-
-    `C ${tear.x} ${tear.y + ductHeight}`,
-    `${middleX} ${inner.y + ductHeight}`,
-    `${inner.x} ${inner.y}`,
-
-    "Z",
-  ].join(" ");
-}
-
-/* ==========================
    DRAW ONE EYE
 ========================== */
 
@@ -396,7 +372,6 @@ function drawEye(side, centerX, centerY, rotation) {
     centerX,
     centerY,
     rotation,
-    animatedEyeHeight,
     blinkAmount,
   );
 
@@ -471,12 +446,7 @@ function initializeEyeControls() {
 
         drawEyes();
 
-        if (
-          window.FaceInspector &&
-          typeof window.FaceInspector.refresh === "function"
-        ) {
-          window.FaceInspector.refresh();
-        }
+        refreshFaceInspector();
       },
     );
   });
@@ -562,12 +532,7 @@ function loadEyes() {
 
     drawEyes();
 
-    if (
-      window.FaceInspector &&
-      typeof window.FaceInspector.refresh === "function"
-    ) {
-      window.FaceInspector.refresh();
-    }
+    refreshFaceInspector();
 
     displayEyeStatus("Saved eye settings loaded.");
 
@@ -637,6 +602,8 @@ function resetEyeRig() {
   });
 
   drawEyes();
+
+  refreshFaceInspector();
 }
 
 /* ==========================
@@ -716,12 +683,7 @@ window.resetEyeRig = resetEyeRig;
 
     drawEyes();
 
-    if (
-      window.FaceInspector &&
-      typeof window.FaceInspector.refresh === "function"
-    ) {
-      window.FaceInspector.refresh();
-    }
+    refreshFaceInspector();
 
     return {
       ...window.eyeSettings,
@@ -1278,7 +1240,7 @@ window.resetEyeRig = resetEyeRig;
 
         guideOrder: 1,
 
-        properties: ["eyeHeight", "eyeUpperArch"],
+        properties: ["eyeHeight"],
 
         help: "Drag vertically to adjust the upper eye opening.",
 
@@ -1318,7 +1280,7 @@ window.resetEyeRig = resetEyeRig;
 
         guideOrder: 3,
 
-        properties: ["eyeHeight", "eyeLowerArch"],
+        properties: ["eyeHeight"],
 
         help: "Drag vertically to adjust the lower eye opening.",
 
@@ -1358,7 +1320,7 @@ window.resetEyeRig = resetEyeRig;
 
         guideOrder: 1,
 
-        properties: ["eyeHeight", "eyeUpperArch"],
+        properties: ["eyeHeight"],
 
         help: "Drag vertically to adjust the upper eye opening.",
 
@@ -1398,7 +1360,7 @@ window.resetEyeRig = resetEyeRig;
 
         guideOrder: 3,
 
-        properties: ["eyeHeight", "eyeLowerArch"],
+        properties: ["eyeHeight"],
 
         help: "Drag vertically to adjust the lower eye opening.",
 
@@ -1432,7 +1394,7 @@ window.resetEyeRig = resetEyeRig;
   window.updateEyeSettings = updateFaceLabEyes;
 
   window.EyeSystem = {
-    version: "2.1.0",
+    version: "2.1.1",
 
     defaults: Object.freeze({
       ...defaultEyeSettings,
@@ -1506,5 +1468,5 @@ window.resetEyeRig = resetEyeRig;
     console.warn("FaceLab Core was not available when eyes.js loaded.");
   }
 
-  console.log("FaceLab Eye System 2.1 registered");
+  console.log("FaceLab Eye System 2.1.1 registered");
 })();
