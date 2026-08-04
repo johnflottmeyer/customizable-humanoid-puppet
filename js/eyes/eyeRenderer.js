@@ -1,6 +1,6 @@
 /* =========================================================
    FACELAB EYE RENDERER
-   Version 5.0.0
+   Version 5.0.1
 
    PURPOSE
 
@@ -198,10 +198,6 @@
 
   function perpendicularVector(vector) {
     return point(-vector.y, vector.x);
-  }
-
-  function dotProduct(first, second) {
-    return first.x * second.x + first.y * second.y;
   }
 
   function reversePointArray(points) {
@@ -1497,7 +1493,7 @@
   ========================== */
 
   window.EyeRenderer = {
-    version: "5.0.0",
+    version: "5.0.1",
 
     defaults: DEFAULT_RENDER_OPTIONS,
 
@@ -1508,5 +1504,5 @@
     createTearDuctSurfacePath: createTearDuctSurfacePath,
   };
 
-  console.log("EyeRenderer 5.0 loaded");
+  console.log("EyeRenderer 5.0.1 loaded");
 })();
