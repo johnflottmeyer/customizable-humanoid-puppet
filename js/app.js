@@ -35,21 +35,29 @@ const headControls = [
 ========================== */
 
 function drawMouthLayers() {
-  /*
-        Draw the older animated mouth first.
-    */
-
-  if (typeof window.drawMouth === "function") {
-    window.drawMouth();
-  }
-
-  /*
-        Draw the procedural mouth above it.
-    */
-
   if (typeof window.drawMouthEngine === "function") {
     window.drawMouthEngine();
   }
+}
+
+/* ==========================
+   REDRAW FACE
+========================== */
+
+function redrawFace() {
+  if (typeof window.drawHead === "function") {
+    window.drawHead();
+  }
+
+  if (typeof window.drawEyes === "function") {
+    window.drawEyes();
+  }
+
+  if (typeof window.drawNose === "function") {
+    window.drawNose();
+  }
+
+  drawMouthLayers();
 }
 
 /* ==========================
@@ -89,17 +97,7 @@ function initializeHeadControls() {
 
       displayHeadValue(settingName);
 
-      window.drawHead();
-
-      if (typeof window.drawEyes === "function") {
-        window.drawEyes();
-      }
-
-      if (typeof window.drawNose === "function") {
-        window.drawNose();
-      }
-
-      drawMouthLayers();
+      redrawFace();
     });
   });
 }
@@ -173,17 +171,7 @@ function loadHead() {
 
     updateHeadControls();
 
-    window.drawHead();
-
-    if (typeof window.drawEyes === "function") {
-      window.drawEyes();
-    }
-
-    if (typeof window.drawNose === "function") {
-      window.drawNose();
-    }
-
-    drawMouthLayers();
+    redrawFace();
 
     displayHeadStatus("Saved head settings loaded.");
 
@@ -204,17 +192,7 @@ function resetHead() {
 
   updateHeadControls();
 
-  window.drawHead();
-
-  if (typeof window.drawEyes === "function") {
-    window.drawEyes();
-  }
-
-  if (typeof window.drawNose === "function") {
-    window.drawNose();
-  }
-
-  drawMouthLayers();
+  redrawFace();
 
   displayHeadStatus("Head settings reset.");
 }
@@ -404,8 +382,6 @@ window.addEventListener("DOMContentLoaded", function () {
 
   if (typeof window.initializeNose === "function") {
     window.initializeNose();
-  } else if (typeof initializeNose === "function") {
-    initializeNose();
   } else {
     console.error("initializeNose() was not loaded.");
   }
@@ -417,21 +393,11 @@ window.addEventListener("DOMContentLoaded", function () {
   initializeMouthButtons();
 
   /* ==========================
-           LEGACY MOUTH
-        ========================== */
-
-  if (typeof window.drawMouth === "function") {
-    window.drawMouth();
-  } else {
-    console.error("drawMouth() was not loaded.");
-  }
-
-  /* ==========================
            PROCEDURAL MOUTH ENGINE
         ========================== */
 
   if (typeof window.drawMouthEngine === "function") {
-    window.drawMouthEngine();
+    drawMouthLayers();
   } else {
     console.error("drawMouthEngine() was not loaded.");
   }
@@ -448,15 +414,6 @@ window.addEventListener("DOMContentLoaded", function () {
 
   initializeFaceInspector();
 
-  /* ==========================
-           IDLE ANIMATION
-        ========================== */
-
-  if (typeof window.startIdleAnimation === "function") {
-    window.startIdleAnimation();
-  } else {
-    console.warn("startIdleAnimation() was not loaded.");
-  }
 });
 
 /* ==========================
