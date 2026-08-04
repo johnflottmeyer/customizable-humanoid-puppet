@@ -1,16 +1,22 @@
 /* =========================================================
    FACELAB EYE GEOMETRY
-   Version 3.0.0
+   Version 3.0.1
 
    PURPOSE
 
    Builds upper and lower eyelids as independent anatomical
    surfaces made from controlled cubic Bézier segments.
 
-   Patch 4 change:
-   shoulder landmarks are now true transition points. The
-   upper peak and lower low point receive flattened tangents,
-   preventing the diamond / tent-shaped eye opening.
+   VERSION HISTORY
+
+   3.0.0
+   - Added anatomical shoulder transition points.
+   - Flattened upper-peak and lower-low tangents.
+   - Prevented diamond and tent-shaped eye openings.
+
+   3.0.1
+   - Removed one unused SVG line-command helper and export.
+   - No geometry or rendering behavior changed.
 ========================================================= */
 
 (function initializeEyeGeometry() {
@@ -82,10 +88,6 @@
 
   function moveCommand(source) {
     return `M ${source.x} ${source.y}`;
-  }
-
-  function lineCommand(source) {
-    return `L ${source.x} ${source.y}`;
   }
 
   function cubicCommand(control1, control2, destination) {
@@ -665,9 +667,11 @@
     }
 
     const parameters = {
+      /* OPENING */
+
       width: 78,
       height: 32,
-      /* Patch 4 anatomical curve controls */
+
       upperCanthusHandle: 0.24,
       upperShoulderHandle: 0.31,
       upperCenterHandle: 0.46,
@@ -677,15 +681,29 @@
       lowerShoulderHandle: 0.30,
       lowerCenterHandle: 0.48,
       lowerShoulderAxisInfluence: 0.5,
+
+      /* CREASES */
+
       upperCreaseHeight: 7,
       upperCreaseInset: 7,
+
       lowerCreaseDepth: 4,
       lowerCreaseInset: 12,
+
+      /* TEAR DUCT */
+
       tearDuctSurfaceHeight: 1.5,
+
+      /* SOCKET */
+
       socketWidthScale: 1.34,
       socketHeightScale: 1.72,
       socketOffsetY: 1,
+
+      /* SAMPLING */
+
       sampleCount: 18,
+
       ...(inputParameters || {}),
     };
 
@@ -717,7 +735,7 @@
   }
 
   window.EyeGeometry = {
-    version: "3.0.0",
+    version: "3.0.1",
     build,
     resolveOpeningLandmarks,
     buildOpeningSegments,
@@ -749,9 +767,8 @@
     normalizeVector,
     perpendicular,
     moveCommand,
-    lineCommand,
     cubicCommand,
   };
 
-  console.log("EyeGeometry 3.0 loaded");
+  console.log("EyeGeometry 3.0.1 loaded");
 })();
