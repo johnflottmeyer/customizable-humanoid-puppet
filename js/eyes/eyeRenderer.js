@@ -1,6 +1,6 @@
 /* =========================================================
    FACELAB EYE RENDERER
-   Version 5.0.1
+   Version 5.2.7
 
    PURPOSE
 
@@ -48,20 +48,34 @@
   const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
   const DEFAULT_RENDER_OPTIONS = Object.freeze({
+    /* SOCKET POSITION */
+
+    socketLiftY: -8,
+
+    /* UPPER LID FOLD */
+
+    upperFoldOffsetScale: 0.055,
+    upperFoldMinimum: 4.2,
+    upperFoldMaximum: 7.5,
+    upperFoldWidth: 0.9,
+    upperFoldOpacity: 0.2,
+    upperFoldStart: 0.12,
+    upperFoldEnd: 0.88,
+
     irisScale: 0.9,
 
     /*
           Lift the iris slightly beneath the upper lid.
       */
 
-    irisLift: 6.5,
+    irisLift: 7.2,
 
     /*
           Lid-edge line widths.
       */
 
-    upperLidWidth: 1.65,
-    lowerLidWidth: 0.85,
+    upperLidWidth: 1.25,
+    lowerLidWidth: 0.95,
 
     /*
           Eyelid surface dimensions.
@@ -71,14 +85,14 @@
           proportionate.
       */
 
-    upperSurfaceDepthScale: 0.075,
-    lowerSurfaceDepthScale: 0.055,
+    upperSurfaceDepthScale: 0.095,
+    lowerSurfaceDepthScale: 0.085,
 
-    upperSurfaceMinimum: 6,
-    upperSurfaceMaximum: 13,
+    upperSurfaceMinimum: 7,
+    upperSurfaceMaximum: 16,
 
-    lowerSurfaceMinimum: 4,
-    lowerSurfaceMaximum: 10,
+    lowerSurfaceMinimum: 6,
+    lowerSurfaceMaximum: 14,
 
     /*
           Surface appearance.
@@ -87,12 +101,12 @@
           skin gradient when available.
       */
 
-    upperSurfaceFill: "url(#skinGradient)",
+    upperSurfaceFill: "url(#faceLabUpperLidGradient)",
 
-    lowerSurfaceFill: "url(#skinGradient)",
+    lowerSurfaceFill: "url(#faceLabLowerLidGradient)",
 
-    upperSurfaceOpacity: 1,
-    lowerSurfaceOpacity: 0.62,
+    upperSurfaceOpacity: 0.96,
+    lowerSurfaceOpacity: 0.92,
 
     /*
           Lid creases.
@@ -101,11 +115,11 @@
     upperCreaseWidth: 1.05,
     lowerCreaseWidth: 0.72,
 
-    upperCreaseOpacity: 0.34,
-    lowerCreaseOpacity: 0.16,
+    upperCreaseOpacity: 0.22,
+    lowerCreaseOpacity: 0.13,
 
-    upperCreaseOffsetScale: 0.045,
-    lowerCreaseOffsetScale: 0.022,
+    upperCreaseOffsetScale: 0.064,
+    lowerCreaseOffsetScale: 0.03,
 
     upperCreaseStart: 0.18,
     upperCreaseEnd: 0.84,
@@ -120,9 +134,22 @@
           integrated into the inner canthus.
       */
 
-    tearDuctOpacity: 0.24,
-    tearDuctLengthScale: 0.035,
-    tearDuctHeightScale: 0.016,
+    tearDuctOpacity: 0.58,
+    tearDuctLengthScale: 0.032,
+    tearDuctHeightScale: 0.013,
+
+    /*
+        Tear-duct placement.
+
+        X moves along the eye axis:
+        positive values move toward the iris.
+
+        Y moves vertically in SVG coordinates:
+        positive values move downward.
+    */
+
+    tearDuctOffsetX: 0, // retained for compatibility; 5.2.6a uses lid endpoints
+    tearDuctOffsetY: 0, // retained for compatibility; 5.2.6a uses lid endpoints
 
     /*
           Highlight.
@@ -131,6 +158,42 @@
     highlightScale: 0.11,
     highlightOffsetScale: 0.18,
   });
+
+  /*
+     EDITABLE TEAR-DUCT LANDMARKS
+
+     These are renderer-level offsets from the true medial
+     canthus. FaceLab/EyeBuilder can expose these as handles.
+     Keeping them here means the rendered duct always uses
+     the same editable position.
+  */
+
+  const tearDuctLandmarks = {
+    left: { x: 0, y: 0 },
+    right: { x: 0, y: 0 },
+  };
+
+  function getTearDuctLandmark(side) {
+    const value = tearDuctLandmarks[side];
+
+    return value
+      ? { x: value.x, y: value.y }
+      : { x: 0, y: 0 };
+  }
+
+  function setTearDuctLandmark(side, x, y) {
+    if (!tearDuctLandmarks[side]) {
+      return false;
+    }
+
+    tearDuctLandmarks[side].x =
+      Number.isFinite(Number(x)) ? Number(x) : 0;
+
+    tearDuctLandmarks[side].y =
+      Number.isFinite(Number(y)) ? Number(y) : 0;
+
+    return true;
+  }
 
   /* ==========================
      BASIC HELPERS
@@ -220,6 +283,199 @@
     path.style.pointerEvents = "none";
 
     return path;
+  }
+
+  function ensureSvgDefinitions() {
+    const svg =
+      document.getElementById("face") ||
+      document.querySelector("svg");
+
+    if (!svg) {
+      return null;
+    }
+
+    let definitions = svg.querySelector("defs");
+
+    if (!definitions) {
+      definitions = document.createElementNS(
+        SVG_NAMESPACE,
+        "defs",
+      );
+
+      svg.insertBefore(definitions, svg.firstChild);
+    }
+
+    return definitions;
+  }
+
+  function ensureLinearGradient(id, coordinates, stops) {
+    const definitions = ensureSvgDefinitions();
+
+    if (!definitions) {
+      return null;
+    }
+
+    let gradient = document.getElementById(id);
+
+    if (!gradient) {
+      gradient = document.createElementNS(
+        SVG_NAMESPACE,
+        "linearGradient",
+      );
+
+      gradient.setAttribute("id", id);
+      definitions.appendChild(gradient);
+    }
+
+    gradient.setAttribute("x1", coordinates.x1);
+    gradient.setAttribute("y1", coordinates.y1);
+    gradient.setAttribute("x2", coordinates.x2);
+    gradient.setAttribute("y2", coordinates.y2);
+
+    gradient.replaceChildren();
+
+    stops.forEach(function addStop(stopData) {
+      const stop = document.createElementNS(
+        SVG_NAMESPACE,
+        "stop",
+      );
+
+      stop.setAttribute("offset", stopData.offset);
+      stop.setAttribute("stop-color", stopData.color);
+
+      if (stopData.opacity !== undefined) {
+        stop.setAttribute("stop-opacity", stopData.opacity);
+      }
+
+      gradient.appendChild(stop);
+    });
+
+    return gradient;
+  }
+
+  function ensureRadialGradient(
+    id,
+    attributes,
+    stops,
+  ) {
+    const definitions = ensureSvgDefinitions();
+
+    if (!definitions) {
+      return null;
+    }
+
+    let gradient = document.getElementById(id);
+
+    if (!gradient) {
+      gradient = document.createElementNS(
+        SVG_NAMESPACE,
+        "radialGradient",
+      );
+
+      gradient.setAttribute("id", id);
+      definitions.appendChild(gradient);
+    }
+
+    Object.keys(attributes).forEach(
+      function setGradientAttribute(name) {
+        gradient.setAttribute(
+          name,
+          attributes[name],
+        );
+      },
+    );
+
+    gradient.replaceChildren();
+
+    stops.forEach(function addStop(stopData) {
+      const stop = document.createElementNS(
+        SVG_NAMESPACE,
+        "stop",
+      );
+
+      stop.setAttribute(
+        "offset",
+        stopData.offset,
+      );
+
+      stop.setAttribute(
+        "stop-color",
+        stopData.color,
+      );
+
+      if (stopData.opacity !== undefined) {
+        stop.setAttribute(
+          "stop-opacity",
+          stopData.opacity,
+        );
+      }
+
+      gradient.appendChild(stop);
+    });
+
+    return gradient;
+  }
+
+  function ensureEyeGradients() {
+    ensureLinearGradient(
+      "faceLabUpperLidGradient",
+      { x1: "0%", y1: "0%", x2: "0%", y2: "100%" },
+      [
+        { offset: "0%", color: "var(--skin-mid)", opacity: "0.48" },
+        { offset: "46%", color: "var(--skin-light)", opacity: "0.88" },
+        { offset: "100%", color: "var(--skin-dark)", opacity: "0.36" },
+      ],
+    );
+
+    ensureLinearGradient(
+      "faceLabLowerLidGradient",
+      { x1: "0%", y1: "0%", x2: "0%", y2: "100%" },
+      [
+        { offset: "0%", color: "var(--skin-light)", opacity: "0.68" },
+        { offset: "56%", color: "var(--skin-mid)", opacity: "0.52" },
+        { offset: "100%", color: "var(--skin-dark)", opacity: "0.22" },
+      ],
+    );
+
+    ensureLinearGradient(
+      "faceLabScleraGradient",
+      {
+        x1: "0%",
+        y1: "50%",
+        x2: "100%",
+        y2: "50%",
+      },
+      [
+        {
+          offset: "0%",
+          color: "#b8aaa2",
+        },
+        {
+          offset: "12%",
+          color: "#d7d1cd",
+        },
+        {
+          offset: "30%",
+          color: "#f3f2f1",
+        },
+        {
+          offset: "50%",
+          color: "#ffffff",
+        },
+        {
+          offset: "70%",
+          color: "#f3f2f1",
+        },
+        {
+          offset: "88%",
+          color: "#d7d1cd",
+        },
+        {
+          offset: "100%",
+          color: "#b8aaa2",
+        },
+      ],
+    );
   }
 
   function insertBeforeElement(parent, element, reference) {
@@ -579,34 +835,67 @@
     const t = clamp(amount, 0, 1);
 
     const arch = Math.pow(
-      Math.sin(Math.PI * t),
-
-      0.72,
+      Math.max(0, Math.sin(Math.PI * t)),
+      0.68,
     );
 
-    const innerRelease = clamp(t / 0.12, 0, 1);
+    const innerRelease = clamp(t / 0.11, 0, 1);
 
     const outerRelease = clamp((1 - t) / 0.1, 0, 1);
 
-    const temporalBias = mix(0.92, 1.08, t);
+    const centerFullness =
+      0.84 +
+      0.24 *
+        Math.exp(
+          -Math.pow((t - 0.56) / 0.24, 2),
+        );
 
-    return arch * innerRelease * outerRelease * temporalBias;
+    const temporalBias = mix(0.96, 1.05, t);
+
+    return (
+      arch *
+      innerRelease *
+      outerRelease *
+      centerFullness *
+      temporalBias
+    );
   }
 
   function lowerSurfaceProfile(amount) {
     const t = clamp(amount, 0, 1);
 
-    const arch = Math.pow(
-      Math.sin(Math.PI * t),
+    /*
+        Broad enough to read as actual lower-lid tissue,
+        while tapering cleanly into both canthi.
+    */
 
+    const arch = Math.pow(
+      Math.max(0, Math.sin(Math.PI * t)),
       1.05,
     );
 
-    const innerRelease = clamp(t / 0.16, 0, 1);
+    const innerRelease = clamp(t / 0.22, 0, 1);
 
-    const outerRelease = clamp((1 - t) / 0.15, 0, 1);
+    const outerRelease = clamp((1 - t) / 0.22, 0, 1);
 
-    return arch * innerRelease * outerRelease;
+    /*
+        Fullest just beneath the iris, with a slight
+        temporal shift instead of perfect symmetry.
+    */
+
+    const centralRoll =
+      0.68 +
+      0.58 *
+        Math.exp(
+          -Math.pow((t - 0.56) / 0.18, 2),
+        );
+
+    return (
+      arch *
+      innerRelease *
+      outerRelease *
+      centralRoll
+    );
   }
 
   function creaseProfile(amount) {
@@ -916,6 +1205,13 @@
         getElement(side, "TearDuct"),
     };
 
+    elements.upperFold =
+      ensureAnatomyElement(
+        side,
+        "UpperLidFold",
+        elements.upperLid,
+      );
+
     elements.upperSurface =
       ensureSurfaceElement(
         side,
@@ -970,17 +1266,29 @@
      SOCKET
   ========================== */
 
-  function renderSocket(elements, anatomy, centerX, centerY, rotation) {
+  function renderSocket(
+    elements,
+    anatomy,
+    centerX,
+    centerY,
+    rotation,
+    options,
+  ) {
     if (!elements.socket || !anatomy.socket) {
       return;
     }
 
     setPath(elements.socket, anatomy.socket.path, null);
 
+    const socketLiftY =
+      number(options.socketLiftY, -8);
+
     elements.socket.setAttribute(
       "transform",
-
-      `rotate(${rotation * 1.5} ${centerX} ${centerY})`,
+      [
+        `translate(0 ${socketLiftY})`,
+        `rotate(${rotation * 1.5} ${centerX} ${centerY})`,
+      ].join(" "),
     );
   }
 
@@ -990,6 +1298,11 @@
 
   function renderOpening(elements, anatomy, transform) {
     setPath(elements.white, anatomy.opening.path, transform);
+
+    if (elements.white) {
+      elements.white.style.fill =
+        "url(#faceLabScleraGradient)";
+    }
 
     setPath(elements.clipPath, anatomy.opening.path, transform);
   }
@@ -1127,9 +1440,129 @@
       styleCurve(
         elements.lowerLid,
         options.lowerLidWidth,
-        0.62,
+        0.90,
       );
     }
+  }
+
+  /* ==========================
+     UPPER LID FOLD
+  ========================== */
+
+  function buildUpperLidFoldPath(anatomy, options) {
+    const axisData = calculateEyeAxis(anatomy);
+
+    let upperPoints = extractCurvePoints(
+      anatomy,
+      "upperLid",
+    );
+
+    upperPoints = orientPoints(
+      upperPoints,
+      axisData.inner,
+    );
+
+    if (upperPoints.length < 3) {
+      return "";
+    }
+
+    const selectedPoints = slicePointsByAmount(
+      upperPoints,
+      options.upperFoldStart,
+      options.upperFoldEnd,
+    );
+
+    if (selectedPoints.length < 2) {
+      return "";
+    }
+
+    const foldOffset = clamp(
+      axisData.width * options.upperFoldOffsetScale,
+      options.upperFoldMinimum,
+      options.upperFoldMaximum,
+    );
+
+    const lastIndex = Math.max(
+      1,
+      selectedPoints.length - 1,
+    );
+
+    const foldPoints = selectedPoints.map(
+      function createFoldPoint(source, index) {
+        const amount = index / lastIndex;
+
+        const arch = Math.pow(
+          Math.max(0, Math.sin(Math.PI * amount)),
+          0.8,
+        );
+
+        const innerRelease = clamp(
+          amount / 0.22,
+          0,
+          1,
+        );
+
+        const outerRelease = clamp(
+          (1 - amount) / 0.26,
+          0,
+          1,
+        );
+
+        const temporalBias = mix(
+          0.96,
+          1.05,
+          amount,
+        );
+
+        const distance =
+          foldOffset *
+          arch *
+          innerRelease *
+          outerRelease *
+          temporalBias;
+
+        return addPoints(
+          source,
+          scalePoint(
+            axisData.upperNormal,
+            distance,
+          ),
+        );
+      },
+    );
+
+    return createSmoothPath(foldPoints);
+  }
+
+  function renderUpperLidFold(
+    elements,
+    anatomy,
+    transform,
+    options,
+  ) {
+    if (!elements.upperFold) {
+      return;
+    }
+
+    const path = buildUpperLidFoldPath(
+      anatomy,
+      options,
+    );
+
+    setPath(
+      elements.upperFold,
+      path,
+      transform,
+    );
+
+    styleCurve(
+      elements.upperFold,
+      options.upperFoldWidth,
+      options.upperFoldOpacity,
+    );
+
+    elements.upperFold.style.stroke =
+      "rgba(116, 72, 50, 0.72)";
   }
 
   /* ==========================
@@ -1184,6 +1617,175 @@
      TEAR DUCT
   ========================== */
 
+  function createRoundedCarunclePath(
+    anatomy,
+    side,
+    options,
+  ) {
+    const axisData =
+      calculateEyeAxis(anatomy);
+
+    let upperPoints =
+      extractCurvePoints(
+        anatomy,
+        "upperLid",
+      );
+
+    let lowerPoints =
+      extractCurvePoints(
+        anatomy,
+        "lowerLid",
+      );
+
+    upperPoints =
+      orientPoints(
+        upperPoints,
+        axisData.inner,
+      );
+
+    lowerPoints =
+      orientPoints(
+        lowerPoints,
+        axisData.inner,
+      );
+
+    if (
+      upperPoints.length < 2 ||
+      lowerPoints.length < 2
+    ) {
+      return "";
+    }
+
+    /*
+        Build the tear duct FROM the actual medial ends
+        of the upper and lower lids. This prevents the
+        caruncle from becoming a detached appendage.
+    */
+
+    const upperCorner =
+      upperPoints[0];
+
+    const lowerCorner =
+      lowerPoints[0];
+
+    const eyeDirection =
+      normalizeVector(axisData.axis);
+
+    const length =
+      clamp(
+        axisData.width *
+          options.tearDuctLengthScale,
+        2.6,
+        4.4,
+      );
+
+    /*
+        Root sits between the two lid endpoints.
+        The visible pink pocket extends inward toward
+        the iris rather than outward toward the nose.
+    */
+
+    const landmarkOffset =
+      getTearDuctLandmark(side);
+
+    const root =
+      addPoints(
+        axisData.inner,
+        point(
+          landmarkOffset.x,
+          landmarkOffset.y,
+        ),
+      );
+
+    /*
+        The joins remain tied to the actual lid endpoints,
+        while the pocket center can be positioned directly
+        with the inspector landmark.
+    */
+
+    const upperJoin =
+      mixPoints(
+        upperCorner,
+        root,
+        0.38,
+      );
+
+    const lowerJoin =
+      mixPoints(
+        lowerCorner,
+        root,
+        0.38,
+      );
+
+    const tip =
+      addPoints(
+        root,
+        scalePoint(
+          eyeDirection,
+          length,
+        ),
+      );
+
+    const upperPocket =
+      addPoints(
+        mixPoints(
+          root,
+          tip,
+          0.58,
+        ),
+        scalePoint(
+          axisData.upperNormal,
+          Math.max(
+            0.8,
+            vectorLength(
+              subtractPoints(
+                upperCorner,
+                lowerCorner,
+              ),
+            ) * 0.18,
+          ),
+        ),
+      );
+
+    const lowerPocket =
+      addPoints(
+        mixPoints(
+          root,
+          tip,
+          0.58,
+        ),
+        scalePoint(
+          axisData.lowerNormal,
+          Math.max(
+            0.8,
+            vectorLength(
+              subtractPoints(
+                upperCorner,
+                lowerCorner,
+              ),
+            ) * 0.18,
+          ),
+        ),
+      );
+
+    return [
+      `M ${upperJoin.x} ${upperJoin.y}`,
+
+      `C ${mix(upperJoin.x, upperPocket.x, 0.55)} ${mix(upperJoin.y, upperPocket.y, 0.55)}`,
+      `${upperPocket.x} ${upperPocket.y}`,
+      `${tip.x} ${tip.y}`,
+
+      `C ${lowerPocket.x} ${lowerPocket.y}`,
+      `${mix(lowerPocket.x, lowerJoin.x, 0.55)} ${mix(lowerPocket.y, lowerJoin.y, 0.55)}`,
+      `${lowerJoin.x} ${lowerJoin.y}`,
+
+      `Q ${root.x} ${root.y}`,
+      `${upperJoin.x} ${upperJoin.y}`,
+
+      "Z",
+    ].join(" ");
+  }
+
   function renderTearDuct(
     elements,
     anatomy,
@@ -1195,20 +1797,15 @@
       anatomy.components &&
       anatomy.components.medialCanthus;
 
-    const carunclePath =
-      medial &&
-      medial.caruncle &&
-      medial.caruncle.path;
-
-    const fallbackPath =
-      anatomy.components &&
-      anatomy.components.tearDuct &&
-      anatomy.components.tearDuct.path;
+    /*
+        Use the renderer-owned rounded caruncle rather than
+        the much smaller geometry placeholder. This makes
+        the tear duct visibly anatomical while remaining
+        attached to the existing inner canthus.
+    */
 
     const path =
-      carunclePath ||
-      fallbackPath ||
-      createTearDuctSurfacePath(
+      createRoundedCarunclePath(
         anatomy,
         side,
         options,
@@ -1222,19 +1819,19 @@
       );
 
       elements.tearDuct.style.fill =
-        "#d99a91";
+        "#c8847c";
 
       elements.tearDuct.style.stroke =
-        "#a6756e";
+        "#79524d";
 
       elements.tearDuct.style.strokeWidth =
-        "0.32px";
+        "0.24px";
 
       elements.tearDuct.style.strokeLinejoin =
         "round";
 
       elements.tearDuct.style.opacity =
-        "0.58";
+        String(options.tearDuctOpacity);
 
       elements.tearDuct.style.pointerEvents =
         "none";
@@ -1253,13 +1850,13 @@
       );
 
       elements.plica.style.fill =
-        "#efc0b4";
+        "#e8b5a7";
 
       elements.plica.style.stroke =
         "none";
 
       elements.plica.style.opacity =
-        plicaPath ? "0.24" : "0";
+        plicaPath ? "0.22" : "0";
 
       elements.plica.style.pointerEvents =
         "none";
@@ -1417,6 +2014,8 @@
 
     const anatomy = input.anatomy;
 
+    ensureEyeGradients();
+
     const options = {
       ...DEFAULT_RENDER_OPTIONS,
       ...(input.options || {}),
@@ -1453,6 +2052,7 @@
       number(input.centerX, 0),
       number(input.centerY, 0),
       number(input.rotation, 0),
+      options,
     );
 
     renderOpening(elements, anatomy, transform);
@@ -1468,6 +2068,8 @@
     );
 
     renderLidSurfaces(elements, surfaces, anatomy, transform, options);
+
+    renderUpperLidFold(elements, anatomy, transform, options);
 
     renderLidEdges(elements, anatomy, transform, options);
 
@@ -1493,7 +2095,7 @@
   ========================== */
 
   window.EyeRenderer = {
-    version: "5.0.1",
+    version: "5.2.7",
 
     defaults: DEFAULT_RENDER_OPTIONS,
 
@@ -1501,8 +2103,16 @@
 
     buildLidSurfaces: buildLidSurfaces,
 
+    buildUpperLidFoldPath: buildUpperLidFoldPath,
+
     createTearDuctSurfacePath: createTearDuctSurfacePath,
+
+    createRoundedCarunclePath: createRoundedCarunclePath,
+
+    getTearDuctLandmark: getTearDuctLandmark,
+
+    setTearDuctLandmark: setTearDuctLandmark,
   };
 
-  console.log("EyeRenderer 5.0.1 loaded");
+  console.log("EyeRenderer 5.2.7 loaded");
 })();
