@@ -1,6 +1,6 @@
 /* =========================================================
    FACELAB EYE SURFACE
-   Version 2.0.1
+   Version 2.1.0
 
    PURPOSE
 
@@ -197,9 +197,9 @@
         The medial corner sits lower toward the nose.
         The outer corner receives only a slight lift.
     */
-    const medialDrop = clamp(sourceWidth * 0.035, 2.0, 3.4);
+    const medialDrop = clamp(sourceWidth * 0.045, 2.8, 4.4);
 
-    const temporalLift = clamp(sourceWidth * 0.008, 0.35, 0.8);
+    const temporalLift = clamp(sourceWidth * 0.005, 0.2, 0.55);
 
     const innerCanthus = addPoints(
       sourceInner,
@@ -243,9 +243,9 @@
         These limits prevent the eye from collapsing into a
         squint while still keeping the upper lid dominant.
     */
-    const upperHeight = clamp(requestedUpperHeight, width * 0.17, width * 0.23);
+    const upperHeight = clamp(requestedUpperHeight, width * 0.19, width * 0.255);
 
-    const lowerDepth = clamp(requestedLowerDepth, width * 0.072, width * 0.115);
+    const lowerDepth = clamp(requestedLowerDepth, width * 0.082, width * 0.132);
 
     return {
       sourceInnerCanthus: copyPoint(sourceInner),
@@ -513,21 +513,26 @@
     */
     const nasalDirection = scalePoint(generated.eyeAxis, -1);
 
-    const ductLength = clamp(generated.width * 0.052, 3.6, 5.8);
+    const ductLength = clamp(generated.width * 0.048, 3.8, 5.6);
 
-    const ductHeight = clamp(generated.width * 0.022, 1.5, 2.6);
+    const ductHeight = clamp(generated.width * 0.032, 2.3, 3.6);
 
-    const tip = addPoints(
+    const center = addPoints(
       inner,
       addPoints(
-        scalePoint(nasalDirection, ductLength),
-        scalePoint(generated.lowerNormal, ductHeight * 0.25),
+        scalePoint(nasalDirection, ductLength * 0.48),
+        scalePoint(generated.lowerNormal, ductHeight * 0.08),
       ),
+    );
+
+    const tip = addPoints(
+      center,
+      scalePoint(nasalDirection, ductLength * 0.52),
     );
 
     const upperJoin = addPoints(
       inner,
-      scalePoint(generated.upperNormal, ductHeight * 0.45),
+      scalePoint(generated.upperNormal, ductHeight * 0.5),
     );
 
     const lowerJoin = addPoints(
@@ -535,19 +540,47 @@
       scalePoint(generated.lowerNormal, ductHeight * 0.72),
     );
 
-    const upperControl = mixPoints(upperJoin, tip, 0.62);
+    const nasalUpper = addPoints(
+      tip,
+      scalePoint(generated.upperNormal, ductHeight * 0.42),
+    );
 
-    const lowerControl = mixPoints(lowerJoin, tip, 0.62);
+    const nasalLower = addPoints(
+      tip,
+      scalePoint(generated.lowerNormal, ductHeight * 0.46),
+    );
+
+    const upperControl1 = mixPoints(upperJoin, nasalUpper, 0.44);
+
+    const upperControl2 = mixPoints(nasalUpper, upperJoin, 0.22);
+
+    const noseControl1 = addPoints(
+      nasalUpper,
+      scalePoint(nasalDirection, ductLength * 0.18),
+    );
+
+    const noseControl2 = addPoints(
+      nasalLower,
+      scalePoint(nasalDirection, ductLength * 0.18),
+    );
+
+    const lowerControl1 = mixPoints(nasalLower, lowerJoin, 0.22);
+
+    const lowerControl2 = mixPoints(lowerJoin, nasalLower, 0.44);
 
     const path = [
       `M ${upperJoin.x} ${upperJoin.y}`,
 
-      `C ${upperControl.x} ${upperControl.y}`,
-      `${tip.x} ${tip.y - ductHeight * 0.28}`,
-      `${tip.x} ${tip.y}`,
+      `C ${upperControl1.x} ${upperControl1.y}`,
+      `${upperControl2.x} ${upperControl2.y}`,
+      `${nasalUpper.x} ${nasalUpper.y}`,
 
-      `C ${tip.x} ${tip.y + ductHeight * 0.28}`,
-      `${lowerControl.x} ${lowerControl.y}`,
+      `C ${noseControl1.x} ${noseControl1.y}`,
+      `${noseControl2.x} ${noseControl2.y}`,
+      `${nasalLower.x} ${nasalLower.y}`,
+
+      `C ${lowerControl1.x} ${lowerControl1.y}`,
+      `${lowerControl2.x} ${lowerControl2.y}`,
       `${lowerJoin.x} ${lowerJoin.y}`,
 
       `Q ${inner.x} ${inner.y}`,
@@ -559,6 +592,7 @@
     return {
       path: path,
       tip: copyPoint(tip),
+      center: copyPoint(center),
       upperJoin: copyPoint(upperJoin),
       lowerJoin: copyPoint(lowerJoin),
       innerCanthus: copyPoint(inner),
@@ -736,7 +770,7 @@
   ========================== */
 
   window.EyeSurface = {
-    version: "2.0.1",
+    version: "2.1.0",
 
     build: buildSurface,
 
@@ -750,5 +784,5 @@
   window.EyeGeometry.build = build;
 
 
-  console.log("EyeSurface 2.0.1 loaded");
+  console.log("EyeSurface 2.1.0 loaded");
 })();
