@@ -49,6 +49,13 @@ const defaultEyeSettings = {
   pupilSize: 10,
   pupilX: 0,
   pupilY: 0,
+
+  /* TEAR DUCT LANDMARK OFFSETS */
+
+  leftTearDuctX: 0,
+  leftTearDuctY: 0,
+  rightTearDuctX: 0,
+  rightTearDuctY: 0,
 };
 
 /* ==========================
@@ -380,6 +387,23 @@ function drawEye(side, centerX, centerY, rotation) {
   }
 
   window.eyeAnatomy[side] = anatomy;
+
+  /*
+      Push the editable tear-duct landmark into EyeRenderer.
+      These values are offsets from the true inner canthus.
+  */
+
+  if (typeof window.EyeRenderer.setTearDuctLandmark === "function") {
+    window.EyeRenderer.setTearDuctLandmark(
+      side,
+      side === "left"
+        ? safeEyeNumber(settings.leftTearDuctX, 0)
+        : safeEyeNumber(settings.rightTearDuctX, 0),
+      side === "left"
+        ? safeEyeNumber(settings.leftTearDuctY, 0)
+        : safeEyeNumber(settings.rightTearDuctY, 0),
+    );
+  }
 
   window.EyeRenderer.render({
     side: side,
@@ -786,6 +810,8 @@ window.resetEyeRig = resetEyeRig;
   function createFaceLabEyeHandles() {
     const geometry = getFaceLabEyeGeometry();
 
+    const settings = geometry.settings;
+
     const leftCenter = geometry.leftCenter;
 
     const rightCenter = geometry.rightCenter;
@@ -926,6 +952,21 @@ window.resetEyeRig = resetEyeRig;
       ),
     );
 
+    /*
+        Tear-duct handles sit on the actual inner canthi plus
+        their independent editable offsets.
+    */
+
+    const leftTearDuct = {
+      x: leftInner.x + eyeNumber(settings.leftTearDuctX, 0),
+      y: leftInner.y + eyeNumber(settings.leftTearDuctY, 0),
+    };
+
+    const rightTearDuct = {
+      x: rightInner.x + eyeNumber(settings.rightTearDuctX, 0),
+      y: rightInner.y + eyeNumber(settings.rightTearDuctY, 0),
+    };
+
     return [
       /* ==========================
          LEFT EYE CENTER
@@ -1015,6 +1056,74 @@ window.resetEyeRig = resetEyeRig;
               120,
               360,
             ),
+          });
+        },
+      },
+
+      /* ==========================
+         LEFT TEAR DUCT
+      ========================== */
+
+      {
+        id: "leftTearDuct",
+
+        label: "Left Tear Duct",
+
+        point: leftTearDuct,
+
+        properties: ["leftTearDuctX", "leftTearDuctY"],
+
+        help: "Drag this point to place the left tear duct precisely inside the inner corner.",
+
+        beginDrag: function () {
+          return {
+            ...window.eyeSettings,
+          };
+        },
+
+        drag: function (deltaX, deltaY, dragStart) {
+          const start = dragStart || {};
+
+          updateFaceLabEyes({
+            leftTearDuctX:
+              eyeNumber(start.leftTearDuctX, 0) + deltaX,
+
+            leftTearDuctY:
+              eyeNumber(start.leftTearDuctY, 0) + deltaY,
+          });
+        },
+      },
+
+      /* ==========================
+         RIGHT TEAR DUCT
+      ========================== */
+
+      {
+        id: "rightTearDuct",
+
+        label: "Right Tear Duct",
+
+        point: rightTearDuct,
+
+        properties: ["rightTearDuctX", "rightTearDuctY"],
+
+        help: "Drag this point to place the right tear duct precisely inside the inner corner.",
+
+        beginDrag: function () {
+          return {
+            ...window.eyeSettings,
+          };
+        },
+
+        drag: function (deltaX, deltaY, dragStart) {
+          const start = dragStart || {};
+
+          updateFaceLabEyes({
+            rightTearDuctX:
+              eyeNumber(start.rightTearDuctX, 0) + deltaX,
+
+            rightTearDuctY:
+              eyeNumber(start.rightTearDuctY, 0) + deltaY,
           });
         },
       },
@@ -1394,7 +1503,7 @@ window.resetEyeRig = resetEyeRig;
   window.updateEyeSettings = updateFaceLabEyes;
 
   window.EyeSystem = {
-    version: "2.1.1",
+    version: "2.1.3",
 
     defaults: Object.freeze({
       ...defaultEyeSettings,
@@ -1468,5 +1577,5 @@ window.resetEyeRig = resetEyeRig;
     console.warn("FaceLab Core was not available when eyes.js loaded.");
   }
 
-  console.log("FaceLab Eye System 2.1.1 registered");
+  console.log("FaceLab Eye System 2.1.3 registered");
 })();
