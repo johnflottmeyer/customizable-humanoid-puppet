@@ -1,6 +1,6 @@
 /* ==========================
    FACELAB
-   FACE INSPECTOR — VERSION 3.0
+   FACE INSPECTOR — VERSION 3.0.1
 
    Direct-editing inspector for procedural
    FaceLab feature engines.
@@ -23,7 +23,7 @@
     ========================== */
 
   const defaultFaceInspectorSettings = {
-    enabled: true,
+    enabled: false,
 
     showPanel: true,
 
@@ -1143,7 +1143,25 @@
       state.dragStartSettings = getFeatureSettings(handle.feature);
     }
 
-    event.currentTarget.setPointerCapture(event.pointerId);
+    /*
+        A feature redraw can replace the SVG handle during
+        pointer-down. Guard pointer capture so a detached
+        handle cannot abort the drag operation.
+    */
+
+    if (
+      event.currentTarget &&
+      typeof event.currentTarget.setPointerCapture === "function"
+    ) {
+      try {
+        event.currentTarget.setPointerCapture(event.pointerId);
+      } catch (error) {
+        console.warn(
+          "Face Inspector could not capture this pointer; continuing drag without capture.",
+          error,
+        );
+      }
+    }
 
     window.addEventListener(
       "pointermove",
@@ -1927,7 +1945,7 @@
     ========================== */
 
   window.FaceInspector = {
-    version: "3.0",
+    version: "3.0.1",
 
     initialize: initialize,
 
@@ -2019,5 +2037,5 @@
     startFaceInspector();
   }
 
-  console.log("faceInspector.js V3.0 loaded");
+  console.log("faceInspector.js V3.0.1 loaded");
 })();
