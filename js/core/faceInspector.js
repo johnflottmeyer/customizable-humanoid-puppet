@@ -1,16 +1,15 @@
 /* ==========================
    FACELAB
-   FACE INSPECTOR — VERSION 3.0.1
+   FACE INSPECTOR — VERSION 3.1.2
 
    Direct-editing inspector for procedural
    FaceLab feature engines.
 
-   Generic direct-editing inspector for
-   all FaceLab registered features.
-
-   Requires:
-   - FaceLab Core
-   - Face SVG
+   Adds:
+   - Inspector zoom
+   - Grab-to-pan navigation
+   - Reset view
+   - Recenter view without changing zoom
 ========================== */
 
 (function () {
@@ -19,20 +18,17 @@
   const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
   /* ==========================
-       DEFAULT SETTINGS
-    ========================== */
+     DEFAULT SETTINGS
+  ========================== */
 
   const defaultFaceInspectorSettings = {
     enabled: false,
 
     showPanel: true,
-
     showHandles: true,
 
     handleRadius: 5,
-
     hoverRadius: 7,
-
     selectedRadius: 8,
 
     handleStrokeWidth: 1.5,
@@ -40,97 +36,140 @@
     dragScale: 1,
 
     handleFill: "#101820",
-
     handleStroke: "#66d9ef",
 
     hoverFill: "#66d9ef",
-
     hoverStroke: "#ffffff",
 
     selectedFill: "#ffcf4a",
-
     selectedStroke: "#ffffff",
 
     guideStroke: "#66d9ef",
-
     guideStrokeWidth: 1,
-
     guideOpacity: 0.55,
+
+    /* VIEW */
+
+    zoom: 1,
+
+    zoomMinimum: 0.5,
+    zoomMaximum: 3,
+    zoomStep: 0.25,
+
+    panX: 0,
+    panY: 0,
   };
 
   window.faceInspectorSettings = {
     ...defaultFaceInspectorSettings,
-
     ...(window.faceInspectorSettings || {}),
   };
 
   /* ==========================
-       STATE
-    ========================== */
-
-  const state = {
-    initialized: false,
-
-    enabled: window.faceInspectorSettings.enabled,
-
-    dragging: false,
-
-    hoveredHandleId: null,
-
-    selectedHandleId: null,
-
-    activePointerId: null,
-
-    dragStartPointer: null,
-
-    dragStartSettings: null,
-
-    handles: [],
-  };
-
-  /* ==========================
-       DOM REFERENCES
-    ========================== */
-
-  let faceSvg = null;
-
-  let handleLayer = null;
-
-  let guideLayer = null;
-
-  let panel = null;
-
-  let panelStatus = null;
-
-  let panelContent = null;
-
-  let reopenButton = null;
-
-  /* ==========================
-       NUMBER HELPERS
-    ========================== */
+     NUMBER HELPERS
+  ========================== */
 
   function safeNumber(value, fallback) {
     const number = Number(value);
 
-    return Number.isFinite(number) ? number : fallback;
+    return Number.isFinite(number)
+      ? number
+      : fallback;
   }
 
   function clamp(value, minimum, maximum) {
     return Math.max(
       minimum,
-
       Math.min(maximum, value),
     );
   }
 
   function formatNumber(value, decimals) {
-    return safeNumber(value, 0).toFixed(decimals === undefined ? 2 : decimals);
+    return safeNumber(value, 0).toFixed(
+      decimals === undefined ? 2 : decimals,
+    );
   }
 
   /* ==========================
-       SVG LOOKUP
-    ========================== */
+     STATE
+  ========================== */
+
+  const state = {
+    initialized: false,
+
+    enabled:
+      window.faceInspectorSettings.enabled,
+
+    dragging: false,
+
+    hoveredHandleId: null,
+    selectedHandleId: null,
+
+    activePointerId: null,
+
+    dragStartPointer: null,
+    dragStartSettings: null,
+
+    handles: [],
+
+    /* VIEW */
+
+    zoom: safeNumber(
+      window.faceInspectorSettings.zoom,
+      1,
+    ),
+
+    panX: safeNumber(
+      window.faceInspectorSettings.panX,
+      0,
+    ),
+
+    panY: safeNumber(
+      window.faceInspectorSettings.panY,
+      0,
+    ),
+
+    /* PAN */
+
+    panning: false,
+
+    panPointerId: null,
+
+    panStartClientX: 0,
+    panStartClientY: 0,
+
+    panStartX: 0,
+    panStartY: 0,
+  };
+
+  /* ==========================
+     DOM REFERENCES
+  ========================== */
+
+  let faceSvg = null;
+
+  let handleLayer = null;
+  let guideLayer = null;
+
+  let panel = null;
+  let panelStatus = null;
+  let panelContent = null;
+
+  let reopenButton = null;
+
+  let zoomOutButton = null;
+  let zoomResetButton = null;
+  let zoomInButton = null;
+
+  let recenterButton = null;
+
+  let originalFaceTransform = "";
+  let originalFaceTransformOrigin = "";
+  let originalFaceCursor = "";
+
+  /* ==========================
+     SVG LOOKUP
+  ========================== */
 
   function getFaceSvg() {
     return (
@@ -141,13 +180,12 @@
   }
 
   /* ==========================
-       SVG ELEMENT HELPERS
-    ========================== */
+     SVG ELEMENT HELPERS
+  ========================== */
 
   function createSvgElement(elementName) {
     return document.createElementNS(
       SVG_NAMESPACE,
-
       elementName,
     );
   }
@@ -165,100 +203,354 @@
   function createCircle(point, radius, options) {
     const settings = options || {};
 
-    const circle = createSvgElement("circle");
+    const circle =
+      createSvgElement("circle");
 
-    circle.setAttribute("cx", safeNumber(point.x, 0));
+    circle.setAttribute(
+      "cx",
+      safeNumber(point.x, 0),
+    );
 
-    circle.setAttribute("cy", safeNumber(point.y, 0));
+    circle.setAttribute(
+      "cy",
+      safeNumber(point.y, 0),
+    );
 
-    circle.setAttribute("r", safeNumber(radius, 5));
+    circle.setAttribute(
+      "r",
+      safeNumber(radius, 5),
+    );
 
-    circle.setAttribute("fill", settings.fill || "none");
+    circle.setAttribute(
+      "fill",
+      settings.fill || "none",
+    );
 
-    circle.setAttribute("stroke", settings.stroke || "none");
+    circle.setAttribute(
+      "stroke",
+      settings.stroke || "none",
+    );
 
-    circle.setAttribute("stroke-width", safeNumber(settings.strokeWidth, 1));
+    circle.setAttribute(
+      "stroke-width",
+      safeNumber(
+        settings.strokeWidth,
+        1,
+      ),
+    );
 
-    circle.setAttribute("vector-effect", "non-scaling-stroke");
+    circle.setAttribute(
+      "vector-effect",
+      "non-scaling-stroke",
+    );
 
     return circle;
   }
 
-  function createLine(firstPoint, secondPoint, options) {
+  function createLine(
+    firstPoint,
+    secondPoint,
+    options,
+  ) {
     const settings = options || {};
 
-    const line = createSvgElement("line");
+    const line =
+      createSvgElement("line");
 
-    line.setAttribute("x1", safeNumber(firstPoint.x, 0));
+    line.setAttribute(
+      "x1",
+      safeNumber(firstPoint.x, 0),
+    );
 
-    line.setAttribute("y1", safeNumber(firstPoint.y, 0));
+    line.setAttribute(
+      "y1",
+      safeNumber(firstPoint.y, 0),
+    );
 
-    line.setAttribute("x2", safeNumber(secondPoint.x, 0));
+    line.setAttribute(
+      "x2",
+      safeNumber(secondPoint.x, 0),
+    );
 
-    line.setAttribute("y2", safeNumber(secondPoint.y, 0));
+    line.setAttribute(
+      "y2",
+      safeNumber(secondPoint.y, 0),
+    );
 
-    line.setAttribute("stroke", settings.stroke || "#ffffff");
+    line.setAttribute(
+      "stroke",
+      settings.stroke || "#ffffff",
+    );
 
-    line.setAttribute("stroke-width", safeNumber(settings.strokeWidth, 1));
+    line.setAttribute(
+      "stroke-width",
+      safeNumber(
+        settings.strokeWidth,
+        1,
+      ),
+    );
 
-    line.setAttribute("stroke-opacity", safeNumber(settings.opacity, 1));
+    line.setAttribute(
+      "stroke-opacity",
+      safeNumber(
+        settings.opacity,
+        1,
+      ),
+    );
 
-    line.setAttribute("stroke-linecap", "round");
+    line.setAttribute(
+      "stroke-linecap",
+      "round",
+    );
 
-    line.setAttribute("vector-effect", "non-scaling-stroke");
+    line.setAttribute(
+      "vector-effect",
+      "non-scaling-stroke",
+    );
 
     return line;
   }
 
   /* ==========================
-       INSPECTOR SVG LAYERS
-    ========================== */
+     INSPECTOR LAYERS
+  ========================== */
 
   function createInspectorLayers() {
     if (!faceSvg) {
       return;
     }
 
-    guideLayer = document.getElementById("faceInspectorGuideLayer");
+    guideLayer =
+      document.getElementById(
+        "faceInspectorGuideLayer",
+      );
 
     if (!guideLayer) {
-      guideLayer = createSvgElement("g");
+      guideLayer =
+        createSvgElement("g");
 
-      guideLayer.setAttribute("id", "faceInspectorGuideLayer");
+      guideLayer.setAttribute(
+        "id",
+        "faceInspectorGuideLayer",
+      );
 
-      guideLayer.style.pointerEvents = "none";
+      guideLayer.style.pointerEvents =
+        "none";
     }
 
-    handleLayer = document.getElementById("faceInspectorHandleLayer");
+    handleLayer =
+      document.getElementById(
+        "faceInspectorHandleLayer",
+      );
 
     if (!handleLayer) {
-      handleLayer = createSvgElement("g");
+      handleLayer =
+        createSvgElement("g");
 
-      handleLayer.setAttribute("id", "faceInspectorHandleLayer");
+      handleLayer.setAttribute(
+        "id",
+        "faceInspectorHandleLayer",
+      );
     }
 
-    /*
-      Reappend both layers so they stay
-      above the rendered facial features.
-    */
-
     faceSvg.appendChild(guideLayer);
-
     faceSvg.appendChild(handleLayer);
   }
 
   /* ==========================
-       PANEL STYLES
-    ========================== */
+     VIEW / ZOOM
+  ========================== */
 
-  function createPanelStyles() {
-    if (document.getElementById("faceInspectorV2Styles")) {
+  function getZoomMinimum() {
+    return safeNumber(
+      window.faceInspectorSettings.zoomMinimum,
+      0.5,
+    );
+  }
+
+  function getZoomMaximum() {
+    return safeNumber(
+      window.faceInspectorSettings.zoomMaximum,
+      3,
+    );
+  }
+
+  function getZoomStep() {
+    return safeNumber(
+      window.faceInspectorSettings.zoomStep,
+      0.25,
+    );
+  }
+
+  function normalizeZoom(value) {
+    return clamp(
+      safeNumber(value, 1),
+      getZoomMinimum(),
+      getZoomMaximum(),
+    );
+  }
+
+  function formatZoomPercent() {
+    return (
+      Math.round(state.zoom * 100) +
+      "%"
+    );
+  }
+
+  function updateZoomControls() {
+    if (zoomResetButton) {
+      zoomResetButton.textContent =
+        formatZoomPercent();
+    }
+
+    if (zoomOutButton) {
+      zoomOutButton.disabled =
+        state.zoom <=
+        getZoomMinimum() + 0.0001;
+    }
+
+    if (zoomInButton) {
+      zoomInButton.disabled =
+        state.zoom >=
+        getZoomMaximum() - 0.0001;
+    }
+  }
+
+  function applyViewTransform() {
+    if (!faceSvg) {
       return;
     }
 
-    const style = document.createElement("style");
+    state.zoom =
+      normalizeZoom(state.zoom);
 
-    style.id = "faceInspectorV2Styles";
+    window.faceInspectorSettings.zoom =
+      state.zoom;
+
+    window.faceInspectorSettings.panX =
+      state.panX;
+
+    window.faceInspectorSettings.panY =
+      state.panY;
+
+    const viewTransform =
+      `translate(${state.panX}px, ${state.panY}px) ` +
+      `scale(${state.zoom})`;
+
+    faceSvg.style.transformOrigin =
+      "50% 50%";
+
+    faceSvg.style.transform =
+      originalFaceTransform &&
+      originalFaceTransform.trim() !== ""
+        ? `${originalFaceTransform} ${viewTransform}`
+        : viewTransform;
+
+    updateZoomControls();
+  }
+
+  function setZoom(value) {
+    state.zoom =
+      normalizeZoom(value);
+
+    applyViewTransform();
+
+    if (state.enabled) {
+      refresh();
+    }
+
+    return state.zoom;
+  }
+
+  function zoomIn() {
+    return setZoom(
+      state.zoom + getZoomStep(),
+    );
+  }
+
+  function zoomOut() {
+    return setZoom(
+      state.zoom - getZoomStep(),
+    );
+  }
+
+  /* ==========================
+     RESET VIEW
+  ========================== */
+
+  function resetView() {
+    state.zoom = 1;
+
+    state.panX = 0;
+    state.panY = 0;
+
+    applyViewTransform();
+
+    if (state.enabled) {
+      refresh();
+    }
+
+    return {
+      zoom: state.zoom,
+      panX: state.panX,
+      panY: state.panY,
+    };
+  }
+
+  /* ==========================
+     RECENTER VIEW
+  ========================== */
+
+  function recenterView() {
+    state.panX = 0;
+    state.panY = 0;
+
+    applyViewTransform();
+
+    if (state.enabled) {
+      refresh();
+    }
+
+    return {
+      zoom: state.zoom,
+      panX: state.panX,
+      panY: state.panY,
+    };
+  }
+
+  function setPan(x, y) {
+    state.panX =
+      safeNumber(x, 0);
+
+    state.panY =
+      safeNumber(y, 0);
+
+    applyViewTransform();
+
+    return {
+      x: state.panX,
+      y: state.panY,
+    };
+  }
+
+  /* ==========================
+     PANEL STYLES
+  ========================== */
+
+  function createPanelStyles() {
+    if (
+      document.getElementById(
+        "faceInspectorV2Styles",
+      )
+    ) {
+      return;
+    }
+
+    const style =
+      document.createElement("style");
+
+    style.id =
+      "faceInspectorV2Styles";
 
     style.textContent = `
 
@@ -269,8 +561,13 @@
         bottom: 1rem;
         right: 1rem;
 
-        width: min(22rem, calc(100vw - 2rem));
-        max-height: calc(100vh - 2rem);
+        width: min(
+          26rem,
+          calc(100vw - 2rem)
+        );
+
+        max-height:
+          calc(100vh - 2rem);
 
         overflow: auto;
 
@@ -279,26 +576,27 @@
         color: #f4f7fa;
 
         background-color:
-          rgba(20, 24, 30, 0.96);
+          rgba(20,24,30,.96);
 
         border:
-          1px solid rgba(255, 255, 255, 0.18);
+          1px solid
+          rgba(255,255,255,.18);
 
-        border-radius: 0.75rem;
+        border-radius: .75rem;
 
         box-shadow:
-          0 0.75rem 2rem
-          rgba(0, 0, 0, 0.42);
+          0 .75rem 2rem
+          rgba(0,0,0,.42);
 
         font-family:
           Arial,
           Helvetica,
           sans-serif;
 
-        font-size: 0.84rem;
+        font-size: .84rem;
 
         backdrop-filter:
-          blur(0.5rem);
+          blur(.5rem);
 
       }
 
@@ -319,17 +617,20 @@
         display: flex;
 
         align-items: flex-start;
-        justify-content: space-between;
 
-        gap: 1rem;
+        justify-content:
+          space-between;
 
-        padding: 0.85rem 1rem;
+        gap: .6rem;
+
+        padding: .85rem 1rem;
 
         background-color:
-          rgba(28, 33, 41, 0.98);
+          rgba(28,33,41,.98);
 
         border-bottom:
-          1px solid rgba(255, 255, 255, 0.12);
+          1px solid
+          rgba(255,255,255,.12);
 
         z-index: 1;
 
@@ -347,12 +648,12 @@
 
       .faceInspectorStatus {
 
-        margin-top: 0.2rem;
+        margin-top: .2rem;
 
         color:
-          rgba(255, 255, 255, 0.58);
+          rgba(255,255,255,.58);
 
-        font-size: 0.72rem;
+        font-size: .72rem;
 
       }
 
@@ -363,7 +664,11 @@
 
         align-items: center;
 
-        gap: 0.35rem;
+        gap: .3rem;
+
+        flex-wrap: wrap;
+
+        justify-content: flex-end;
 
       }
 
@@ -373,20 +678,22 @@
         appearance: none;
 
         border:
-          1px solid rgba(255, 255, 255, 0.16);
+          1px solid
+          rgba(255,255,255,.16);
 
-        border-radius: 0.35rem;
+        border-radius: .35rem;
 
         background-color:
-          rgba(255, 255, 255, 0.06);
+          rgba(255,255,255,.06);
 
         color: white;
 
         cursor: pointer;
 
-        padding: 0.25rem 0.45rem;
+        padding:
+          .25rem .45rem;
 
-        font-size: 0.78rem;
+        font-size: .78rem;
 
       }
 
@@ -394,7 +701,57 @@
       .faceInspectorHeader button:hover {
 
         background-color:
-          rgba(255, 255, 255, 0.12);
+          rgba(255,255,255,.12);
+
+      }
+
+
+      .faceInspectorHeader button:disabled {
+
+        opacity: .35;
+
+        cursor: default;
+
+      }
+
+
+      .faceInspectorZoomControls {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: .2rem;
+
+      }
+
+
+      .faceInspectorZoomControls button {
+
+        min-width: 1.9rem;
+
+      }
+
+
+      #faceInspectorZoomReset {
+
+        min-width: 3.5rem;
+
+        font-family:
+          ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          Consolas,
+          monospace;
+
+        font-size: .72rem;
+
+      }
+
+
+      #faceInspectorRecenter {
+
+        min-width: 3.6rem;
 
       }
 
@@ -403,7 +760,8 @@
 
         border: 0;
 
-        background-color: transparent;
+        background:
+          transparent;
 
         font-size: 1.25rem;
 
@@ -421,12 +779,13 @@
 
       .faceInspectorEmpty {
 
-        padding: 1.2rem 0.5rem;
+        padding:
+          1.2rem .5rem;
 
         text-align: center;
 
         color:
-          rgba(255, 255, 255, 0.58);
+          rgba(255,255,255,.58);
 
         line-height: 1.55;
 
@@ -449,22 +808,24 @@
 
       .faceInspectorSectionTitle {
 
-        margin-bottom: 0.5rem;
+        margin-bottom: .5rem;
 
-        padding-bottom: 0.35rem;
+        padding-bottom: .35rem;
 
         color: #83e9ff;
 
         border-bottom:
-          1px solid rgba(255, 255, 255, 0.12);
+          1px solid
+          rgba(255,255,255,.12);
 
-        font-size: 0.68rem;
+        font-size: .68rem;
 
         font-weight: 700;
 
-        letter-spacing: 0.07em;
+        letter-spacing: .07em;
 
-        text-transform: uppercase;
+        text-transform:
+          uppercase;
 
       }
 
@@ -474,12 +835,13 @@
         display: grid;
 
         grid-template-columns:
-          minmax(0, 1fr)
+          minmax(0,1fr)
           auto;
 
         gap: 1rem;
 
-        padding: 0.27rem 0;
+        padding:
+          .27rem 0;
 
       }
 
@@ -487,7 +849,7 @@
       .faceInspectorLabel {
 
         color:
-          rgba(255, 255, 255, 0.63);
+          rgba(255,255,255,.63);
 
       }
 
@@ -510,26 +872,22 @@
 
       .faceInspectorHelp {
 
-        margin-top: 0.75rem;
+        margin-top: .75rem;
 
-        padding: 0.65rem;
+        padding: .65rem;
 
         color:
-          rgba(255, 255, 255, 0.65);
+          rgba(255,255,255,.65);
 
         background-color:
-          rgba(255, 255, 255, 0.05);
+          rgba(255,255,255,.05);
 
-        border-radius: 0.4rem;
+        border-radius: .4rem;
 
         line-height: 1.45;
 
       }
 
-
-      /* ==========================
-         FLOATING REOPEN BUTTON
-      ========================== */
 
       #faceInspectorReopen {
 
@@ -541,10 +899,13 @@
         z-index: 10001;
 
         display: flex;
-        align-items: center;
-        gap: 0.45rem;
 
-        padding: 0.7rem 1rem;
+        align-items: center;
+
+        gap: .45rem;
+
+        padding:
+          .7rem 1rem;
 
         border: none;
 
@@ -556,27 +917,13 @@
 
         cursor: pointer;
 
-        font-size: 0.85rem;
+        font-size: .85rem;
 
         font-weight: 600;
 
         box-shadow:
-          0 8px 24px rgba(0, 0, 0, 0.35);
-
-        transition:
-          transform 0.15s ease,
-          background 0.15s ease;
-
-      }
-
-
-      #faceInspectorReopen:hover {
-
-        transform:
-          translateY(-2px);
-
-        background:
-          #252c36;
+          0 8px 24px
+          rgba(0,0,0,.35);
 
       }
 
@@ -593,31 +940,36 @@
   }
 
   /* ==========================
-     CREATE REOPEN BUTTON
+     REOPEN BUTTON
   ========================== */
 
   function createReopenButton() {
-    const existingButton = document.getElementById("faceInspectorReopen");
+    const existingButton =
+      document.getElementById(
+        "faceInspectorReopen",
+      );
 
     if (existingButton) {
-      reopenButton = existingButton;
+      reopenButton =
+        existingButton;
 
       return;
     }
 
-    reopenButton = document.createElement("button");
+    reopenButton =
+      document.createElement("button");
 
-    reopenButton.type = "button";
+    reopenButton.type =
+      "button";
 
-    reopenButton.id = "faceInspectorReopen";
+    reopenButton.id =
+      "faceInspectorReopen";
 
-    reopenButton.textContent = "✦ Inspector";
-
-    reopenButton.setAttribute("aria-label", "Open Face Inspector");
+    reopenButton.textContent =
+      "✦ Inspector";
 
     reopenButton.addEventListener(
       "click",
-
       function () {
         showInspector();
       },
@@ -625,28 +977,30 @@
 
     reopenButton.hidden = true;
 
-    document.body.appendChild(reopenButton);
+    document.body.appendChild(
+      reopenButton,
+    );
   }
 
   /* ==========================
-       CREATE PANEL
-    ========================== */
+     PANEL
+  ========================== */
 
   function createPanel() {
-    let existingPanel = document.getElementById("faceInspectorPanel");
-
-    /*
-      Replace an older inspector panel
-      if one already exists.
-    */
+    const existingPanel =
+      document.getElementById(
+        "faceInspectorPanel",
+      );
 
     if (existingPanel) {
       existingPanel.remove();
     }
 
-    panel = document.createElement("aside");
+    panel =
+      document.createElement("aside");
 
-    panel.id = "faceInspectorPanel";
+    panel.id =
+      "faceInspectorPanel";
 
     panel.innerHTML = `
 
@@ -655,7 +1009,7 @@
         <div>
 
           <div class="faceInspectorTitle">
-            Face Inspector 3
+            Face Inspector 3.1
           </div>
 
           <div class="faceInspectorStatus">
@@ -664,7 +1018,48 @@
 
         </div>
 
+
         <div class="faceInspectorHeaderButtons">
+
+          <div class="faceInspectorZoomControls">
+
+            <button
+              type="button"
+              id="faceInspectorZoomOut"
+              title="Zoom out"
+            >
+              −
+            </button>
+
+
+            <button
+              type="button"
+              id="faceInspectorZoomReset"
+              title="Reset zoom to 100% and recenter"
+            >
+              100%
+            </button>
+
+
+            <button
+              type="button"
+              id="faceInspectorZoomIn"
+              title="Zoom in"
+            >
+              +
+            </button>
+
+          </div>
+
+
+          <button
+            type="button"
+            id="faceInspectorRecenter"
+            title="Recenter face without changing zoom"
+          >
+            Center
+          </button>
+
 
           <button
             type="button"
@@ -673,10 +1068,10 @@
             Clear
           </button>
 
+
           <button
             type="button"
             id="faceInspectorClose"
-            aria-label="Close Face Inspector"
           >
             ×
           </button>
@@ -684,6 +1079,7 @@
         </div>
 
       </div>
+
 
       <div class="faceInspectorContent">
 
@@ -693,8 +1089,11 @@
 
           <br><br>
 
-          Click and drag a handle to edit
-          the procedural feature directly.
+          Drag a handle to edit anatomy.
+
+          <br><br>
+
+          Drag empty face space to pan.
 
         </div>
 
@@ -704,206 +1103,316 @@
 
     document.body.appendChild(panel);
 
-    panelStatus = panel.querySelector(".faceInspectorStatus");
+    panelStatus =
+      panel.querySelector(
+        ".faceInspectorStatus",
+      );
 
-    panelContent = panel.querySelector(".faceInspectorContent");
+    panelContent =
+      panel.querySelector(
+        ".faceInspectorContent",
+      );
 
-    const clearButton = panel.querySelector("#faceInspectorClear");
+    zoomOutButton =
+      panel.querySelector(
+        "#faceInspectorZoomOut",
+      );
 
-    const closeButton = panel.querySelector("#faceInspectorClose");
+    zoomResetButton =
+      panel.querySelector(
+        "#faceInspectorZoomReset",
+      );
+
+    zoomInButton =
+      panel.querySelector(
+        "#faceInspectorZoomIn",
+      );
+
+    recenterButton =
+      panel.querySelector(
+        "#faceInspectorRecenter",
+      );
+
+    const clearButton =
+      panel.querySelector(
+        "#faceInspectorClear",
+      );
+
+    const closeButton =
+      panel.querySelector(
+        "#faceInspectorClose",
+      );
+
+    if (zoomOutButton) {
+      zoomOutButton.addEventListener(
+        "click",
+        zoomOut,
+      );
+    }
+
+    if (zoomResetButton) {
+      zoomResetButton.addEventListener(
+        "click",
+        resetView,
+      );
+    }
+
+    if (zoomInButton) {
+      zoomInButton.addEventListener(
+        "click",
+        zoomIn,
+      );
+    }
+
+    if (recenterButton) {
+      recenterButton.addEventListener(
+        "click",
+        recenterView,
+      );
+    }
 
     if (clearButton) {
       clearButton.addEventListener(
         "click",
-
-        function () {
-          clearSelection();
-        },
+        clearSelection,
       );
     }
 
     if (closeButton) {
       closeButton.addEventListener(
         "click",
-
-        function () {
-          hideInspector();
-        },
+        hideInspector,
       );
     }
 
-    panel.hidden = !window.faceInspectorSettings.showPanel;
+    panel.hidden =
+      !window.faceInspectorSettings.showPanel;
+
+    updateZoomControls();
   }
 
   /* ==========================
-       SVG POINTER POSITION
-    ========================== */
+     POINTER POSITION
+  ========================== */
 
   function getSvgPointer(event) {
     if (!faceSvg) {
       return null;
     }
 
-    const matrix = faceSvg.getScreenCTM();
+    const matrix =
+      faceSvg.getScreenCTM();
 
     if (!matrix) {
       return null;
     }
 
-    const svgPoint = faceSvg.createSVGPoint();
+    const svgPoint =
+      faceSvg.createSVGPoint();
 
-    svgPoint.x = event.clientX;
+    svgPoint.x =
+      event.clientX;
 
-    svgPoint.y = event.clientY;
+    svgPoint.y =
+      event.clientY;
 
-    return svgPoint.matrixTransform(matrix.inverse());
+    return svgPoint.matrixTransform(
+      matrix.inverse(),
+    );
   }
 
   /* ==========================
-       FACELAB FEATURE HANDLES
-    ========================== */
+     PAN START
+  ========================== */
+
+  function handleFacePointerDown(event) {
+    if (!state.enabled) {
+      return;
+    }
+
+    if (
+      event.button !== undefined &&
+      event.button !== 0
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+
+    state.panning = true;
+
+    state.panPointerId =
+      event.pointerId;
+
+    state.panStartClientX =
+      event.clientX;
+
+    state.panStartClientY =
+      event.clientY;
+
+    state.panStartX =
+      state.panX;
+
+    state.panStartY =
+      state.panY;
+
+    faceSvg.style.cursor =
+      "grabbing";
+
+    window.addEventListener(
+      "pointermove",
+      handlePanMove,
+    );
+
+    window.addEventListener(
+      "pointerup",
+      handlePanEnd,
+    );
+
+    window.addEventListener(
+      "pointercancel",
+      handlePanEnd,
+    );
+  }
+
+  /* ==========================
+     PAN MOVE
+  ========================== */
+
+  function handlePanMove(event) {
+    if (
+      !state.panning ||
+      event.pointerId !==
+        state.panPointerId
+    ) {
+      return;
+    }
+
+    const deltaX =
+      event.clientX -
+      state.panStartClientX;
+
+    const deltaY =
+      event.clientY -
+      state.panStartClientY;
+
+    state.panX =
+      state.panStartX +
+      deltaX;
+
+    state.panY =
+      state.panStartY +
+      deltaY;
+
+    applyViewTransform();
+  }
+
+  /* ==========================
+     PAN END
+  ========================== */
+
+  function handlePanEnd(event) {
+    if (!state.panning) {
+      return;
+    }
+
+    if (
+      state.panPointerId !== null &&
+      event.pointerId !==
+        state.panPointerId
+    ) {
+      return;
+    }
+
+    state.panning = false;
+
+    state.panPointerId = null;
+
+    if (faceSvg) {
+      faceSvg.style.cursor =
+        "grab";
+    }
+
+    window.removeEventListener(
+      "pointermove",
+      handlePanMove,
+    );
+
+    window.removeEventListener(
+      "pointerup",
+      handlePanEnd,
+    );
+
+    window.removeEventListener(
+      "pointercancel",
+      handlePanEnd,
+    );
+  }
+
+  /* ==========================
+     FEATURE HANDLES
+  ========================== */
 
   function collectFeatureHandles() {
-    if (!window.FaceLab || typeof window.FaceLab.getHandles !== "function") {
+    if (
+      !window.FaceLab ||
+      typeof window.FaceLab.getHandles !==
+        "function"
+    ) {
       return [];
     }
 
-    const handles = window.FaceLab.getHandles();
+    const handles =
+      window.FaceLab.getHandles();
 
-    return Array.isArray(handles) ? handles : [];
+    return Array.isArray(handles)
+      ? handles
+      : [];
   }
 
   /* ==========================
-       FEATURE SETTINGS
-    ========================== */
+     FEATURE SETTINGS
+  ========================== */
 
   function getFeatureSettings(featureId) {
     if (
       window.FaceLab &&
       window.FaceLab.Core &&
-      typeof window.FaceLab.Core.getFeatureSettings === "function"
+      typeof window.FaceLab.Core
+        .getFeatureSettings ===
+        "function"
     ) {
-      return window.FaceLab.Core.getFeatureSettings(featureId) || {};
+      return (
+        window.FaceLab.Core
+          .getFeatureSettings(
+            featureId,
+          ) || {}
+      );
     }
 
     return {};
   }
 
   /* ==========================
-       CONTROL SYNCHRONIZATION
-    ========================== */
-
-  function findSettingControls(propertyName, featureId) {
-    const controls = [];
-
-    const possibleIds = [
-      propertyName,
-
-      featureId + propertyName.charAt(0).toUpperCase() + propertyName.slice(1),
-    ];
-
-    possibleIds.forEach(function (controlId) {
-      const control = document.getElementById(controlId);
-
-      if (control && !controls.includes(control)) {
-        controls.push(control);
-      }
-    });
-
-    document
-      .querySelectorAll(
-        [
-          `[data-setting="${propertyName}"]`,
-          `[data-feature-setting="${propertyName}"]`,
-          `[data-${featureId}-setting="${propertyName}"]`,
-          `input[name="${propertyName}"]`,
-        ].join(","),
-      )
-      .forEach(function (control) {
-        if (!controls.includes(control)) {
-          controls.push(control);
-        }
-      });
-
-    return controls;
-  }
-
-  function syncControl(propertyName, featureId) {
-    const settings = getFeatureSettings(featureId);
-
-    const value = settings[propertyName];
-
-    if (value === undefined) {
-      return;
-    }
-
-    findSettingControls(propertyName, featureId).forEach(function (control) {
-      if ("value" in control) {
-        control.value = value;
-      }
-
-      control.dispatchEvent(
-        new CustomEvent(
-          "facelab-sync",
-
-          {
-            bubbles: true,
-
-            detail: {
-              feature: featureId,
-
-              property: propertyName,
-
-              value: value,
-            },
-          },
-        ),
-      );
-    });
-
-    const capitalizedProperty =
-      propertyName.charAt(0).toUpperCase() + propertyName.slice(1);
-
-    const valueDisplayIds = [
-      propertyName + "Value",
-
-      featureId + capitalizedProperty + "Value",
-    ];
-
-    valueDisplayIds.forEach(function (displayId) {
-      const display = document.getElementById(displayId);
-
-      if (display) {
-        display.textContent = formatNumber(value, 3);
-      }
-    });
-  }
-
-  function syncControls(propertyNames, featureId) {
-    if (!Array.isArray(propertyNames)) {
-      return;
-    }
-
-    propertyNames.forEach(function (propertyName) {
-      syncControl(propertyName, featureId);
-    });
-  }
-
-  /* ==========================
-       HANDLE LOOKUP
-    ========================== */
+     HANDLE LOOKUP
+  ========================== */
 
   function getHandleById(handleId) {
     return (
-      state.handles.find(function (handle) {
-        return handle.id === handleId;
-      }) || null
+      state.handles.find(
+        function (handle) {
+          return (
+            handle.id ===
+            handleId
+          );
+        },
+      ) || null
     );
   }
 
   /* ==========================
-       DRAW GUIDE LINES
-    ========================== */
+     DRAW GUIDES
+  ========================== */
 
   function drawGuides() {
     clearElement(guideLayer);
@@ -912,165 +1421,244 @@
       return;
     }
 
-    const guideGroups = new Map();
+    const guideGroups =
+      new Map();
 
-    state.handles.forEach(function (handle) {
-      if (!handle.guideGroup) {
-        return;
-      }
+    state.handles.forEach(
+      function (handle) {
+        if (!handle.guideGroup) {
+          return;
+        }
 
-      if (!guideGroups.has(handle.guideGroup)) {
-        guideGroups.set(handle.guideGroup, []);
-      }
+        if (
+          !guideGroups.has(
+            handle.guideGroup,
+          )
+        ) {
+          guideGroups.set(
+            handle.guideGroup,
+            [],
+          );
+        }
 
-      guideGroups.get(handle.guideGroup).push(handle);
-    });
+        guideGroups
+          .get(handle.guideGroup)
+          .push(handle);
+      },
+    );
 
-    guideGroups.forEach(function (handles) {
-      handles.sort(function (firstHandle, secondHandle) {
-        return (
-          safeNumber(firstHandle.guideOrder, 0) -
-          safeNumber(secondHandle.guideOrder, 0)
+    guideGroups.forEach(
+      function (handles) {
+        handles.sort(
+          function (a, b) {
+            return (
+              safeNumber(
+                a.guideOrder,
+                0,
+              ) -
+              safeNumber(
+                b.guideOrder,
+                0,
+              )
+            );
+          },
         );
-      });
 
-      for (let index = 0; index < handles.length - 1; index += 1) {
-        const firstHandle = handles[index];
+        for (
+          let index = 0;
+          index <
+          handles.length - 1;
+          index += 1
+        ) {
+          guideLayer.appendChild(
+            createLine(
+              handles[index].point,
+              handles[index + 1]
+                .point,
+              {
+                stroke:
+                  window
+                    .faceInspectorSettings
+                    .guideStroke,
 
-        const secondHandle = handles[index + 1];
+                strokeWidth:
+                  window
+                    .faceInspectorSettings
+                    .guideStrokeWidth,
 
-        guideLayer.appendChild(
-          createLine(
-            firstHandle.point,
-
-            secondHandle.point,
-
-            {
-              stroke: window.faceInspectorSettings.guideStroke,
-
-              strokeWidth: window.faceInspectorSettings.guideStrokeWidth,
-
-              opacity: window.faceInspectorSettings.guideOpacity,
-            },
-          ),
-        );
-      }
-    });
+                opacity:
+                  window
+                    .faceInspectorSettings
+                    .guideOpacity,
+              },
+            ),
+          );
+        }
+      },
+    );
   }
 
   /* ==========================
-       HANDLE APPEARANCE
-    ========================== */
+     HANDLE APPEARANCE
+  ========================== */
 
-  function getHandleAppearance(handleId) {
-    const settings = window.faceInspectorSettings;
+  function getHandleAppearance(
+    handleId,
+  ) {
+    const settings =
+      window.faceInspectorSettings;
 
-    if (handleId === state.selectedHandleId) {
+    if (
+      handleId ===
+      state.selectedHandleId
+    ) {
       return {
-        radius: settings.selectedRadius,
+        radius:
+          settings.selectedRadius,
 
-        fill: settings.selectedFill,
+        fill:
+          settings.selectedFill,
 
-        stroke: settings.selectedStroke,
+        stroke:
+          settings.selectedStroke,
       };
     }
 
-    if (handleId === state.hoveredHandleId) {
+    if (
+      handleId ===
+      state.hoveredHandleId
+    ) {
       return {
-        radius: settings.hoverRadius,
+        radius:
+          settings.hoverRadius,
 
-        fill: settings.hoverFill,
+        fill:
+          settings.hoverFill,
 
-        stroke: settings.hoverStroke,
+        stroke:
+          settings.hoverStroke,
       };
     }
 
     return {
-      radius: settings.handleRadius,
+      radius:
+        settings.handleRadius,
 
-      fill: settings.handleFill,
+      fill:
+        settings.handleFill,
 
-      stroke: settings.handleStroke,
+      stroke:
+        settings.handleStroke,
     };
   }
 
   /* ==========================
-       DRAW HANDLES
-    ========================== */
+     DRAW HANDLES
+  ========================== */
 
   function drawHandles() {
     clearElement(handleLayer);
 
-    if (!state.enabled || !window.faceInspectorSettings.showHandles) {
+    if (
+      !state.enabled ||
+      !window.faceInspectorSettings
+        .showHandles
+    ) {
       return;
     }
 
-    state.handles.forEach(function (handle) {
-      if (!handle.point) {
-        return;
-      }
+    state.handles.forEach(
+      function (handle) {
+        if (!handle.point) {
+          return;
+        }
 
-      const appearance = getHandleAppearance(handle.id);
+        const appearance =
+          getHandleAppearance(
+            handle.id,
+          );
 
-      const circle = createCircle(
-        handle.point,
+        const circle =
+          createCircle(
+            handle.point,
+            appearance.radius,
+            {
+              fill:
+                appearance.fill,
 
-        appearance.radius,
+              stroke:
+                appearance.stroke,
 
-        {
-          fill: appearance.fill,
+              strokeWidth:
+                window
+                  .faceInspectorSettings
+                  .handleStrokeWidth,
+            },
+          );
 
-          stroke: appearance.stroke,
+        circle.dataset.handleId =
+          handle.id;
 
-          strokeWidth: window.faceInspectorSettings.handleStrokeWidth,
-        },
-      );
+        circle.style.cursor =
+          state.dragging
+            ? "grabbing"
+            : "grab";
 
-      circle.dataset.handleId = handle.id;
+        circle.style.pointerEvents =
+          "all";
 
-      circle.style.cursor = state.dragging ? "grabbing" : "grab";
+        circle.addEventListener(
+          "pointerenter",
+          handlePointerEnter,
+        );
 
-      circle.style.pointerEvents = "all";
+        circle.addEventListener(
+          "pointerleave",
+          handlePointerLeave,
+        );
 
-      circle.addEventListener(
-        "pointerenter",
+        circle.addEventListener(
+          "pointerdown",
+          handlePointerDown,
+        );
 
-        handlePointerEnter,
-      );
-
-      circle.addEventListener(
-        "pointerleave",
-
-        handlePointerLeave,
-      );
-
-      circle.addEventListener(
-        "pointerdown",
-
-        handlePointerDown,
-      );
-
-      handleLayer.appendChild(circle);
-    });
+        handleLayer.appendChild(
+          circle,
+        );
+      },
+    );
   }
 
   /* ==========================
-       HOVER
-    ========================== */
+     HOVER
+  ========================== */
 
   function handlePointerEnter(event) {
-    if (state.dragging || !state.enabled) {
+    if (
+      state.dragging ||
+      !state.enabled
+    ) {
       return;
     }
 
-    const handleId = event.currentTarget.dataset.handleId;
+    const handleId =
+      event.currentTarget.dataset
+        .handleId;
 
-    state.hoveredHandleId = handleId;
+    state.hoveredHandleId =
+      handleId;
 
-    const handle = getHandleById(handleId);
+    const handle =
+      getHandleById(handleId);
 
-    if (handle && !state.selectedHandleId) {
-      renderHandlePanel(handle, "Hover");
+    if (
+      handle &&
+      !state.selectedHandleId
+    ) {
+      renderHandlePanel(
+        handle,
+        "Hover",
+      );
     }
 
     drawHandles();
@@ -1081,13 +1669,21 @@
       return;
     }
 
-    const handleId = event.currentTarget.dataset.handleId;
+    const handleId =
+      event.currentTarget.dataset
+        .handleId;
 
-    if (state.hoveredHandleId === handleId) {
-      state.hoveredHandleId = null;
+    if (
+      state.hoveredHandleId ===
+      handleId
+    ) {
+      state.hoveredHandleId =
+        null;
     }
 
-    if (state.selectedHandleId) {
+    if (
+      state.selectedHandleId
+    ) {
       renderSelectedHandle();
     } else {
       renderEmptyPanel();
@@ -1097,8 +1693,8 @@
   }
 
   /* ==========================
-       START DRAG
-    ========================== */
+     HANDLE DRAG START
+  ========================== */
 
   function handlePointerDown(event) {
     if (!state.enabled) {
@@ -1106,58 +1702,69 @@
     }
 
     event.preventDefault();
-
     event.stopPropagation();
 
-    const handleId = event.currentTarget.dataset.handleId;
+    const handleId =
+      event.currentTarget.dataset
+        .handleId;
 
-    const handle = getHandleById(handleId);
+    const handle =
+      getHandleById(handleId);
 
     if (!handle) {
       return;
     }
 
-    const pointer = getSvgPointer(event);
+    const pointer =
+      getSvgPointer(event);
 
     if (!pointer) {
       return;
     }
 
-    state.selectedHandleId = handleId;
+    state.selectedHandleId =
+      handleId;
 
-    state.hoveredHandleId = handleId;
+    state.hoveredHandleId =
+      handleId;
 
     state.dragging = true;
 
-    state.activePointerId = event.pointerId;
+    state.activePointerId =
+      event.pointerId;
 
     state.dragStartPointer = {
       x: pointer.x,
-
       y: pointer.y,
     };
 
-    if (typeof handle.beginDrag === "function") {
-      state.dragStartSettings = handle.beginDrag() || {};
+    if (
+      typeof handle.beginDrag ===
+      "function"
+    ) {
+      state.dragStartSettings =
+        handle.beginDrag() || {};
     } else {
-      state.dragStartSettings = getFeatureSettings(handle.feature);
+      state.dragStartSettings =
+        getFeatureSettings(
+          handle.feature,
+        );
     }
-
-    /*
-        A feature redraw can replace the SVG handle during
-        pointer-down. Guard pointer capture so a detached
-        handle cannot abort the drag operation.
-    */
 
     if (
       event.currentTarget &&
-      typeof event.currentTarget.setPointerCapture === "function"
+      typeof event.currentTarget
+        .setPointerCapture ===
+        "function"
     ) {
       try {
-        event.currentTarget.setPointerCapture(event.pointerId);
+        event.currentTarget
+          .setPointerCapture(
+            event.pointerId,
+          );
       } catch (error) {
         console.warn(
-          "Face Inspector could not capture this pointer; continuing drag without capture.",
+          "Face Inspector could not capture pointer.",
           error,
         );
       }
@@ -1165,76 +1772,98 @@
 
     window.addEventListener(
       "pointermove",
-
       handlePointerMove,
     );
 
     window.addEventListener(
       "pointerup",
-
       handlePointerUp,
     );
 
     window.addEventListener(
       "pointercancel",
-
       handlePointerUp,
     );
 
-    renderHandlePanel(handle, "Dragging");
+    renderHandlePanel(
+      handle,
+      "Dragging",
+    );
 
     drawHandles();
   }
 
   /* ==========================
-       DRAG MOVE
-    ========================== */
+     HANDLE DRAG MOVE
+  ========================== */
 
   function handlePointerMove(event) {
-    if (!state.dragging || event.pointerId !== state.activePointerId) {
+    if (
+      !state.dragging ||
+      event.pointerId !==
+        state.activePointerId
+    ) {
       return;
     }
 
-    const pointer = getSvgPointer(event);
+    const pointer =
+      getSvgPointer(event);
 
-    if (!pointer || !state.dragStartPointer) {
+    if (
+      !pointer ||
+      !state.dragStartPointer
+    ) {
       return;
     }
 
     const deltaX =
-      (pointer.x - state.dragStartPointer.x) *
-      window.faceInspectorSettings.dragScale;
+      (
+        pointer.x -
+        state.dragStartPointer.x
+      ) *
+      window
+        .faceInspectorSettings
+        .dragScale;
 
     const deltaY =
-      (pointer.y - state.dragStartPointer.y) *
-      window.faceInspectorSettings.dragScale;
+      (
+        pointer.y -
+        state.dragStartPointer.y
+      ) *
+      window
+        .faceInspectorSettings
+        .dragScale;
 
-    const handle = getHandleById(state.selectedHandleId);
+    const handle =
+      getHandleById(
+        state.selectedHandleId,
+      );
 
-    if (!handle || typeof handle.drag !== "function") {
+    if (
+      !handle ||
+      typeof handle.drag !==
+        "function"
+    ) {
       return;
     }
 
     handle.drag(
       deltaX,
-
       deltaY,
-
       state.dragStartSettings || {},
-
       {
-        handle: handle,
-
-        feature: handle.feature,
-
-        inspector: window.FaceInspector,
+        handle,
+        feature:
+          handle.feature,
+        inspector:
+          window.FaceInspector,
       },
     );
   }
 
   /* ==========================
-       END DRAG
-    ========================== */
+     HANDLE DRAG END
+  ========================== */
 
   function handlePointerUp(event) {
     if (!state.dragging) {
@@ -1242,35 +1871,37 @@
     }
 
     if (
-      state.activePointerId !== null &&
-      event.pointerId !== state.activePointerId
+      state.activePointerId !==
+        null &&
+      event.pointerId !==
+        state.activePointerId
     ) {
       return;
     }
 
     state.dragging = false;
 
-    state.activePointerId = null;
+    state.activePointerId =
+      null;
 
-    state.dragStartPointer = null;
+    state.dragStartPointer =
+      null;
 
-    state.dragStartSettings = null;
+    state.dragStartSettings =
+      null;
 
     window.removeEventListener(
       "pointermove",
-
       handlePointerMove,
     );
 
     window.removeEventListener(
       "pointerup",
-
       handlePointerUp,
     );
 
     window.removeEventListener(
       "pointercancel",
-
       handlePointerUp,
     );
 
@@ -1278,17 +1909,26 @@
 
     renderSelectedHandle();
   }
+
   /* ==========================
-       PANEL HTML HELPERS
-    ========================== */
+     PANEL HELPERS
+  ========================== */
 
   function escapeHtml(value) {
-    return String(value === undefined || value === null ? "" : value)
+    return String(
+      value === undefined ||
+      value === null
+        ? ""
+        : value,
+    )
       .replaceAll("&", "&amp;")
       .replaceAll("<", "&lt;")
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
+      .replaceAll(
+        "'",
+        "&#039;",
+      );
   }
 
   function panelRow(label, value) {
@@ -1309,56 +1949,80 @@
     `;
   }
 
-  function formatPropertyName(propertyName) {
-    return String(propertyName || "")
+  function formatPropertyName(
+    propertyName,
+  ) {
+    return String(
+      propertyName || "",
+    )
       .replace(
         /([A-Z])/g,
-
         " $1",
       )
       .replace(
         /^./,
-
-        function (firstCharacter) {
-          return firstCharacter.toUpperCase();
+        function (
+          firstCharacter,
+        ) {
+          return firstCharacter
+            .toUpperCase();
         },
       );
   }
 
   /* ==========================
-       RENDER HANDLE PANEL
-    ========================== */
+     RENDER PANEL
+  ========================== */
 
-  function renderHandlePanel(handle, status) {
-    if (!panelContent || !handle) {
+  function renderHandlePanel(
+    handle,
+    status,
+  ) {
+    if (
+      !panelContent ||
+      !handle
+    ) {
       return;
     }
 
-    const settings = getFeatureSettings(handle.feature);
+    const settings =
+      getFeatureSettings(
+        handle.feature,
+      );
 
-    const properties = Array.isArray(handle.properties)
-      ? handle.properties
-      : [];
+    const properties =
+      Array.isArray(
+        handle.properties,
+      )
+        ? handle.properties
+        : [];
 
-    const propertyRows = properties
-      .map(function (propertyName) {
-        const propertyValue = settings[propertyName];
+    const propertyRows =
+      properties
+        .map(
+          function (
+            propertyName,
+          ) {
+            const value =
+              settings[
+                propertyName
+              ];
 
-        return panelRow(
-          formatPropertyName(propertyName),
-
-          propertyValue === undefined
-            ? "—"
-            : formatNumber(
-                propertyValue,
-
-                3,
+            return panelRow(
+              formatPropertyName(
+                propertyName,
               ),
-        );
-      })
-      .join("");
 
-    const helpText = handle.help || "Drag this handle to edit the feature.";
+              value === undefined
+                ? "—"
+                : formatNumber(
+                    value,
+                    3,
+                  ),
+            );
+          },
+        )
+        .join("");
 
     panelContent.innerHTML = `
 
@@ -1368,13 +2032,34 @@
           Selection
         </div>
 
-        ${panelRow("Handle", handle.label || handle.localId || handle.id)}
+        ${panelRow(
+          "Handle",
+          handle.label ||
+            handle.localId ||
+            handle.id,
+        )}
 
-        ${panelRow("Feature", handle.featureLabel || handle.feature)}
+        ${panelRow(
+          "Feature",
+          handle.featureLabel ||
+            handle.feature,
+        )}
 
-        ${panelRow("X", formatNumber(handle.point.x, 2))}
+        ${panelRow(
+          "X",
+          formatNumber(
+            handle.point.x,
+            2,
+          ),
+        )}
 
-        ${panelRow("Y", formatNumber(handle.point.y, 2))}
+        ${panelRow(
+          "Y",
+          formatNumber(
+            handle.point.y,
+            2,
+          ),
+        )}
 
       </div>
 
@@ -1385,14 +2070,23 @@
           Parameters
         </div>
 
-        ${propertyRows || panelRow("Properties", "None")}
+        ${
+          propertyRows ||
+          panelRow(
+            "Properties",
+            "None",
+          )
+        }
 
       </div>
 
 
       <div class="faceInspectorHelp">
 
-        ${escapeHtml(helpText)}
+        ${escapeHtml(
+          handle.help ||
+            "Drag this handle to edit the feature.",
+        )}
 
       </div>
 
@@ -1400,20 +2094,31 @@
 
     if (panelStatus) {
       panelStatus.textContent =
-        status + " · " + (handle.label || handle.localId || handle.id);
+        status +
+        " · " +
+        (
+          handle.label ||
+          handle.localId ||
+          handle.id
+        );
     }
   }
 
   function renderSelectedHandle() {
-    const handle = getHandleById(state.selectedHandleId);
+    const handle =
+      getHandleById(
+        state.selectedHandleId,
+      );
 
     if (!handle) {
       renderEmptyPanel();
-
       return;
     }
 
-    renderHandlePanel(handle, "Selected");
+    renderHandlePanel(
+      handle,
+      "Selected",
+    );
   }
 
   function renderEmptyPanel() {
@@ -1429,8 +2134,13 @@
 
         <br><br>
 
-        Click and drag a handle to edit
-        its procedural facial feature.
+        Drag a landmark to edit
+        facial geometry.
+
+        <br><br>
+
+        Drag empty face space to
+        reposition the view.
 
       </div>
 
@@ -1438,50 +2148,46 @@
 
     if (panelStatus) {
       const featureCount =
-        window.FaceLab && typeof window.FaceLab.getFeatures === "function"
-          ? window.FaceLab.getFeatures().length
+        window.FaceLab &&
+        typeof window.FaceLab
+          .getFeatures ===
+          "function"
+          ? window.FaceLab
+              .getFeatures()
+              .length
           : 0;
 
       panelStatus.textContent =
         featureCount +
-        (featureCount === 1 ? " feature registered" : " features registered");
+        (
+          featureCount === 1
+            ? " feature registered"
+            : " features registered"
+        );
     }
   }
 
   /* ==========================
-       CLEAR SELECTION
-    ========================== */
+     CLEAR SELECTION
+  ========================== */
 
   function clearSelection() {
-    state.selectedHandleId = null;
+    state.selectedHandleId =
+      null;
 
-    state.hoveredHandleId = null;
+    state.hoveredHandleId =
+      null;
 
     state.dragging = false;
 
-    state.activePointerId = null;
+    state.activePointerId =
+      null;
 
-    state.dragStartPointer = null;
+    state.dragStartPointer =
+      null;
 
-    state.dragStartSettings = null;
-
-    window.removeEventListener(
-      "pointermove",
-
-      handlePointerMove,
-    );
-
-    window.removeEventListener(
-      "pointerup",
-
-      handlePointerUp,
-    );
-
-    window.removeEventListener(
-      "pointercancel",
-
-      handlePointerUp,
-    );
+    state.dragStartSettings =
+      null;
 
     renderEmptyPanel();
 
@@ -1489,44 +2195,65 @@
   }
 
   /* ==========================
-       REFRESH
-    ========================== */
+     REFRESH
+  ========================== */
 
   function refresh() {
-    if (!state.initialized || !state.enabled) {
+    if (
+      !state.initialized ||
+      !state.enabled
+    ) {
       return;
     }
 
-    state.handles = collectFeatureHandles();
+    state.handles =
+      collectFeatureHandles();
 
-    /*
-      Remove a selection when its
-      feature no longer supplies it.
-    */
-
-    if (state.selectedHandleId && !getHandleById(state.selectedHandleId)) {
-      state.selectedHandleId = null;
+    if (
+      state.selectedHandleId &&
+      !getHandleById(
+        state.selectedHandleId,
+      )
+    ) {
+      state.selectedHandleId =
+        null;
     }
 
-    if (state.hoveredHandleId && !getHandleById(state.hoveredHandleId)) {
-      state.hoveredHandleId = null;
+    if (
+      state.hoveredHandleId &&
+      !getHandleById(
+        state.hoveredHandleId,
+      )
+    ) {
+      state.hoveredHandleId =
+        null;
     }
 
     drawGuides();
-
     drawHandles();
 
-    if (state.selectedHandleId) {
-      renderSelectedHandle();
+    updateZoomControls();
 
+    if (
+      state.selectedHandleId
+    ) {
+      renderSelectedHandle();
       return;
     }
 
-    if (state.hoveredHandleId) {
-      const hoveredHandle = getHandleById(state.hoveredHandleId);
+    if (
+      state.hoveredHandleId
+    ) {
+      const handle =
+        getHandleById(
+          state.hoveredHandleId,
+        );
 
-      if (hoveredHandle) {
-        renderHandlePanel(hoveredHandle, "Hover");
+      if (handle) {
+        renderHandlePanel(
+          handle,
+          "Hover",
+        );
 
         return;
       }
@@ -1536,15 +2263,17 @@
   }
 
   /* ==========================
-       SHOW INSPECTOR
-    ========================== */
+     SHOW / HIDE
+  ========================== */
 
   function showInspector() {
     state.enabled = true;
 
-    window.faceInspectorSettings.enabled = true;
+    window.faceInspectorSettings.enabled =
+      true;
 
-    window.faceInspectorSettings.showPanel = true;
+    window.faceInspectorSettings.showPanel =
+      true;
 
     if (panel) {
       panel.hidden = false;
@@ -1555,59 +2284,73 @@
     }
 
     if (handleLayer) {
-      handleLayer.style.display = "";
+      handleLayer.style.display =
+        "";
     }
 
     if (guideLayer) {
-      guideLayer.style.display = "";
+      guideLayer.style.display =
+        "";
     }
+
+    applyViewTransform();
 
     refresh();
   }
-
-  /* ==========================
-       HIDE INSPECTOR
-    ========================== */
 
   function hideInspector() {
     state.enabled = false;
 
     state.dragging = false;
+    state.panning = false;
 
     state.activePointerId = null;
+    state.panPointerId = null;
 
-    state.dragStartPointer = null;
+    window.faceInspectorSettings.enabled =
+      false;
 
-    state.dragStartSettings = null;
-
-    window.faceInspectorSettings.enabled = false;
-
-    window.faceInspectorSettings.showPanel = false;
+    window.faceInspectorSettings.showPanel =
+      false;
 
     window.removeEventListener(
       "pointermove",
-
       handlePointerMove,
     );
 
     window.removeEventListener(
       "pointerup",
-
       handlePointerUp,
     );
 
     window.removeEventListener(
       "pointercancel",
-
       handlePointerUp,
     );
 
+    window.removeEventListener(
+      "pointermove",
+      handlePanMove,
+    );
+
+    window.removeEventListener(
+      "pointerup",
+      handlePanEnd,
+    );
+
+    window.removeEventListener(
+      "pointercancel",
+      handlePanEnd,
+    );
+
     if (handleLayer) {
-      handleLayer.style.display = "none";
+      handleLayer.style.display =
+        "none";
     }
 
     if (guideLayer) {
-      guideLayer.style.display = "none";
+      guideLayer.style.display =
+        "none";
     }
 
     if (panel) {
@@ -1615,13 +2358,10 @@
     }
 
     if (reopenButton) {
-      reopenButton.hidden = false;
+      reopenButton.hidden =
+        false;
     }
   }
-
-  /* ==========================
-       ENABLE / DISABLE
-    ========================== */
 
   function enable() {
     showInspector();
@@ -1641,19 +2381,18 @@
     return state.enabled;
   }
 
-  function showPanel() {
-    showInspector();
-  }
-
-  function hidePanel() {
-    hideInspector();
-  }
   /* ==========================
-       UPDATE SETTINGS
-    ========================== */
+     SETTINGS
+  ========================== */
 
-  function updateSettings(updates) {
-    if (!updates || typeof updates !== "object") {
+  function updateSettings(
+    updates,
+  ) {
+    if (
+      !updates ||
+      typeof updates !==
+        "object"
+    ) {
       return {
         ...window.faceInspectorSettings,
       };
@@ -1661,19 +2400,62 @@
 
     Object.assign(
       window.faceInspectorSettings,
-
       updates,
     );
 
-    state.enabled = window.faceInspectorSettings.enabled !== false;
+    if (
+      updates.enabled !==
+      undefined
+    ) {
+      state.enabled =
+        updates.enabled !== false;
+    }
 
-    if (window.faceInspectorSettings.showPanel === false) {
+    if (
+      updates.zoom !==
+      undefined
+    ) {
+      state.zoom =
+        normalizeZoom(
+          updates.zoom,
+        );
+    }
+
+    if (
+      updates.panX !==
+      undefined
+    ) {
+      state.panX =
+        safeNumber(
+          updates.panX,
+          0,
+        );
+    }
+
+    if (
+      updates.panY !==
+      undefined
+    ) {
+      state.panY =
+        safeNumber(
+          updates.panY,
+          0,
+        );
+    }
+
+    applyViewTransform();
+
+    if (
+      window.faceInspectorSettings
+        .showPanel === false
+    ) {
       if (panel) {
         panel.hidden = true;
       }
 
       if (reopenButton) {
-        reopenButton.hidden = false;
+        reopenButton.hidden =
+          false;
       }
     } else {
       if (panel) {
@@ -1681,27 +2463,32 @@
       }
 
       if (reopenButton) {
-        reopenButton.hidden = true;
+        reopenButton.hidden =
+          true;
       }
     }
 
     if (state.enabled) {
       if (handleLayer) {
-        handleLayer.style.display = "";
+        handleLayer.style.display =
+          "";
       }
 
       if (guideLayer) {
-        guideLayer.style.display = "";
+        guideLayer.style.display =
+          "";
       }
 
       refresh();
     } else {
       if (handleLayer) {
-        handleLayer.style.display = "none";
+        handleLayer.style.display =
+          "none";
       }
 
       if (guideLayer) {
-        guideLayer.style.display = "none";
+        guideLayer.style.display =
+          "none";
       }
     }
 
@@ -1710,16 +2497,16 @@
     };
   }
 
-  /* ==========================
-       RESET SETTINGS
-    ========================== */
-
   function resetSettings() {
     window.faceInspectorSettings = {
       ...defaultFaceInspectorSettings,
     };
 
-    state.enabled = window.faceInspectorSettings.enabled;
+    state.enabled =
+      window.faceInspectorSettings
+        .enabled;
+
+    resetView();
 
     if (state.enabled) {
       showInspector();
@@ -1733,19 +2520,22 @@
   }
 
   /* ==========================
-       SELECT HANDLE
-    ========================== */
+     HANDLE SELECTION
+  ========================== */
 
   function selectHandle(handleId) {
-    const handle = getHandleById(handleId);
+    const handle =
+      getHandleById(handleId);
 
     if (!handle) {
       return false;
     }
 
-    state.selectedHandleId = handle.id;
+    state.selectedHandleId =
+      handle.id;
 
-    state.hoveredHandleId = null;
+    state.hoveredHandleId =
+      null;
 
     renderSelectedHandle();
 
@@ -1754,76 +2544,106 @@
     return true;
   }
 
-  /* ==========================
-       SELECT FEATURE HANDLE
-    ========================== */
-
-  function selectFeatureHandle(featureId, localHandleId) {
-    return selectHandle(featureId + ":" + localHandleId);
+  function selectFeatureHandle(
+    featureId,
+    localHandleId,
+  ) {
+    return selectHandle(
+      featureId +
+        ":" +
+        localHandleId,
+    );
   }
-
-  /* ==========================
-       GET CURRENT HANDLES
-    ========================== */
 
   function getHandles() {
-    return state.handles.map(function (handle) {
-      return {
-        ...handle,
+    return state.handles.map(
+      function (handle) {
+        return {
+          ...handle,
 
-        point: handle.point
-          ? {
-              x: safeNumber(handle.point.x, 0),
+          point:
+            handle.point
+              ? {
+                  x:
+                    safeNumber(
+                      handle.point.x,
+                      0,
+                    ),
 
-              y: safeNumber(handle.point.y, 0),
-            }
-          : null,
-      };
-    });
+                  y:
+                    safeNumber(
+                      handle.point.y,
+                      0,
+                    ),
+                }
+              : null,
+        };
+      },
+    );
   }
 
   /* ==========================
-       REFRESH AFTER FEATURE UPDATE
-    ========================== */
+     FACELAB REFRESH
+  ========================== */
 
   function handleFaceLabRefresh() {
-    if (!state.initialized || !state.enabled) {
+    if (
+      !state.initialized ||
+      !state.enabled
+    ) {
       return;
     }
 
     refresh();
   }
-
-  /* ==========================
-       WINDOW RESIZE
-    ========================== */
 
   function handleWindowResize() {
-    if (!state.initialized || !state.enabled) {
+    if (
+      !state.initialized
+    ) {
       return;
     }
 
-    refresh();
+    applyViewTransform();
+
+    if (state.enabled) {
+      refresh();
+    }
   }
 
   /* ==========================
-       INITIALIZE
-    ========================== */
+     INITIALIZE
+  ========================== */
 
   function initialize() {
     if (state.initialized) {
       refresh();
-
       return true;
     }
 
-    faceSvg = getFaceSvg();
+    faceSvg =
+      getFaceSvg();
 
     if (!faceSvg) {
-      console.warn("Face Inspector could not find the face SVG.");
+      console.warn(
+        "Face Inspector could not find the face SVG.",
+      );
 
       return false;
     }
+
+    originalFaceTransform =
+      faceSvg.style.transform ||
+      "";
+
+    originalFaceTransformOrigin =
+      faceSvg.style
+        .transformOrigin ||
+      "";
+
+    originalFaceCursor =
+      faceSvg.style.cursor ||
+      "";
 
     createPanelStyles();
 
@@ -1833,65 +2653,128 @@
 
     createPanel();
 
+    state.zoom =
+      normalizeZoom(
+        window
+          .faceInspectorSettings
+          .zoom,
+      );
+
+    state.panX =
+      safeNumber(
+        window
+          .faceInspectorSettings
+          .panX,
+        0,
+      );
+
+    state.panY =
+      safeNumber(
+        window
+          .faceInspectorSettings
+          .panY,
+        0,
+      );
+
+    applyViewTransform();
+
+    faceSvg.style.cursor =
+      "grab";
+
+    faceSvg.addEventListener(
+      "pointerdown",
+      handleFacePointerDown,
+    );
+
     window.addEventListener(
       "resize",
-
       handleWindowResize,
     );
 
     window.addEventListener(
       "facelab-refresh",
-
       handleFaceLabRefresh,
     );
 
     state.initialized = true;
 
-    if (window.faceInspectorSettings.enabled === false) {
+    if (
+      window
+        .faceInspectorSettings
+        .enabled === false
+    ) {
       hideInspector();
     } else {
       showInspector();
     }
 
-    console.log("Face Inspector initialized");
+    console.log(
+      "Face Inspector 3.1.2 initialized",
+    );
 
     return true;
   }
 
   /* ==========================
-       DESTROY
-    ========================== */
+     DESTROY
+  ========================== */
 
   function destroy() {
     window.removeEventListener(
       "resize",
-
       handleWindowResize,
     );
 
     window.removeEventListener(
       "facelab-refresh",
-
       handleFaceLabRefresh,
     );
 
     window.removeEventListener(
       "pointermove",
-
       handlePointerMove,
     );
 
     window.removeEventListener(
       "pointerup",
-
       handlePointerUp,
     );
 
     window.removeEventListener(
       "pointercancel",
-
       handlePointerUp,
     );
+
+    window.removeEventListener(
+      "pointermove",
+      handlePanMove,
+    );
+
+    window.removeEventListener(
+      "pointerup",
+      handlePanEnd,
+    );
+
+    window.removeEventListener(
+      "pointercancel",
+      handlePanEnd,
+    );
+
+    if (faceSvg) {
+      faceSvg.removeEventListener(
+        "pointerdown",
+        handleFacePointerDown,
+      );
+
+      faceSvg.style.transform =
+        originalFaceTransform;
+
+      faceSvg.style.transformOrigin =
+        originalFaceTransformOrigin;
+
+      faceSvg.style.cursor =
+        originalFaceCursor;
+    }
 
     if (handleLayer) {
       handleLayer.remove();
@@ -1910,86 +2793,131 @@
     }
 
     handleLayer = null;
-
     guideLayer = null;
 
     panel = null;
-
     panelStatus = null;
-
     panelContent = null;
 
     reopenButton = null;
+
+    zoomOutButton = null;
+    zoomResetButton = null;
+    zoomInButton = null;
+    recenterButton = null;
 
     faceSvg = null;
 
     state.initialized = false;
 
     state.dragging = false;
+    state.panning = false;
 
     state.hoveredHandleId = null;
-
     state.selectedHandleId = null;
 
     state.activePointerId = null;
+    state.panPointerId = null;
 
     state.dragStartPointer = null;
-
     state.dragStartSettings = null;
 
     state.handles = [];
   }
 
   /* ==========================
-       PUBLIC API
-    ========================== */
+     PUBLIC API
+  ========================== */
 
   window.FaceInspector = {
-    version: "3.0.1",
+    version: "3.1.2",
 
-    initialize: initialize,
+    initialize,
+    destroy,
 
-    destroy: destroy,
+    refresh,
 
-    refresh: refresh,
-
-    enable: enable,
-
-    disable: disable,
-
-    toggle: toggle,
+    enable,
+    disable,
+    toggle,
 
     show: showInspector,
-
     hide: hideInspector,
 
-    showPanel: showPanel,
+    showPanel: showInspector,
+    hidePanel: hideInspector,
 
-    hidePanel: hidePanel,
+    clearSelection,
 
-    clearSelection: clearSelection,
+    selectHandle,
+    selectFeatureHandle,
 
-    selectHandle: selectHandle,
+    getHandles,
 
-    selectFeatureHandle: selectFeatureHandle,
+    /* VIEW */
 
-    getHandles: getHandles,
+    zoomIn,
+    zoomOut,
+
+    setZoom,
+    setPan,
+
+    resetZoom: resetView,
+    resetView,
+
+    recenterView,
+
+    getZoom: function () {
+      return state.zoom;
+    },
+
+    getView: function () {
+      return {
+        zoom:
+          state.zoom,
+
+        panX:
+          state.panX,
+
+        panY:
+          state.panY,
+      };
+    },
 
     getState: function () {
       return {
-        initialized: state.initialized,
+        initialized:
+          state.initialized,
 
-        enabled: state.enabled,
+        enabled:
+          state.enabled,
 
-        dragging: state.dragging,
+        dragging:
+          state.dragging,
 
-        hoveredHandleId: state.hoveredHandleId,
+        panning:
+          state.panning,
 
-        selectedHandleId: state.selectedHandleId,
+        hoveredHandleId:
+          state.hoveredHandleId,
 
-        activePointerId: state.activePointerId,
+        selectedHandleId:
+          state.selectedHandleId,
 
-        handleCount: state.handles.length,
+        activePointerId:
+          state.activePointerId,
+
+        handleCount:
+          state.handles.length,
+
+        zoom:
+          state.zoom,
+
+        panX:
+          state.panX,
+
+        panY:
+          state.panY,
       };
     },
 
@@ -1999,36 +2927,31 @@
       };
     },
 
-    updateSettings: updateSettings,
+    updateSettings,
 
-    resetSettings: resetSettings,
+    resetSettings,
   };
 
   /* ==========================
-       AUTOMATIC STARTUP
-    ========================== */
+     AUTOMATIC STARTUP
+  ========================== */
 
   function startFaceInspector() {
-    /*
-      Wait until the other scripts and SVG
-      elements have finished loading.
-    */
-
     window.setTimeout(
       function () {
         initialize();
       },
-
       0,
     );
   }
 
-  if (document.readyState === "loading") {
+  if (
+    document.readyState ===
+    "loading"
+  ) {
     document.addEventListener(
       "DOMContentLoaded",
-
       startFaceInspector,
-
       {
         once: true,
       },
@@ -2037,5 +2960,7 @@
     startFaceInspector();
   }
 
-  console.log("faceInspector.js V3.0.1 loaded");
+  console.log(
+    "faceInspector.js V3.1.2 loaded",
+  );
 })();
