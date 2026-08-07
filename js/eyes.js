@@ -1,13 +1,11 @@
 /* =========================================================
    FACELAB EYE SYSTEM
-   EyeBuilder Stable Controller
-   Version 2.1
+   Version 2.2.1
 
-   REQUIRES:
-
-   js/eyes/eyeBuilder.js
-
-   EyeBuilder must load before this file.
+   2.2.1
+   - Tear duct is centered on inner canthus.
+   - Removed old 2.2px vertical duct displacement.
+   - Three tear-duct Inspector handles remain available.
 ========================================================= */
 
 /* ==========================
@@ -15,12 +13,8 @@
 ========================== */
 
 const defaultEyeSettings = {
-  /* POSITION */
-
   eyeY: 235,
   eyeSpacing: 134,
-
-  /* EYE OPENING */
 
   eyeWidth: 80,
   eyeHeight: 30,
@@ -32,61 +26,46 @@ const defaultEyeSettings = {
   eyeInnerCorner: -2,
   eyeOuterCorner: 2,
 
-  /* IRIS */
-
   irisSize: 27,
-
-  /*
-      Fine adjustment for the resting
-      center of both irises.
-  */
 
   irisCenterX: 0,
   irisCenterY: -2,
-
-  /* PUPIL / GAZE */
 
   pupilSize: 10,
   pupilX: 0,
   pupilY: 0,
 
-  /* TEAR DUCT LANDMARK OFFSETS */
+  /* LEFT TEAR DUCT */
 
   leftTearDuctX: 0,
   leftTearDuctY: 0,
+
+  leftTearDuctUpperX: 0,
+  leftTearDuctUpperY: 0,
+
+  leftTearDuctLowerX: 0,
+  leftTearDuctLowerY: 0,
+
+  /* RIGHT TEAR DUCT */
+
   rightTearDuctX: 0,
   rightTearDuctY: 0,
-};
 
-/* ==========================
-   CURRENT EYE SETTINGS
-========================== */
+  rightTearDuctUpperX: 0,
+  rightTearDuctUpperY: 0,
+
+  rightTearDuctLowerX: 0,
+  rightTearDuctLowerY: 0,
+};
 
 window.eyeSettings = {
   ...defaultEyeSettings,
 };
 
-/* ==========================
-   LATEST BUILT ANATOMY
-========================== */
-
-/*
-    This becomes the shared geometry source for:
-
-    - the SVG renderer
-    - FaceInspector
-    - future eye presets
-    - debugging tools
-*/
-
 window.eyeAnatomy = {
   left: null,
   right: null,
 };
-
-/* ==========================
-   EYE ANIMATION STATE
-========================== */
 
 window.eyeAnimationState = {
   lookX: 0,
@@ -99,10 +78,6 @@ window.eyeAnimationState = {
   angry: 0,
   sleepy: 0,
 };
-
-/* ==========================
-   EYE CONTROL NAMES
-========================== */
 
 const eyeControls = [
   "eyeY",
@@ -127,44 +102,57 @@ const eyeControls = [
   "pupilY",
 ];
 
-/* ==========================
-   DISPLAY CONTROL VALUE
-========================== */
-
 function displayEyeValue(settingName) {
-  const valueDisplay = document.getElementById(`${settingName}Value`);
+  const valueDisplay =
+    document.getElementById(
+      `${settingName}Value`,
+    );
 
   if (!valueDisplay) {
     return;
   }
 
-  valueDisplay.textContent = window.eyeSettings[settingName];
+  valueDisplay.textContent =
+    window.eyeSettings[
+      settingName
+    ];
 }
 
-/* ==========================
-   NUMBER HELPERS
-========================== */
-
-function clamp(value, minimum, maximum) {
-  return Math.max(minimum, Math.min(maximum, value));
+function clamp(
+  value,
+  minimum,
+  maximum,
+) {
+  return Math.max(
+    minimum,
+    Math.min(
+      maximum,
+      value,
+    ),
+  );
 }
 
-function safeEyeNumber(value, fallback) {
-  const number = Number(value);
+function safeEyeNumber(
+  value,
+  fallback,
+) {
+  const number =
+    Number(value);
 
-  return Number.isFinite(number) ? number : fallback;
+  return Number.isFinite(number)
+    ? number
+    : fallback;
 }
-
-/* ==========================
-   REFRESH FACE INSPECTOR
-========================== */
 
 function refreshFaceInspector() {
   if (
     window.FaceInspector &&
-    typeof window.FaceInspector.refresh === "function"
+    typeof window.FaceInspector
+      .refresh ===
+      "function"
   ) {
-    window.FaceInspector.refresh();
+    window.FaceInspector
+      .refresh();
   }
 }
 
@@ -181,7 +169,9 @@ function buildEyeAnatomy(
 ) {
   if (
     !window.EyeBuilder ||
-    typeof window.EyeBuilder.build !== "function"
+    typeof window.EyeBuilder
+      .build !==
+      "function"
   ) {
     console.error(
       "EyeBuilder is unavailable. Load js/eyes/eyeBuilder.js before js/eyes.js.",
@@ -190,63 +180,61 @@ function buildEyeAnatomy(
     return null;
   }
 
-  const settings = window.eyeSettings;
+  const settings =
+    window.eyeSettings;
 
-  /*
-      The existing upper and lower arch sliders
-      use a broader numerical range than the
-      builder's proportional settings.
+  const upperPeakHeight =
+    clamp(
+      safeEyeNumber(
+        settings.eyeUpperArch,
+        defaultEyeSettings
+          .eyeUpperArch,
+      ) * 0.43,
+      0.08,
+      1.1,
+    );
 
-      These conversions retain compatibility
-      with the existing controls.
-  */
+  const lowerLowDepth =
+    clamp(
+      safeEyeNumber(
+        settings.eyeLowerArch,
+        defaultEyeSettings
+          .eyeLowerArch,
+      ) * 0.4,
+      0.04,
+      0.9,
+    );
 
-  const upperPeakHeight = clamp(
-    safeEyeNumber(settings.eyeUpperArch, defaultEyeSettings.eyeUpperArch) *
-      0.43,
+  const cornerInfluence =
+    1 -
+    clamp(
+      blinkAmount,
+      0,
+      1,
+    );
 
-    0.08,
-    1.1,
-  );
-
-  const lowerLowDepth = clamp(
-    safeEyeNumber(settings.eyeLowerArch, defaultEyeSettings.eyeLowerArch) * 0.4,
-
-    0.04,
-    0.9,
-  );
-
-  /*
-      During a blink, the vertical corner offsets
-      flatten progressively.
-
-      This keeps the closed eye from retaining
-      exaggerated corner differences.
-  */
-
-  const cornerInfluence = 1 - clamp(blinkAmount, 0, 1);
-
-  /*
-      EyeBuilder defines coordinates anatomically:
-
-      innerCornerY = inner canthus offset
-      outerCornerY = outer canthus offset
-
-      The builder mirrors those positions for the
-      left and right eye automatically.
-  */
+  const isLeft =
+    side === "left";
 
   return window.EyeBuilder.build({
-    side: side,
+    side,
 
-    centerX: centerX,
-    centerY: centerY,
+    centerX,
+    centerY,
 
-    width: safeEyeNumber(settings.eyeWidth, defaultEyeSettings.eyeWidth),
+    width:
+      safeEyeNumber(
+        settings.eyeWidth,
+        defaultEyeSettings.eyeWidth,
+      ),
 
-    height: safeEyeNumber(settings.eyeHeight, defaultEyeSettings.eyeHeight),
+    height:
+      safeEyeNumber(
+        settings.eyeHeight,
+        defaultEyeSettings.eyeHeight,
+      ),
 
-    rotation: rotation,
+    rotation,
 
     /* CORNERS */
 
@@ -254,34 +242,101 @@ function buildEyeAnatomy(
       safeEyeNumber(
         settings.eyeInnerCorner,
         defaultEyeSettings.eyeInnerCorner,
-      ) * cornerInfluence,
+      ) *
+      cornerInfluence,
 
     outerCornerY:
       safeEyeNumber(
         settings.eyeOuterCorner,
         defaultEyeSettings.eyeOuterCorner,
-      ) * cornerInfluence,
+      ) *
+      cornerInfluence,
 
-    /* UPPER OPENING */
+    /* UPPER */
 
     upperPeakPosition: 0.39,
-    upperPeakHeight: upperPeakHeight,
+
+    upperPeakHeight,
 
     upperInnerTension: 0.72,
     upperOuterTension: 0.54,
 
-    /* LOWER OPENING */
+    /* LOWER */
 
     lowerLowPosition: 0.61,
-    lowerLowDepth: lowerLowDepth,
+
+    lowerLowDepth,
 
     lowerOuterTension: 0.34,
     lowerInnerTension: 0.25,
 
-    /* TEAR DUCT */
+    /* ==========================
+       TEAR DUCT
+
+       Important:
+       tearDuctHeight used to be 2.2.
+
+       That was forcing the entire duct
+       away from the inner eye corner.
+
+       It is now centered on the canthus.
+    ========================== */
 
     tearDuctLength: 4.5,
-    tearDuctHeight: 2.2,
+
+    tearDuctHeight: 0,
+
+    tearDuctSurfaceHeight: 1.35,
+
+    tearDuctAttachmentInset: 0.22,
+
+    tearDuctTipOffsetX:
+      safeEyeNumber(
+        isLeft
+          ? settings.leftTearDuctX
+          : settings.rightTearDuctX,
+        0,
+      ),
+
+    tearDuctTipOffsetY:
+      safeEyeNumber(
+        isLeft
+          ? settings.leftTearDuctY
+          : settings.rightTearDuctY,
+        0,
+      ),
+
+    tearDuctUpperOffsetX:
+      safeEyeNumber(
+        isLeft
+          ? settings.leftTearDuctUpperX
+          : settings.rightTearDuctUpperX,
+        0,
+      ),
+
+    tearDuctUpperOffsetY:
+      safeEyeNumber(
+        isLeft
+          ? settings.leftTearDuctUpperY
+          : settings.rightTearDuctUpperY,
+        0,
+      ),
+
+    tearDuctLowerOffsetX:
+      safeEyeNumber(
+        isLeft
+          ? settings.leftTearDuctLowerX
+          : settings.rightTearDuctLowerX,
+        0,
+      ),
+
+    tearDuctLowerOffsetY:
+      safeEyeNumber(
+        isLeft
+          ? settings.leftTearDuctLowerY
+          : settings.rightTearDuctLowerY,
+        0,
+      ),
 
     /* CREASES */
 
@@ -295,67 +350,148 @@ function buildEyeAnatomy(
 
     socketWidthScale: 1.38,
 
-    /*
-        Keep the socket based on resting eye
-        height, not blink-compressed height.
-    */
-
     socketHeightScale:
-      (safeEyeNumber(settings.eyeHeight, defaultEyeSettings.eyeHeight) + 18) /
+      (
+        safeEyeNumber(
+          settings.eyeHeight,
+          defaultEyeSettings.eyeHeight,
+        ) +
+        18
+      ) /
       Math.max(
-        safeEyeNumber(settings.eyeHeight, defaultEyeSettings.eyeHeight),
+        safeEyeNumber(
+          settings.eyeHeight,
+          defaultEyeSettings.eyeHeight,
+        ),
         1,
       ),
 
     socketOffsetY: 2,
 
-    /* EYE RIG */
+    /* RIG */
 
     rigState: {
-      blink: clamp(safeEyeNumber(blinkAmount, 0), 0, 1),
-      squint: clamp(safeEyeNumber(window.eyeAnimationState.squint, 0), 0, 1),
-      wide: clamp(safeEyeNumber(window.eyeAnimationState.wide, 0), 0, 1),
-      happy: clamp(safeEyeNumber(window.eyeAnimationState.happy, 0), 0, 1),
-      angry: clamp(safeEyeNumber(window.eyeAnimationState.angry, 0), 0, 1),
-      sleepy: clamp(safeEyeNumber(window.eyeAnimationState.sleepy, 0), 0, 1),
+      blink:
+        clamp(
+          safeEyeNumber(
+            blinkAmount,
+            0,
+          ),
+          0,
+          1,
+        ),
 
-      /* Gaze remains in EyeRenderer for now to avoid double movement. */
+      squint:
+        clamp(
+          safeEyeNumber(
+            window.eyeAnimationState
+              .squint,
+            0,
+          ),
+          0,
+          1,
+        ),
+
+      wide:
+        clamp(
+          safeEyeNumber(
+            window.eyeAnimationState
+              .wide,
+            0,
+          ),
+          0,
+          1,
+        ),
+
+      happy:
+        clamp(
+          safeEyeNumber(
+            window.eyeAnimationState
+              .happy,
+            0,
+          ),
+          0,
+          1,
+        ),
+
+      angry:
+        clamp(
+          safeEyeNumber(
+            window.eyeAnimationState
+              .angry,
+            0,
+          ),
+          0,
+          1,
+        ),
+
+      sleepy:
+        clamp(
+          safeEyeNumber(
+            window.eyeAnimationState
+              .sleepy,
+            0,
+          ),
+          0,
+          1,
+        ),
+
       gazeX: 0,
       gazeY: 0,
     },
 
-    /* IRIS */
+    irisSize:
+      safeEyeNumber(
+        settings.irisSize,
+        defaultEyeSettings.irisSize,
+      ),
 
-    irisSize: safeEyeNumber(settings.irisSize, defaultEyeSettings.irisSize),
+    irisCenterX:
+      safeEyeNumber(
+        settings.irisCenterX,
+        defaultEyeSettings.irisCenterX,
+      ),
 
-    irisCenterX: safeEyeNumber(
-      settings.irisCenterX,
-      defaultEyeSettings.irisCenterX,
-    ),
+    irisCenterY:
+      safeEyeNumber(
+        settings.irisCenterY,
+        defaultEyeSettings.irisCenterY,
+      ),
 
-    irisCenterY: safeEyeNumber(
-      settings.irisCenterY,
-      defaultEyeSettings.irisCenterY,
-    ),
-
-    pupilSize: safeEyeNumber(settings.pupilSize, defaultEyeSettings.pupilSize),
+    pupilSize:
+      safeEyeNumber(
+        settings.pupilSize,
+        defaultEyeSettings.pupilSize,
+      ),
   });
 }
 
 /* ==========================
-   DRAW ONE EYE
+   DRAW EYE
 ========================== */
 
-function drawEye(side, centerX, centerY, rotation) {
-  const settings = window.eyeSettings;
+function drawEye(
+  side,
+  centerX,
+  centerY,
+  rotation,
+) {
+  const settings =
+    window.eyeSettings;
 
-  const animation = window.eyeAnimationState || {
-    lookX: 0,
-    lookY: 0,
-    blink: 0,
-  };
+  const animation =
+    window.eyeAnimationState || {
+      lookX: 0,
+      lookY: 0,
+      blink: 0,
+    };
 
-  if (!window.EyeRenderer || typeof window.EyeRenderer.render !== "function") {
+  if (
+    !window.EyeRenderer ||
+    typeof window.EyeRenderer
+      .render !==
+      "function"
+  ) {
     console.error(
       "EyeRenderer is unavailable. Load js/eyes/eyeRenderer.js before js/eyes.js.",
     );
@@ -363,194 +499,231 @@ function drawEye(side, centerX, centerY, rotation) {
     return;
   }
 
-  const blinkAmount = clamp(safeEyeNumber(animation.blink, 0), 0, 1);
+  const blinkAmount =
+    clamp(
+      safeEyeNumber(
+        animation.blink,
+        0,
+      ),
+      0,
+      1,
+    );
 
-  const minimumEyeHeight = 1.5;
+  const animatedEyeHeight =
+    Math.max(
+      1.5,
 
-  const animatedEyeHeight = Math.max(
-    minimumEyeHeight,
-
-    safeEyeNumber(settings.eyeHeight, defaultEyeSettings.eyeHeight) *
+      safeEyeNumber(
+        settings.eyeHeight,
+        defaultEyeSettings.eyeHeight,
+      ) *
       (1 - blinkAmount),
-  );
+    );
 
-  const anatomy = buildEyeAnatomy(
-    side,
-    centerX,
-    centerY,
-    rotation,
-    blinkAmount,
-  );
+  const anatomy =
+    buildEyeAnatomy(
+      side,
+      centerX,
+      centerY,
+      rotation,
+      blinkAmount,
+    );
 
   if (!anatomy) {
     return;
   }
 
-  window.eyeAnatomy[side] = anatomy;
-
-  /*
-      Push the editable tear-duct landmark into EyeRenderer.
-      These values are offsets from the true inner canthus.
-  */
-
-  if (typeof window.EyeRenderer.setTearDuctLandmark === "function") {
-    window.EyeRenderer.setTearDuctLandmark(
-      side,
-      side === "left"
-        ? safeEyeNumber(settings.leftTearDuctX, 0)
-        : safeEyeNumber(settings.rightTearDuctX, 0),
-      side === "left"
-        ? safeEyeNumber(settings.leftTearDuctY, 0)
-        : safeEyeNumber(settings.rightTearDuctY, 0),
-    );
-  }
+  window.eyeAnatomy[
+    side
+  ] = anatomy;
 
   window.EyeRenderer.render({
-    side: side,
+    side,
 
-    anatomy: anatomy,
+    anatomy,
 
-    centerX: centerX,
+    centerX,
+    centerY,
 
-    centerY: centerY,
+    rotation,
 
-    rotation: rotation,
+    animatedEyeHeight,
 
-    animatedEyeHeight: animatedEyeHeight,
+    eyeSettings:
+      settings,
 
-    eyeSettings: settings,
-
-    animationState: animation,
+    animationState:
+      animation,
   });
 }
 
-/* ==========================
-   DRAW BOTH EYES
-========================== */
-
 function drawEyes() {
-  const settings = window.eyeSettings;
+  const settings =
+    window.eyeSettings;
 
-  const faceCenterX = 250;
+  const faceCenterX =
+    250;
 
-  const leftEyeX = faceCenterX - settings.eyeSpacing / 2;
+  const leftEyeX =
+    faceCenterX -
+    settings.eyeSpacing / 2;
 
-  const rightEyeX = faceCenterX + settings.eyeSpacing / 2;
+  const rightEyeX =
+    faceCenterX +
+    settings.eyeSpacing / 2;
 
-  drawEye("left", leftEyeX, settings.eyeY, settings.eyeRotation);
+  drawEye(
+    "left",
+    leftEyeX,
+    settings.eyeY,
+    settings.eyeRotation,
+  );
 
-  drawEye("right", rightEyeX, settings.eyeY, -settings.eyeRotation);
+  drawEye(
+    "right",
+    rightEyeX,
+    settings.eyeY,
+    -settings.eyeRotation,
+  );
 }
 
 /* ==========================
-   INITIALIZE EYE CONTROLS
+   CONTROLS
 ========================== */
 
 function initializeEyeControls() {
-  eyeControls.forEach(function initializeEyeControl(settingName) {
-    const slider = document.getElementById(settingName);
+  eyeControls.forEach(
+    function (
+      settingName,
+    ) {
+      const slider =
+        document.getElementById(
+          settingName,
+        );
 
-    if (!slider) {
-      console.warn(`Could not find eye slider: ${settingName}`);
+      if (!slider) {
+        console.warn(
+          `Could not find eye slider: ${settingName}`,
+        );
 
-      return;
-    }
+        return;
+      }
 
-    slider.value = window.eyeSettings[settingName];
+      slider.value =
+        window.eyeSettings[
+          settingName
+        ];
 
-    displayEyeValue(settingName);
+      displayEyeValue(
+        settingName,
+      );
 
-    slider.addEventListener(
-      "input",
+      slider.addEventListener(
+        "input",
 
-      function handleEyeInput() {
-        window.eyeSettings[settingName] = Number(slider.value);
+        function () {
+          window.eyeSettings[
+            settingName
+          ] =
+            Number(
+              slider.value,
+            );
 
-        displayEyeValue(settingName);
+          displayEyeValue(
+            settingName,
+          );
 
-        drawEyes();
+          drawEyes();
 
-        refreshFaceInspector();
-      },
-    );
-  });
+          refreshFaceInspector();
+        },
+      );
+    },
+  );
 }
-
-/* ==========================
-   UPDATE EYE CONTROLS
-========================== */
 
 function updateEyeControls() {
-  eyeControls.forEach(function updateEyeControl(settingName) {
-    const slider = document.getElementById(settingName);
+  eyeControls.forEach(
+    function (
+      settingName,
+    ) {
+      const slider =
+        document.getElementById(
+          settingName,
+        );
 
-    if (!slider) {
-      return;
-    }
+      if (!slider) {
+        return;
+      }
 
-    slider.value = window.eyeSettings[settingName];
+      slider.value =
+        window.eyeSettings[
+          settingName
+        ];
 
-    displayEyeValue(settingName);
-  });
+      displayEyeValue(
+        settingName,
+      );
+    },
+  );
 }
 
 /* ==========================
-   STATUS MESSAGE
+   SAVE / LOAD
 ========================== */
 
 function displayEyeStatus(message) {
-  const status = document.getElementById("eyeSaveStatus");
+  const status =
+    document.getElementById(
+      "eyeSaveStatus",
+    );
 
-  if (!status) {
-    return;
+  if (status) {
+    status.textContent =
+      message;
   }
-
-  status.textContent = message;
 }
-
-/* ==========================
-   SAVE EYES
-========================== */
 
 function saveEyes() {
   try {
     localStorage.setItem(
       "humanoidEyeSettings",
 
-      JSON.stringify(window.eyeSettings),
+      JSON.stringify(
+        window.eyeSettings,
+      ),
     );
 
-    displayEyeStatus("Eye settings saved.");
+    displayEyeStatus(
+      "Eye settings saved.",
+    );
   } catch (error) {
-    displayEyeStatus("Eye settings could not be saved.");
-
-    console.error("Eye settings could not be saved:", error);
+    console.error(
+      error,
+    );
   }
 }
 
-/* ==========================
-   LOAD EYES
-========================== */
-
 function loadEyes() {
-  const savedSettings = localStorage.getItem("humanoidEyeSettings");
+  const savedSettings =
+    localStorage.getItem(
+      "humanoidEyeSettings",
+    );
 
   if (!savedSettings) {
-    displayEyeStatus("No saved eye settings were found.");
-
     return false;
   }
 
   try {
-    const parsedSettings = JSON.parse(savedSettings);
+    Object.assign(
+      window.eyeSettings,
 
-    /*
-        Begin with the newest defaults so saved
-        data from older versions receives any
-        newly added eye properties.
-    */
+      defaultEyeSettings,
 
-    Object.assign(window.eyeSettings, defaultEyeSettings, parsedSettings);
+      JSON.parse(
+        savedSettings,
+      ),
+    );
 
     updateEyeControls();
 
@@ -558,72 +731,23 @@ function loadEyes() {
 
     refreshFaceInspector();
 
-    displayEyeStatus("Saved eye settings loaded.");
-
     return true;
   } catch (error) {
-    displayEyeStatus("Saved eye settings could not be loaded.");
-
-    console.error("Saved eye settings could not be loaded:", error);
+    console.error(
+      error,
+    );
 
     return false;
   }
 }
 
-/* ==========================
-   RESET EYES
-========================== */
-
 function resetEyes() {
-  Object.assign(window.eyeSettings, defaultEyeSettings);
+  Object.assign(
+    window.eyeSettings,
+    defaultEyeSettings,
+  );
 
   updateEyeControls();
-
-  drawEyes();
-
-  if (
-    window.FaceInspector &&
-    typeof window.FaceInspector.refresh === "function"
-  ) {
-    window.FaceInspector.refresh();
-  }
-
-  displayEyeStatus("Eye settings reset.");
-}
-
-/* ==========================
-   EYE RIG CONTROLS
-========================== */
-
-function setEyeRigPose(poseName, amount) {
-  const allowedPoses = ["blink", "squint", "wide", "happy", "angry", "sleepy"];
-
-  if (!allowedPoses.includes(poseName)) {
-    console.warn(`Unknown eye rig pose: ${poseName}`);
-    return;
-  }
-
-  window.eyeAnimationState[poseName] = clamp(safeEyeNumber(amount, 0), 0, 1);
-
-  drawEyes();
-
-  if (
-    window.FaceInspector &&
-    typeof window.FaceInspector.refresh === "function"
-  ) {
-    window.FaceInspector.refresh();
-  }
-}
-
-function resetEyeRig() {
-  Object.assign(window.eyeAnimationState, {
-    blink: 0,
-    squint: 0,
-    wide: 0,
-    happy: 0,
-    angry: 0,
-    sleepy: 0,
-  });
 
   drawEyes();
 
@@ -631,21 +755,95 @@ function resetEyeRig() {
 }
 
 /* ==========================
-   GLOBAL FUNCTIONS
+   RIG
 ========================== */
 
-window.drawEye = drawEye;
-window.drawEyes = drawEyes;
+function setEyeRigPose(
+  poseName,
+  amount,
+) {
+  const allowedPoses = [
+    "blink",
+    "squint",
+    "wide",
+    "happy",
+    "angry",
+    "sleepy",
+  ];
 
-window.initializeEyeControls = initializeEyeControls;
+  if (
+    !allowedPoses.includes(
+      poseName,
+    )
+  ) {
+    return;
+  }
 
-window.updateEyeControls = updateEyeControls;
+  window.eyeAnimationState[
+    poseName
+  ] =
+    clamp(
+      safeEyeNumber(
+        amount,
+        0,
+      ),
+      0,
+      1,
+    );
 
-window.saveEyes = saveEyes;
-window.loadEyes = loadEyes;
-window.resetEyes = resetEyes;
-window.setEyeRigPose = setEyeRigPose;
-window.resetEyeRig = resetEyeRig;
+  drawEyes();
+
+  refreshFaceInspector();
+}
+
+function resetEyeRig() {
+  Object.assign(
+    window.eyeAnimationState,
+    {
+      blink: 0,
+      squint: 0,
+      wide: 0,
+      happy: 0,
+      angry: 0,
+      sleepy: 0,
+    },
+  );
+
+  drawEyes();
+
+  refreshFaceInspector();
+}
+
+/* ==========================
+   GLOBAL API
+========================== */
+
+window.drawEye =
+  drawEye;
+
+window.drawEyes =
+  drawEyes;
+
+window.initializeEyeControls =
+  initializeEyeControls;
+
+window.updateEyeControls =
+  updateEyeControls;
+
+window.saveEyes =
+  saveEyes;
+
+window.loadEyes =
+  loadEyes;
+
+window.resetEyes =
+  resetEyes;
+
+window.setEyeRigPose =
+  setEyeRigPose;
+
+window.resetEyeRig =
+  resetEyeRig;
 
 /* =========================================================
    FACELAB EYE FEATURE
@@ -654,54 +852,97 @@ window.resetEyeRig = resetEyeRig;
 (function registerFaceLabEyes() {
   "use strict";
 
-  /* ==========================
-     NUMBER HELPERS
-  ========================== */
+  function eyeNumber(
+    value,
+    fallback,
+  ) {
+    const number =
+      Number(value);
 
-  function eyeNumber(value, fallback) {
-    const number = Number(value);
-
-    return Number.isFinite(number) ? number : fallback;
+    return Number.isFinite(number)
+      ? number
+      : fallback;
   }
 
-  function eyeClamp(value, minimum, maximum) {
-    return Math.max(minimum, Math.min(maximum, value));
+  function eyeClamp(
+    value,
+    minimum,
+    maximum,
+  ) {
+    return Math.max(
+      minimum,
+      Math.min(
+        maximum,
+        value,
+      ),
+    );
   }
 
-  /* ==========================
-     ROTATE HANDLE POINT
-  ========================== */
+  function rotateEyePoint(
+    sourcePoint,
+    center,
+    degrees,
+  ) {
+    const radians =
+      eyeNumber(
+        degrees,
+        0,
+      ) *
+      Math.PI /
+      180;
 
-  function rotateEyePoint(sourcePoint, center, degrees) {
-    const radians = (eyeNumber(degrees, 0) * Math.PI) / 180;
+    const cosine =
+      Math.cos(
+        radians,
+      );
 
-    const cosine = Math.cos(radians);
+    const sine =
+      Math.sin(
+        radians,
+      );
 
-    const sine = Math.sin(radians);
+    const offsetX =
+      sourcePoint.x -
+      center.x;
 
-    const offsetX = sourcePoint.x - center.x;
-
-    const offsetY = sourcePoint.y - center.y;
+    const offsetY =
+      sourcePoint.y -
+      center.y;
 
     return {
-      x: center.x + offsetX * cosine - offsetY * sine,
+      x:
+        center.x +
+        offsetX *
+          cosine -
+        offsetY *
+          sine,
 
-      y: center.y + offsetX * sine + offsetY * cosine,
+      y:
+        center.y +
+        offsetX *
+          sine +
+        offsetY *
+          cosine,
     };
   }
 
-  /* ==========================
-     UPDATE EYE SETTINGS
-  ========================== */
-
-  function updateFaceLabEyes(updates) {
-    if (!updates || typeof updates !== "object") {
+  function updateFaceLabEyes(
+    updates,
+  ) {
+    if (
+      !updates ||
+      typeof updates !==
+        "object"
+    ) {
       return {
         ...window.eyeSettings,
       };
     }
 
-    Object.assign(window.eyeSettings, updates);
+    Object.assign(
+      window.eyeSettings,
+      updates,
+    );
 
     updateEyeControls();
 
@@ -714,85 +955,112 @@ window.resetEyeRig = resetEyeRig;
     };
   }
 
-  /* ==========================
-     EYE GEOMETRY
-  ========================== */
-
   function getFaceLabEyeGeometry() {
-    const settings = window.eyeSettings;
+    const settings =
+      window.eyeSettings;
 
-    const faceCenterX = 250;
+    const faceCenterX =
+      250;
 
-    const eyeY = eyeNumber(settings.eyeY, defaultEyeSettings.eyeY);
+    const eyeY =
+      eyeNumber(
+        settings.eyeY,
+        defaultEyeSettings.eyeY,
+      );
 
-    const spacing = eyeNumber(
-      settings.eyeSpacing,
-      defaultEyeSettings.eyeSpacing,
-    );
+    const spacing =
+      eyeNumber(
+        settings.eyeSpacing,
+        defaultEyeSettings.eyeSpacing,
+      );
 
-    const width = eyeNumber(settings.eyeWidth, defaultEyeSettings.eyeWidth);
+    const width =
+      eyeNumber(
+        settings.eyeWidth,
+        defaultEyeSettings.eyeWidth,
+      );
 
-    const height = eyeNumber(settings.eyeHeight, defaultEyeSettings.eyeHeight);
+    const height =
+      eyeNumber(
+        settings.eyeHeight,
+        defaultEyeSettings.eyeHeight,
+      );
 
-    const rotation = eyeNumber(
-      settings.eyeRotation,
-      defaultEyeSettings.eyeRotation,
-    );
-
-    const halfWidth = width / 2;
-
-    const halfHeight = height / 2;
+    const rotation =
+      eyeNumber(
+        settings.eyeRotation,
+        defaultEyeSettings.eyeRotation,
+      );
 
     const leftCenter = {
-      x: faceCenterX - spacing / 2,
+      x:
+        faceCenterX -
+        spacing / 2,
 
-      y: eyeY,
+      y:
+        eyeY,
     };
 
     const rightCenter = {
-      x: faceCenterX + spacing / 2,
+      x:
+        faceCenterX +
+        spacing / 2,
 
-      y: eyeY,
+      y:
+        eyeY,
     };
 
     return {
-      settings: settings,
+      settings,
 
-      faceCenterX: faceCenterX,
+      faceCenterX,
+      eyeY,
+      spacing,
 
-      eyeY: eyeY,
+      width,
+      height,
 
-      spacing: spacing,
+      halfWidth:
+        width / 2,
 
-      width: width,
-      height: height,
+      halfHeight:
+        height / 2,
 
-      halfWidth: halfWidth,
-      halfHeight: halfHeight,
+      rotation,
 
-      rotation: rotation,
+      leftCenter,
+      rightCenter,
 
-      leftCenter: leftCenter,
-      rightCenter: rightCenter,
+      leftRotation:
+        rotation,
 
-      leftRotation: rotation,
-      rightRotation: -rotation,
+      rightRotation:
+        -rotation,
     };
   }
 
-  /* ==========================
-     GET BUILDER LANDMARK
-  ========================== */
-
-  function getBuilderLandmark(side, landmarkName, fallback) {
-    const anatomy = window.eyeAnatomy && window.eyeAnatomy[side];
+  function getBuilderLandmark(
+    side,
+    landmarkName,
+    fallback,
+  ) {
+    const anatomy =
+      window.eyeAnatomy &&
+      window.eyeAnatomy[
+        side
+      ];
 
     if (
       anatomy &&
       anatomy.transformedLandmarks &&
-      anatomy.transformedLandmarks[landmarkName]
+      anatomy.transformedLandmarks[
+        landmarkName
+      ]
     ) {
-      const landmark = anatomy.transformedLandmarks[landmarkName];
+      const landmark =
+        anatomy.transformedLandmarks[
+          landmarkName
+        ];
 
       return {
         x: landmark.x,
@@ -803,779 +1071,1139 @@ window.resetEyeRig = resetEyeRig;
     return fallback;
   }
 
-  /* ==========================
-     CREATE EYE HANDLES
-  ========================== */
-
   function createFaceLabEyeHandles() {
-    const geometry = getFaceLabEyeGeometry();
+    const geometry =
+      getFaceLabEyeGeometry();
 
-    const settings = geometry.settings;
+    const leftCenter =
+      geometry.leftCenter;
 
-    const leftCenter = geometry.leftCenter;
+    const rightCenter =
+      geometry.rightCenter;
 
-    const rightCenter = geometry.rightCenter;
+    const leftInner =
+      getBuilderLandmark(
+        "left",
+        "innerCanthus",
 
-    /*
-        Prefer the actual EyeBuilder landmarks.
+        rotateEyePoint(
+          {
+            x:
+              leftCenter.x +
+              geometry.halfWidth,
 
-        The old calculated points remain as
-        fallbacks during initialization before
-        the first complete eye draw.
-    */
+            y:
+              leftCenter.y,
+          },
 
-    const leftInner = getBuilderLandmark(
-      "left",
-      "innerCanthus",
+          leftCenter,
 
-      rotateEyePoint(
-        {
-          x: leftCenter.x + geometry.halfWidth,
+          geometry.leftRotation,
+        ),
+      );
 
-          y: leftCenter.y,
-        },
+    const leftOuter =
+      getBuilderLandmark(
+        "left",
+        "outerCanthus",
 
+        rotateEyePoint(
+          {
+            x:
+              leftCenter.x -
+              geometry.halfWidth,
+
+            y:
+              leftCenter.y,
+          },
+
+          leftCenter,
+
+          geometry.leftRotation,
+        ),
+      );
+
+    const rightInner =
+      getBuilderLandmark(
+        "right",
+        "innerCanthus",
+
+        rotateEyePoint(
+          {
+            x:
+              rightCenter.x -
+              geometry.halfWidth,
+
+            y:
+              rightCenter.y,
+          },
+
+          rightCenter,
+
+          geometry.rightRotation,
+        ),
+      );
+
+    const rightOuter =
+      getBuilderLandmark(
+        "right",
+        "outerCanthus",
+
+        rotateEyePoint(
+          {
+            x:
+              rightCenter.x +
+              geometry.halfWidth,
+
+            y:
+              rightCenter.y,
+          },
+
+          rightCenter,
+
+          geometry.rightRotation,
+        ),
+      );
+
+    const leftUpper =
+      getBuilderLandmark(
+        "left",
+        "upperPeak",
         leftCenter,
-        geometry.leftRotation,
-      ),
-    );
+      );
 
-    const leftOuter = getBuilderLandmark(
-      "left",
-      "outerCanthus",
-
-      rotateEyePoint(
-        {
-          x: leftCenter.x - geometry.halfWidth,
-
-          y: leftCenter.y,
-        },
-
+    const leftLower =
+      getBuilderLandmark(
+        "left",
+        "lowerLow",
         leftCenter,
-        geometry.leftRotation,
-      ),
-    );
+      );
 
-    const rightInner = getBuilderLandmark(
-      "right",
-      "innerCanthus",
-
-      rotateEyePoint(
-        {
-          x: rightCenter.x - geometry.halfWidth,
-
-          y: rightCenter.y,
-        },
-
+    const rightUpper =
+      getBuilderLandmark(
+        "right",
+        "upperPeak",
         rightCenter,
-        geometry.rightRotation,
-      ),
-    );
+      );
 
-    const rightOuter = getBuilderLandmark(
-      "right",
-      "outerCanthus",
-
-      rotateEyePoint(
-        {
-          x: rightCenter.x + geometry.halfWidth,
-
-          y: rightCenter.y,
-        },
-
+    const rightLower =
+      getBuilderLandmark(
+        "right",
+        "lowerLow",
         rightCenter,
-        geometry.rightRotation,
-      ),
-    );
+      );
 
-    const leftUpper = getBuilderLandmark(
-      "left",
-      "upperPeak",
+    const leftTearUpper =
+      getBuilderLandmark(
+        "left",
+        "tearDuctUpper",
+        leftInner,
+      );
 
-      rotateEyePoint(
-        {
-          x: leftCenter.x,
+    const leftTearTip =
+      getBuilderLandmark(
+        "left",
+        "tearDuct",
+        leftInner,
+      );
 
-          y: leftCenter.y - geometry.halfHeight,
-        },
+    const leftTearLower =
+      getBuilderLandmark(
+        "left",
+        "tearDuctLower",
+        leftInner,
+      );
 
-        leftCenter,
-        geometry.leftRotation,
-      ),
-    );
+    const rightTearUpper =
+      getBuilderLandmark(
+        "right",
+        "tearDuctUpper",
+        rightInner,
+      );
 
-    const leftLower = getBuilderLandmark(
-      "left",
-      "lowerLow",
+    const rightTearTip =
+      getBuilderLandmark(
+        "right",
+        "tearDuct",
+        rightInner,
+      );
 
-      rotateEyePoint(
-        {
-          x: leftCenter.x,
+    const rightTearLower =
+      getBuilderLandmark(
+        "right",
+        "tearDuctLower",
+        rightInner,
+      );
 
-          y: leftCenter.y + geometry.halfHeight,
-        },
+    function dragSettingPair(
+      xProperty,
+      yProperty,
+    ) {
+      return function (
+        deltaX,
+        deltaY,
+        dragStart,
+      ) {
+        const start =
+          dragStart || {};
 
-        leftCenter,
-        geometry.leftRotation,
-      ),
-    );
+        updateFaceLabEyes({
+          [xProperty]:
+            eyeClamp(
+              eyeNumber(
+                start[
+                  xProperty
+                ],
+                0,
+              ) +
+              deltaX,
+              -30,
+              30,
+            ),
 
-    const rightUpper = getBuilderLandmark(
-      "right",
-      "upperPeak",
+          [yProperty]:
+            eyeClamp(
+              eyeNumber(
+                start[
+                  yProperty
+                ],
+                0,
+              ) +
+              deltaY,
+              -30,
+              30,
+            ),
+        });
+      };
+    }
 
-      rotateEyePoint(
-        {
-          x: rightCenter.x,
-
-          y: rightCenter.y - geometry.halfHeight,
-        },
-
-        rightCenter,
-        geometry.rightRotation,
-      ),
-    );
-
-    const rightLower = getBuilderLandmark(
-      "right",
-      "lowerLow",
-
-      rotateEyePoint(
-        {
-          x: rightCenter.x,
-
-          y: rightCenter.y + geometry.halfHeight,
-        },
-
-        rightCenter,
-        geometry.rightRotation,
-      ),
-    );
-
-    /*
-        Tear-duct handles sit on the actual inner canthi plus
-        their independent editable offsets.
-    */
-
-    const leftTearDuct = {
-      x: leftInner.x + eyeNumber(settings.leftTearDuctX, 0),
-      y: leftInner.y + eyeNumber(settings.leftTearDuctY, 0),
-    };
-
-    const rightTearDuct = {
-      x: rightInner.x + eyeNumber(settings.rightTearDuctX, 0),
-      y: rightInner.y + eyeNumber(settings.rightTearDuctY, 0),
-    };
-
-    return [
-      /* ==========================
-         LEFT EYE CENTER
-      ========================== */
+    const handles = [
+      /* LEFT DUCT */
 
       {
-        id: "leftCenter",
+        id:
+          "leftTearDuctUpper",
 
-        label: "Left Eye Position",
+        label:
+          "Left Upper Tear Duct",
 
-        point: leftCenter,
+        point:
+          leftTearUpper,
 
-        guideGroup: "eyeCenters",
+        guideGroup:
+          "leftTearDuct",
+
         guideOrder: 0,
 
-        properties: ["eyeSpacing", "eyeY"],
+        properties: [
+          "leftTearDuctUpperX",
+          "leftTearDuctUpperY",
+        ],
 
-        help: "Drag horizontally to change eye spacing. Drag vertically to move both eyes.",
+        help:
+          "Controls the upper attachment of the tear duct at the inner canthus.",
 
-        beginDrag: function () {
-          return {
-            ...window.eyeSettings,
-          };
-        },
+        beginDrag:
+          function () {
+            return {
+              ...window.eyeSettings,
+            };
+          },
 
-        drag: function (deltaX, deltaY, dragStart) {
-          const start = dragStart || {};
-
-          updateFaceLabEyes({
-            eyeSpacing: eyeClamp(
-              eyeNumber(start.eyeSpacing, defaultEyeSettings.eyeSpacing) -
-                deltaX * 2,
-
-              40,
-              240,
-            ),
-
-            eyeY: eyeClamp(
-              eyeNumber(start.eyeY, defaultEyeSettings.eyeY) + deltaY,
-
-              120,
-              360,
-            ),
-          });
-        },
+        drag:
+          dragSettingPair(
+            "leftTearDuctUpperX",
+            "leftTearDuctUpperY",
+          ),
       },
 
-      /* ==========================
-         RIGHT EYE CENTER
-      ========================== */
-
       {
-        id: "rightCenter",
+        id:
+          "leftTearDuct",
 
-        label: "Right Eye Position",
+        label:
+          "Left Tear Duct Tip",
 
-        point: rightCenter,
+        point:
+          leftTearTip,
 
-        guideGroup: "eyeCenters",
+        guideGroup:
+          "leftTearDuct",
+
         guideOrder: 1,
 
-        properties: ["eyeSpacing", "eyeY"],
+        properties: [
+          "leftTearDuctX",
+          "leftTearDuctY",
+        ],
 
-        help: "Drag horizontally to change eye spacing. Drag vertically to move both eyes.",
+        help:
+          "Controls the nasal tip of the left tear duct.",
 
-        beginDrag: function () {
-          return {
-            ...window.eyeSettings,
-          };
-        },
+        beginDrag:
+          function () {
+            return {
+              ...window.eyeSettings,
+            };
+          },
 
-        drag: function (deltaX, deltaY, dragStart) {
-          const start = dragStart || {};
-
-          updateFaceLabEyes({
-            eyeSpacing: eyeClamp(
-              eyeNumber(start.eyeSpacing, defaultEyeSettings.eyeSpacing) +
-                deltaX * 2,
-
-              40,
-              240,
-            ),
-
-            eyeY: eyeClamp(
-              eyeNumber(start.eyeY, defaultEyeSettings.eyeY) + deltaY,
-
-              120,
-              360,
-            ),
-          });
-        },
+        drag:
+          dragSettingPair(
+            "leftTearDuctX",
+            "leftTearDuctY",
+          ),
       },
 
-      /* ==========================
-         LEFT TEAR DUCT
-      ========================== */
-
       {
-        id: "leftTearDuct",
+        id:
+          "leftTearDuctLower",
 
-        label: "Left Tear Duct",
+        label:
+          "Left Lower Tear Duct",
 
-        point: leftTearDuct,
+        point:
+          leftTearLower,
 
-        properties: ["leftTearDuctX", "leftTearDuctY"],
-
-        help: "Drag this point to place the left tear duct precisely inside the inner corner.",
-
-        beginDrag: function () {
-          return {
-            ...window.eyeSettings,
-          };
-        },
-
-        drag: function (deltaX, deltaY, dragStart) {
-          const start = dragStart || {};
-
-          updateFaceLabEyes({
-            leftTearDuctX:
-              eyeNumber(start.leftTearDuctX, 0) + deltaX,
-
-            leftTearDuctY:
-              eyeNumber(start.leftTearDuctY, 0) + deltaY,
-          });
-        },
-      },
-
-      /* ==========================
-         RIGHT TEAR DUCT
-      ========================== */
-
-      {
-        id: "rightTearDuct",
-
-        label: "Right Tear Duct",
-
-        point: rightTearDuct,
-
-        properties: ["rightTearDuctX", "rightTearDuctY"],
-
-        help: "Drag this point to place the right tear duct precisely inside the inner corner.",
-
-        beginDrag: function () {
-          return {
-            ...window.eyeSettings,
-          };
-        },
-
-        drag: function (deltaX, deltaY, dragStart) {
-          const start = dragStart || {};
-
-          updateFaceLabEyes({
-            rightTearDuctX:
-              eyeNumber(start.rightTearDuctX, 0) + deltaX,
-
-            rightTearDuctY:
-              eyeNumber(start.rightTearDuctY, 0) + deltaY,
-          });
-        },
-      },
-
-      /* ==========================
-         LEFT INNER CANTHUS
-      ========================== */
-
-      {
-        id: "leftInnerCorner",
-
-        label: "Left Inner Canthus",
-
-        point: leftInner,
-
-        guideGroup: "leftEyeShape",
+        guideGroup:
+          "leftTearDuct",
 
         guideOrder: 2,
 
-        properties: ["eyeWidth", "eyeSpacing", "eyeRotation"],
+        properties: [
+          "leftTearDuctLowerX",
+          "leftTearDuctLowerY",
+        ],
 
-        help: "Drag horizontally to alter eye width and inner spacing. Drag vertically to rotate the eye line.",
+        help:
+          "Controls the lower attachment of the tear duct at the inner canthus.",
 
-        beginDrag: function () {
-          return {
-            ...window.eyeSettings,
-          };
-        },
+        beginDrag:
+          function () {
+            return {
+              ...window.eyeSettings,
+            };
+          },
 
-        drag: function (deltaX, deltaY, dragStart) {
-          const start = dragStart || {};
-
-          updateFaceLabEyes({
-            eyeWidth: eyeClamp(
-              eyeNumber(start.eyeWidth, defaultEyeSettings.eyeWidth) + deltaX,
-
-              25,
-              160,
-            ),
-
-            eyeSpacing: eyeClamp(
-              eyeNumber(start.eyeSpacing, defaultEyeSettings.eyeSpacing) -
-                deltaX,
-
-              40,
-              240,
-            ),
-
-            eyeRotation: eyeClamp(
-              eyeNumber(start.eyeRotation, defaultEyeSettings.eyeRotation) +
-                deltaY * 0.35,
-
-              -30,
-              30,
-            ),
-          });
-        },
+        drag:
+          dragSettingPair(
+            "leftTearDuctLowerX",
+            "leftTearDuctLowerY",
+          ),
       },
 
-      /* ==========================
-         LEFT OUTER CANTHUS
-      ========================== */
+      /* RIGHT DUCT */
 
       {
-        id: "leftOuterCorner",
+        id:
+          "rightTearDuctUpper",
 
-        label: "Left Outer Canthus",
+        label:
+          "Right Upper Tear Duct",
 
-        point: leftOuter,
+        point:
+          rightTearUpper,
 
-        guideGroup: "leftEyeShape",
+        guideGroup:
+          "rightTearDuct",
 
         guideOrder: 0,
 
-        properties: ["eyeWidth", "eyeRotation"],
+        properties: [
+          "rightTearDuctUpperX",
+          "rightTearDuctUpperY",
+        ],
 
-        help: "Drag horizontally to change eye width. Drag vertically to rotate the eye line.",
+        help:
+          "Controls the upper attachment of the tear duct at the inner canthus.",
 
-        beginDrag: function () {
-          return {
-            ...window.eyeSettings,
-          };
-        },
+        beginDrag:
+          function () {
+            return {
+              ...window.eyeSettings,
+            };
+          },
 
-        drag: function (deltaX, deltaY, dragStart) {
-          const start = dragStart || {};
-
-          updateFaceLabEyes({
-            eyeWidth: eyeClamp(
-              eyeNumber(start.eyeWidth, defaultEyeSettings.eyeWidth) -
-                deltaX * 2,
-
-              25,
-              160,
-            ),
-
-            eyeRotation: eyeClamp(
-              eyeNumber(start.eyeRotation, defaultEyeSettings.eyeRotation) -
-                deltaY * 0.35,
-
-              -30,
-              30,
-            ),
-          });
-        },
+        drag:
+          dragSettingPair(
+            "rightTearDuctUpperX",
+            "rightTearDuctUpperY",
+          ),
       },
 
-      /* ==========================
-         RIGHT INNER CANTHUS
-      ========================== */
-
       {
-        id: "rightInnerCorner",
+        id:
+          "rightTearDuct",
 
-        label: "Right Inner Canthus",
+        label:
+          "Right Tear Duct Tip",
 
-        point: rightInner,
+        point:
+          rightTearTip,
 
-        guideGroup: "rightEyeShape",
+        guideGroup:
+          "rightTearDuct",
 
-        guideOrder: 0,
+        guideOrder: 1,
 
-        properties: ["eyeWidth", "eyeSpacing", "eyeRotation"],
+        properties: [
+          "rightTearDuctX",
+          "rightTearDuctY",
+        ],
 
-        help: "Drag horizontally to alter eye width and inner spacing. Drag vertically to rotate the eye line.",
+        help:
+          "Controls the nasal tip of the right tear duct.",
 
-        beginDrag: function () {
-          return {
-            ...window.eyeSettings,
-          };
-        },
+        beginDrag:
+          function () {
+            return {
+              ...window.eyeSettings,
+            };
+          },
 
-        drag: function (deltaX, deltaY, dragStart) {
-          const start = dragStart || {};
-
-          updateFaceLabEyes({
-            eyeWidth: eyeClamp(
-              eyeNumber(start.eyeWidth, defaultEyeSettings.eyeWidth) - deltaX,
-
-              25,
-              160,
-            ),
-
-            eyeSpacing: eyeClamp(
-              eyeNumber(start.eyeSpacing, defaultEyeSettings.eyeSpacing) +
-                deltaX,
-
-              40,
-              240,
-            ),
-
-            eyeRotation: eyeClamp(
-              eyeNumber(start.eyeRotation, defaultEyeSettings.eyeRotation) -
-                deltaY * 0.35,
-
-              -30,
-              30,
-            ),
-          });
-        },
+        drag:
+          dragSettingPair(
+            "rightTearDuctX",
+            "rightTearDuctY",
+          ),
       },
 
-      /* ==========================
-         RIGHT OUTER CANTHUS
-      ========================== */
-
       {
-        id: "rightOuterCorner",
+        id:
+          "rightTearDuctLower",
 
-        label: "Right Outer Canthus",
+        label:
+          "Right Lower Tear Duct",
 
-        point: rightOuter,
+        point:
+          rightTearLower,
 
-        guideGroup: "rightEyeShape",
+        guideGroup:
+          "rightTearDuct",
 
         guideOrder: 2,
 
-        properties: ["eyeWidth", "eyeRotation"],
+        properties: [
+          "rightTearDuctLowerX",
+          "rightTearDuctLowerY",
+        ],
 
-        help: "Drag horizontally to change eye width. Drag vertically to rotate the eye line.",
+        help:
+          "Controls the lower attachment of the tear duct at the inner canthus.",
 
-        beginDrag: function () {
-          return {
-            ...window.eyeSettings,
-          };
-        },
+        beginDrag:
+          function () {
+            return {
+              ...window.eyeSettings,
+            };
+          },
 
-        drag: function (deltaX, deltaY, dragStart) {
-          const start = dragStart || {};
-
-          updateFaceLabEyes({
-            eyeWidth: eyeClamp(
-              eyeNumber(start.eyeWidth, defaultEyeSettings.eyeWidth) +
-                deltaX * 2,
-
-              25,
-              160,
-            ),
-
-            eyeRotation: eyeClamp(
-              eyeNumber(start.eyeRotation, defaultEyeSettings.eyeRotation) +
-                deltaY * 0.35,
-
-              -30,
-              30,
-            ),
-          });
-        },
+        drag:
+          dragSettingPair(
+            "rightTearDuctLowerX",
+            "rightTearDuctLowerY",
+          ),
       },
 
-      /* ==========================
-         LEFT UPPER PEAK
-      ========================== */
+      /* EYE CENTERS */
 
       {
-        id: "leftUpperLid",
+        id:
+          "leftCenter",
 
-        label: "Left Upper Lid Peak",
+        label:
+          "Left Eye Position",
 
-        point: leftUpper,
+        point:
+          leftCenter,
 
-        guideGroup: "leftEyeShape",
+        guideGroup:
+          "eyeCenters",
+
+        guideOrder: 0,
+
+        properties: [
+          "eyeSpacing",
+          "eyeY",
+        ],
+
+        beginDrag:
+          function () {
+            return {
+              ...window.eyeSettings,
+            };
+          },
+
+        drag:
+          function (
+            deltaX,
+            deltaY,
+            start,
+          ) {
+            updateFaceLabEyes({
+              eyeSpacing:
+                eyeClamp(
+                  eyeNumber(
+                    start.eyeSpacing,
+                    defaultEyeSettings.eyeSpacing,
+                  ) -
+                  deltaX * 2,
+                  40,
+                  240,
+                ),
+
+              eyeY:
+                eyeClamp(
+                  eyeNumber(
+                    start.eyeY,
+                    defaultEyeSettings.eyeY,
+                  ) +
+                  deltaY,
+                  120,
+                  360,
+                ),
+            });
+          },
+      },
+
+      {
+        id:
+          "rightCenter",
+
+        label:
+          "Right Eye Position",
+
+        point:
+          rightCenter,
+
+        guideGroup:
+          "eyeCenters",
 
         guideOrder: 1,
 
-        properties: ["eyeHeight"],
+        properties: [
+          "eyeSpacing",
+          "eyeY",
+        ],
 
-        help: "Drag vertically to adjust the upper eye opening.",
+        beginDrag:
+          function () {
+            return {
+              ...window.eyeSettings,
+            };
+          },
 
-        beginDrag: function () {
-          return {
-            ...window.eyeSettings,
-          };
-        },
+        drag:
+          function (
+            deltaX,
+            deltaY,
+            start,
+          ) {
+            updateFaceLabEyes({
+              eyeSpacing:
+                eyeClamp(
+                  eyeNumber(
+                    start.eyeSpacing,
+                    defaultEyeSettings.eyeSpacing,
+                  ) +
+                  deltaX * 2,
+                  40,
+                  240,
+                ),
 
-        drag: function (deltaX, deltaY, dragStart) {
-          const start = dragStart || {};
-
-          updateFaceLabEyes({
-            eyeHeight: eyeClamp(
-              eyeNumber(start.eyeHeight, defaultEyeSettings.eyeHeight) -
-                deltaY * 2,
-
-              4,
-              110,
-            ),
-          });
-        },
+              eyeY:
+                eyeClamp(
+                  eyeNumber(
+                    start.eyeY,
+                    defaultEyeSettings.eyeY,
+                  ) +
+                  deltaY,
+                  120,
+                  360,
+                ),
+            });
+          },
       },
 
-      /* ==========================
-         LEFT LOWER LOW POINT
-      ========================== */
+      /* INNER CANTHI */
 
       {
-        id: "leftLowerLid",
+        id:
+          "leftInnerCorner",
 
-        label: "Left Lower Lid Low Point",
+        label:
+          "Left Inner Canthus",
 
-        point: leftLower,
+        point:
+          leftInner,
 
-        guideGroup: "leftEyeShape",
+        guideGroup:
+          "leftEyeShape",
 
-        guideOrder: 3,
+        guideOrder: 2,
 
-        properties: ["eyeHeight"],
+        properties: [
+          "eyeWidth",
+          "eyeSpacing",
+          "eyeRotation",
+        ],
 
-        help: "Drag vertically to adjust the lower eye opening.",
+        beginDrag:
+          function () {
+            return {
+              ...window.eyeSettings,
+            };
+          },
 
-        beginDrag: function () {
-          return {
-            ...window.eyeSettings,
-          };
-        },
+        drag:
+          function (
+            deltaX,
+            deltaY,
+            start,
+          ) {
+            updateFaceLabEyes({
+              eyeWidth:
+                eyeClamp(
+                  eyeNumber(
+                    start.eyeWidth,
+                    defaultEyeSettings.eyeWidth,
+                  ) +
+                  deltaX,
+                  25,
+                  160,
+                ),
 
-        drag: function (deltaX, deltaY, dragStart) {
-          const start = dragStart || {};
+              eyeSpacing:
+                eyeClamp(
+                  eyeNumber(
+                    start.eyeSpacing,
+                    defaultEyeSettings.eyeSpacing,
+                  ) -
+                  deltaX,
+                  40,
+                  240,
+                ),
 
-          updateFaceLabEyes({
-            eyeHeight: eyeClamp(
-              eyeNumber(start.eyeHeight, defaultEyeSettings.eyeHeight) +
-                deltaY * 2,
-
-              4,
-              110,
-            ),
-          });
-        },
+              eyeRotation:
+                eyeClamp(
+                  eyeNumber(
+                    start.eyeRotation,
+                    0,
+                  ) +
+                  deltaY * 0.35,
+                  -30,
+                  30,
+                ),
+            });
+          },
       },
 
-      /* ==========================
-         RIGHT UPPER PEAK
-      ========================== */
+      {
+        id:
+          "rightInnerCorner",
+
+        label:
+          "Right Inner Canthus",
+
+        point:
+          rightInner,
+
+        guideGroup:
+          "rightEyeShape",
+
+        guideOrder: 0,
+
+        properties: [
+          "eyeWidth",
+          "eyeSpacing",
+          "eyeRotation",
+        ],
+
+        beginDrag:
+          function () {
+            return {
+              ...window.eyeSettings,
+            };
+          },
+
+        drag:
+          function (
+            deltaX,
+            deltaY,
+            start,
+          ) {
+            updateFaceLabEyes({
+              eyeWidth:
+                eyeClamp(
+                  eyeNumber(
+                    start.eyeWidth,
+                    defaultEyeSettings.eyeWidth,
+                  ) -
+                  deltaX,
+                  25,
+                  160,
+                ),
+
+              eyeSpacing:
+                eyeClamp(
+                  eyeNumber(
+                    start.eyeSpacing,
+                    defaultEyeSettings.eyeSpacing,
+                  ) +
+                  deltaX,
+                  40,
+                  240,
+                ),
+
+              eyeRotation:
+                eyeClamp(
+                  eyeNumber(
+                    start.eyeRotation,
+                    0,
+                  ) -
+                  deltaY * 0.35,
+                  -30,
+                  30,
+                ),
+            });
+          },
+      },
+
+      /* OUTER CANTHI */
 
       {
-        id: "rightUpperLid",
+        id:
+          "leftOuterCorner",
 
-        label: "Right Upper Lid Peak",
+        label:
+          "Left Outer Canthus",
 
-        point: rightUpper,
+        point:
+          leftOuter,
 
-        guideGroup: "rightEyeShape",
+        guideGroup:
+          "leftEyeShape",
+
+        guideOrder: 0,
+
+        properties: [
+          "eyeWidth",
+          "eyeRotation",
+        ],
+
+        beginDrag:
+          function () {
+            return {
+              ...window.eyeSettings,
+            };
+          },
+
+        drag:
+          function (
+            deltaX,
+            deltaY,
+            start,
+          ) {
+            updateFaceLabEyes({
+              eyeWidth:
+                eyeClamp(
+                  eyeNumber(
+                    start.eyeWidth,
+                    defaultEyeSettings.eyeWidth,
+                  ) -
+                  deltaX * 2,
+                  25,
+                  160,
+                ),
+
+              eyeRotation:
+                eyeClamp(
+                  eyeNumber(
+                    start.eyeRotation,
+                    0,
+                  ) -
+                  deltaY * 0.35,
+                  -30,
+                  30,
+                ),
+            });
+          },
+      },
+
+      {
+        id:
+          "rightOuterCorner",
+
+        label:
+          "Right Outer Canthus",
+
+        point:
+          rightOuter,
+
+        guideGroup:
+          "rightEyeShape",
+
+        guideOrder: 2,
+
+        properties: [
+          "eyeWidth",
+          "eyeRotation",
+        ],
+
+        beginDrag:
+          function () {
+            return {
+              ...window.eyeSettings,
+            };
+          },
+
+        drag:
+          function (
+            deltaX,
+            deltaY,
+            start,
+          ) {
+            updateFaceLabEyes({
+              eyeWidth:
+                eyeClamp(
+                  eyeNumber(
+                    start.eyeWidth,
+                    defaultEyeSettings.eyeWidth,
+                  ) +
+                  deltaX * 2,
+                  25,
+                  160,
+                ),
+
+              eyeRotation:
+                eyeClamp(
+                  eyeNumber(
+                    start.eyeRotation,
+                    0,
+                  ) +
+                  deltaY * 0.35,
+                  -30,
+                  30,
+                ),
+            });
+          },
+      },
+
+      /* UPPER / LOWER */
+
+      {
+        id:
+          "leftUpperLid",
+
+        label:
+          "Left Upper Lid Peak",
+
+        point:
+          leftUpper,
+
+        guideGroup:
+          "leftEyeShape",
 
         guideOrder: 1,
 
-        properties: ["eyeHeight"],
+        properties: [
+          "eyeHeight",
+        ],
 
-        help: "Drag vertically to adjust the upper eye opening.",
+        beginDrag:
+          function () {
+            return {
+              ...window.eyeSettings,
+            };
+          },
 
-        beginDrag: function () {
-          return {
-            ...window.eyeSettings,
-          };
-        },
-
-        drag: function (deltaX, deltaY, dragStart) {
-          const start = dragStart || {};
-
-          updateFaceLabEyes({
-            eyeHeight: eyeClamp(
-              eyeNumber(start.eyeHeight, defaultEyeSettings.eyeHeight) -
-                deltaY * 2,
-
-              4,
-              110,
-            ),
-          });
-        },
+        drag:
+          function (
+            deltaX,
+            deltaY,
+            start,
+          ) {
+            updateFaceLabEyes({
+              eyeHeight:
+                eyeClamp(
+                  eyeNumber(
+                    start.eyeHeight,
+                    defaultEyeSettings.eyeHeight,
+                  ) -
+                  deltaY * 2,
+                  4,
+                  110,
+                ),
+            });
+          },
       },
 
-      /* ==========================
-         RIGHT LOWER LOW POINT
-      ========================== */
-
       {
-        id: "rightLowerLid",
+        id:
+          "leftLowerLid",
 
-        label: "Right Lower Lid Low Point",
+        label:
+          "Left Lower Lid Low Point",
 
-        point: rightLower,
+        point:
+          leftLower,
 
-        guideGroup: "rightEyeShape",
+        guideGroup:
+          "leftEyeShape",
 
         guideOrder: 3,
 
-        properties: ["eyeHeight"],
+        properties: [
+          "eyeHeight",
+        ],
 
-        help: "Drag vertically to adjust the lower eye opening.",
+        beginDrag:
+          function () {
+            return {
+              ...window.eyeSettings,
+            };
+          },
 
-        beginDrag: function () {
-          return {
-            ...window.eyeSettings,
-          };
-        },
+        drag:
+          function (
+            deltaX,
+            deltaY,
+            start,
+          ) {
+            updateFaceLabEyes({
+              eyeHeight:
+                eyeClamp(
+                  eyeNumber(
+                    start.eyeHeight,
+                    defaultEyeSettings.eyeHeight,
+                  ) +
+                  deltaY * 2,
+                  4,
+                  110,
+                ),
+            });
+          },
+      },
 
-        drag: function (deltaX, deltaY, dragStart) {
-          const start = dragStart || {};
+      {
+        id:
+          "rightUpperLid",
 
-          updateFaceLabEyes({
-            eyeHeight: eyeClamp(
-              eyeNumber(start.eyeHeight, defaultEyeSettings.eyeHeight) +
-                deltaY * 2,
+        label:
+          "Right Upper Lid Peak",
 
-              4,
-              110,
-            ),
-          });
-        },
+        point:
+          rightUpper,
+
+        guideGroup:
+          "rightEyeShape",
+
+        guideOrder: 1,
+
+        properties: [
+          "eyeHeight",
+        ],
+
+        beginDrag:
+          function () {
+            return {
+              ...window.eyeSettings,
+            };
+          },
+
+        drag:
+          function (
+            deltaX,
+            deltaY,
+            start,
+          ) {
+            updateFaceLabEyes({
+              eyeHeight:
+                eyeClamp(
+                  eyeNumber(
+                    start.eyeHeight,
+                    defaultEyeSettings.eyeHeight,
+                  ) -
+                  deltaY * 2,
+                  4,
+                  110,
+                ),
+            });
+          },
+      },
+
+      {
+        id:
+          "rightLowerLid",
+
+        label:
+          "Right Lower Lid Low Point",
+
+        point:
+          rightLower,
+
+        guideGroup:
+          "rightEyeShape",
+
+        guideOrder: 3,
+
+        properties: [
+          "eyeHeight",
+        ],
+
+        beginDrag:
+          function () {
+            return {
+              ...window.eyeSettings,
+            };
+          },
+
+        drag:
+          function (
+            deltaX,
+            deltaY,
+            start,
+          ) {
+            updateFaceLabEyes({
+              eyeHeight:
+                eyeClamp(
+                  eyeNumber(
+                    start.eyeHeight,
+                    defaultEyeSettings.eyeHeight,
+                  ) +
+                  deltaY * 2,
+                  4,
+                  110,
+                ),
+            });
+          },
       },
     ];
+
+    return handles;
   }
 
-  /* ==========================
-     PUBLIC EYE SYSTEM API
-  ========================== */
-
-  window.updateEyeSettings = updateFaceLabEyes;
+  window.updateEyeSettings =
+    updateFaceLabEyes;
 
   window.EyeSystem = {
-    version: "2.1.3",
+    version: "2.2.1",
 
-    defaults: Object.freeze({
-      ...defaultEyeSettings,
-    }),
+    defaults:
+      Object.freeze({
+        ...defaultEyeSettings,
+      }),
 
-    getSettings: function () {
-      return {
-        ...window.eyeSettings,
-      };
-    },
+    getSettings:
+      function () {
+        return {
+          ...window.eyeSettings,
+        };
+      },
 
-    getAnatomy: function (side) {
-      if (side) {
-        return window.eyeAnatomy[side] || null;
-      }
+    getAnatomy:
+      function (side) {
+        if (side) {
+          return (
+            window.eyeAnatomy[
+              side
+            ] ||
+            null
+          );
+        }
 
-      return {
-        left: window.eyeAnatomy.left,
+        return {
+          left:
+            window.eyeAnatomy.left,
 
-        right: window.eyeAnatomy.right,
-      };
-    },
+          right:
+            window.eyeAnatomy.right,
+        };
+      },
 
-    getHandles: createFaceLabEyeHandles,
+    getHandles:
+      createFaceLabEyeHandles,
 
-    draw: drawEyes,
-    refresh: drawEyes,
+    draw:
+      drawEyes,
 
-    initialize: initializeEyeControls,
+    refresh:
+      drawEyes,
 
-    update: updateFaceLabEyes,
+    initialize:
+      initializeEyeControls,
 
-    setPose: setEyeRigPose,
-    resetRig: resetEyeRig,
+    update:
+      updateFaceLabEyes,
 
-    reset: resetEyes,
-    save: saveEyes,
-    load: loadEyes,
+    setPose:
+      setEyeRigPose,
+
+    resetRig:
+      resetEyeRig,
+
+    reset:
+      resetEyes,
+
+    save:
+      saveEyes,
+
+    load:
+      loadEyes,
   };
 
-  /* ==========================
-     REGISTER EYE FEATURE
-  ========================== */
-
-  if (window.FaceLab && typeof window.FaceLab.registerFeature === "function") {
+  if (
+    window.FaceLab &&
+    typeof window.FaceLab
+      .registerFeature ===
+      "function"
+  ) {
     window.FaceLab.registerFeature(
       "eyes",
 
       {
         label: "Eyes",
 
-        defaults: window.EyeSystem.defaults,
+        defaults:
+          window.EyeSystem
+            .defaults,
 
-        getSettings: window.EyeSystem.getSettings,
+        getSettings:
+          window.EyeSystem
+            .getSettings,
 
-        getAnatomy: window.EyeSystem.getAnatomy,
+        getAnatomy:
+          window.EyeSystem
+            .getAnatomy,
 
-        getHandles: createFaceLabEyeHandles,
+        getHandles:
+          createFaceLabEyeHandles,
 
-        update: updateFaceLabEyes,
+        update:
+          updateFaceLabEyes,
 
-        draw: drawEyes,
-        refresh: drawEyes,
+        draw:
+          drawEyes,
 
-        reset: resetEyes,
-        save: saveEyes,
-        load: loadEyes,
+        refresh:
+          drawEyes,
+
+        reset:
+          resetEyes,
+
+        save:
+          saveEyes,
+
+        load:
+          loadEyes,
       },
     );
   } else {
-    console.warn("FaceLab Core was not available when eyes.js loaded.");
+    console.warn(
+      "FaceLab Core was not available when eyes.js loaded.",
+    );
   }
 
-  console.log("FaceLab Eye System 2.1.3 registered");
+  console.log(
+    "FaceLab Eye System 2.2.1 registered",
+  );
 })();
