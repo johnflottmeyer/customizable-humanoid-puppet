@@ -1,13 +1,12 @@
 /* =========================================================
    FACELAB EYE RENDERER
-   Version 5.5.5
+   Version 5.5.9
 
-   5.5.5
-   - Iris colors now use FaceLab CSS color variables.
-   - Supports live color editing from colorControls.js.
-   - Keeps top-to-bottom iris shading.
-   - Keeps horizontal-only sclera shading.
-   - Preserves organic iris fibers and current tear duct tuning.
+   5.5.9
+   - Flips the tear-duct iris-facing arc to a true concave "(" profile.
+   - Keeps one continuous smooth arc from upper edge to lower edge.
+   - Preserves duct position, inset, offset, rotation and overall size.
+   - Keeps color controls and iris rendering unchanged.
 ========================================================= */
 
 (function initializeEyeRenderer() {
@@ -1980,7 +1979,7 @@ tearDuctOffsetY:
 
           scalePoint(
             lowerNormal,
-            halfHeight * 1.12,
+            halfHeight * 1.38,
           ),
         ),
       );
@@ -2014,7 +2013,7 @@ tearDuctOffsetY:
 
           scalePoint(
             lowerNormal,
-            halfHeight * 0.62,
+            halfHeight * 0.88,
           ),
         ),
       );
@@ -2066,33 +2065,58 @@ tearDuctOffsetY:
         ),
       );
 
-    const frontBulge =
+    /*
+       5.5.6
+
+       Concave eye-facing edge.
+
+       Instead of pushing the middle of the front edge farther
+       toward the eyeball, pull the curve controls slightly back
+       toward the inner canthus. This makes the broad edge cup
+       around the globe rather than bulge into it.
+
+       Left eye  ->  }>
+       Right eye ->  <(
+    */
+
+    /*
+       5.5.9
+
+       TRUE CONCAVE IRIS-FACING ARC
+
+       The upper/lower edge points remain farther toward the iris,
+       while the center controls are pulled back toward the inner
+       canthus. That reverses the previous slight ")" bulge and
+       produces the desired "(" globe-following arc.
+    */
+
+    const frontCup =
       addPoints(
         inner,
 
         scalePoint(
           inward,
-          depth * 1.08,
+          depth * 0.46,
         ),
       );
 
     let frontRoundUpperControl =
       addPoints(
-        frontBulge,
+        frontCup,
 
         scalePoint(
           upperNormal,
-          halfHeight * 0.35,
+          halfHeight * 0.48,
         ),
       );
 
     let frontRoundLowerControl =
       addPoints(
-        frontBulge,
+        frontCup,
 
         scalePoint(
           lowerNormal,
-          halfHeight * 0.45,
+          halfHeight * 0.62,
         ),
       );
 
@@ -2102,7 +2126,7 @@ tearDuctOffsetY:
 
         scalePoint(
           lowerNormal,
-          halfHeight * 0.20,
+          halfHeight * 0.30,
         ),
       );
 
@@ -2307,16 +2331,16 @@ tearDuctOffsetY:
       `${upperShoulderControl.x} ${upperShoulderControl.y}`,
       `${upperShoulder.x} ${upperShoulder.y}`,
 
-      `C ${upperFrontControl1.x} ${upperFrontControl1.y}`,
-      `${upperFrontControl2.x} ${upperFrontControl2.y}`,
-      `${frontUpper.x} ${frontUpper.y}`,
+      /*
+         5.5.8
+
+         ONE smooth concave arc across the iris-facing edge.
+         This replaces the previous upper-front / rounded-front /
+         lower-front sequence that created the molar-tooth silhouette.
+      */
 
       `C ${frontRoundUpperControl.x} ${frontRoundUpperControl.y}`,
       `${frontRoundLowerControl.x} ${frontRoundLowerControl.y}`,
-      `${frontLower.x} ${frontLower.y}`,
-
-      `C ${lowerFrontControl1.x} ${lowerFrontControl1.y}`,
-      `${lowerFrontControl2.x} ${lowerFrontControl2.y}`,
       `${lowerShoulder.x} ${lowerShoulder.y}`,
 
       `C ${lowerShoulderControl.x} ${lowerShoulderControl.y}`,
@@ -3840,7 +3864,7 @@ tearDuctOffsetY:
   ========================================================= */
 
   window.EyeRenderer = {
-    version: "5.5.5",
+    version: "5.5.9",
 
     defaults:
       DEFAULT_RENDER_OPTIONS,
@@ -3857,6 +3881,6 @@ tearDuctOffsetY:
   };
 
   console.log(
-    "EyeRenderer 5.5.5 loaded",
+    "EyeRenderer 5.5.9 loaded",
   );
 })();
