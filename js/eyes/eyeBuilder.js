@@ -1,6 +1,6 @@
 /* =========================================================
    FACELAB EYE BUILDER
-   Version 4.0.1
+   Version 4.1.3
 
    PURPOSE
 
@@ -8,20 +8,10 @@
    eyeball model rather than placing them as vertical offsets
    from a straight eye axis.
 
-   PIPELINE
-
-   EyeBuilder
-      ↓
-   EyeRig
-      ↓
-   EyeGeometry / EyeSurface
-      ↓
-   EyeRenderer
-
-   LOAD AFTER:
-
-   js/eyes/eyeGeometry.js
-   js/eyes/eyeRig.js
+   4.1.3
+   - Tear duct now sits inside the eye opening.
+   - Tear duct extends from inner canthus toward the iris.
+   - Upper/lower duct attachments remain inside the almond.
 ========================================================= */
 
 (function initializeEyeBuilder() {
@@ -44,14 +34,30 @@
     innerCornerY: 0,
     outerCornerY: 1,
 
-    tearDuctLength: 4.5,
-    tearDuctHeight: 2.2,
-    tearDuctSurfaceHeight: 1.5,
+    /* ==========================
+       TEAR DUCT
+    ========================== */
 
-    /*
-        These settings remain compatible with the previous
-        builder, but now influence orbital arc projection.
-    */
+    tearDuctLength: 4.5,
+
+    tearDuctHeight: 0,
+
+    tearDuctSurfaceHeight: 1.35,
+
+    tearDuctAttachmentInset: 0.22,
+
+    tearDuctTipOffsetX: 0,
+    tearDuctTipOffsetY: 0,
+
+    tearDuctUpperOffsetX: 0,
+    tearDuctUpperOffsetY: 0,
+
+    tearDuctLowerOffsetX: 0,
+    tearDuctLowerOffsetY: 0,
+
+    /* ==========================
+       UPPER LID
+    ========================== */
 
     upperPeakPosition: 0.48,
     upperPeakHeight: 0.36,
@@ -65,6 +71,10 @@
     upperInnerTension: 0.72,
     upperOuterTension: 0.54,
 
+    /* ==========================
+       LOWER LID
+    ========================== */
+
     lowerLowPosition: 0.56,
     lowerLowDepth: 0.3,
 
@@ -77,29 +87,28 @@
     lowerOuterTension: 0.36,
     lowerInnerTension: 0.48,
 
+    /* CREASES */
+
     upperCreaseHeight: 7,
     upperCreaseInset: 7,
 
     lowerCreaseDepth: 4,
     lowerCreaseInset: 12,
 
+    /* SOCKET */
+
     socketWidthScale: 1.34,
     socketHeightScale: 1.72,
     socketOffsetY: 1,
+
+    /* IRIS */
 
     irisSize: 28,
     irisCenterX: 0,
     irisCenterY: 1,
     pupilSize: 10,
 
-    /*
-        Eyeball model.
-
-        globeWidthScale controls horizontal curvature.
-        globeHeightScale controls vertical curvature.
-        lidWrap controls how strongly landmarks follow the
-        globe rather than a flat eye axis.
-    */
+    /* GLOBE */
 
     globeWidthScale: 0.58,
     globeHeightScale: 0.72,
@@ -117,37 +126,46 @@
   };
 
   /* ==========================
-     NUMBER HELPERS
+     HELPERS
   ========================== */
 
   function safeNumber(value, fallback) {
     const resolved = Number(value);
 
-    return Number.isFinite(resolved) ? resolved : fallback;
+    return Number.isFinite(resolved)
+      ? resolved
+      : fallback;
   }
 
   function clamp(value, minimum, maximum) {
-    return Math.max(minimum, Math.min(maximum, value));
+    return Math.max(
+      minimum,
+      Math.min(maximum, value),
+    );
   }
 
   function mix(start, end, amount) {
-    return start + (end - start) * amount;
+    return start +
+      (end - start) * amount;
   }
 
   function smoothStep(start, end, value) {
     const amount = clamp(
-      (value - start) / Math.max(0.0001, end - start),
-
+      (value - start) /
+        Math.max(
+          0.0001,
+          end - start,
+        ),
       0,
       1,
     );
 
-    return amount * amount * (3 - 2 * amount);
+    return (
+      amount *
+      amount *
+      (3 - 2 * amount)
+    );
   }
-
-  /* ==========================
-     POINT HELPERS
-  ========================== */
 
   function point(x, y) {
     return {
@@ -157,351 +175,537 @@
   }
 
   function copyPoint(source) {
-    return point(source.x, source.y);
+    return point(
+      source.x,
+      source.y,
+    );
   }
 
   function addPoints(first, second) {
-    return point(first.x + second.x, first.y + second.y);
+    return point(
+      first.x + second.x,
+      first.y + second.y,
+    );
   }
 
   function subtractPoints(first, second) {
-    return point(first.x - second.x, first.y - second.y);
+    return point(
+      first.x - second.x,
+      first.y - second.y,
+    );
   }
 
   function scalePoint(source, amount) {
-    return point(source.x * amount, source.y * amount);
+    return point(
+      source.x * amount,
+      source.y * amount,
+    );
   }
 
   function pointBetween(first, second, amount) {
     return point(
-      first.x + (second.x - first.x) * amount,
+      first.x +
+        (second.x - first.x) * amount,
 
-      first.y + (second.y - first.y) * amount,
+      first.y +
+        (second.y - first.y) * amount,
     );
   }
 
   function vectorLength(vector) {
-    return Math.hypot(vector.x, vector.y);
+    return Math.hypot(
+      vector.x,
+      vector.y,
+    );
   }
 
   function normalizeVector(vector) {
-    const length = vectorLength(vector);
+    const length =
+      vectorLength(vector);
 
     if (length < 0.0001) {
       return point(1, 0);
     }
 
-    return point(vector.x / length, vector.y / length);
+    return point(
+      vector.x / length,
+      vector.y / length,
+    );
   }
 
   function perpendicularVector(vector) {
-    return point(-vector.y, vector.x);
+    return point(
+      -vector.y,
+      vector.x,
+    );
   }
 
   /* ==========================
-     SETTINGS
+     RESOLVE SETTINGS
   ========================== */
 
   function resolveSettings(inputSettings) {
     const input =
-      inputSettings && typeof inputSettings === "object" ? inputSettings : {};
+      inputSettings &&
+      typeof inputSettings === "object"
+        ? inputSettings
+        : {};
 
     const settings = {
       ...defaultBuilderSettings,
       ...input,
     };
 
-    settings.side = settings.side === "right" ? "right" : "left";
+    settings.side =
+      settings.side === "right"
+        ? "right"
+        : "left";
 
-    settings.centerX = safeNumber(
-      settings.centerX,
-      defaultBuilderSettings.centerX,
-    );
-
-    settings.centerY = safeNumber(
-      settings.centerY,
-      defaultBuilderSettings.centerY,
-    );
-
-    settings.width = clamp(
-      safeNumber(settings.width, defaultBuilderSettings.width),
-      4,
-      300,
-    );
-
-    settings.height = clamp(
-      safeNumber(settings.height, defaultBuilderSettings.height),
-      2,
-      180,
-    );
-
-    settings.rotation = safeNumber(
-      settings.rotation,
-      defaultBuilderSettings.rotation,
-    );
-
-    settings.innerCornerY = safeNumber(
-      settings.innerCornerY,
-      defaultBuilderSettings.innerCornerY,
-    );
-
-    settings.outerCornerY = safeNumber(
-      settings.outerCornerY,
-      defaultBuilderSettings.outerCornerY,
-    );
-
-    settings.tearDuctLength = clamp(
+    settings.centerX =
       safeNumber(
-        settings.tearDuctLength,
-        defaultBuilderSettings.tearDuctLength,
-      ),
-      0,
-      30,
-    );
+        settings.centerX,
+        defaultBuilderSettings.centerX,
+      );
 
-    settings.tearDuctHeight = clamp(
+    settings.centerY =
       safeNumber(
-        settings.tearDuctHeight,
-        defaultBuilderSettings.tearDuctHeight,
-      ),
-      -20,
-      20,
-    );
+        settings.centerY,
+        defaultBuilderSettings.centerY,
+      );
 
-    settings.upperPeakPosition = clamp(
+    settings.width =
+      clamp(
+        safeNumber(
+          settings.width,
+          defaultBuilderSettings.width,
+        ),
+        4,
+        300,
+      );
+
+    settings.height =
+      clamp(
+        safeNumber(
+          settings.height,
+          defaultBuilderSettings.height,
+        ),
+        2,
+        180,
+      );
+
+    settings.rotation =
       safeNumber(
-        settings.upperPeakPosition,
-        defaultBuilderSettings.upperPeakPosition,
-      ),
-      0.15,
-      0.8,
-    );
+        settings.rotation,
+        defaultBuilderSettings.rotation,
+      );
 
-    settings.upperPeakHeight = clamp(
+    settings.innerCornerY =
       safeNumber(
-        settings.upperPeakHeight,
-        defaultBuilderSettings.upperPeakHeight,
-      ),
-      0.02,
-      1.4,
-    );
+        settings.innerCornerY,
+        defaultBuilderSettings.innerCornerY,
+      );
 
-    settings.upperInnerShoulderPosition = clamp(
+    settings.outerCornerY =
       safeNumber(
-        settings.upperInnerShoulderPosition,
-        defaultBuilderSettings.upperInnerShoulderPosition,
-      ),
-      0.05,
-      settings.upperPeakPosition - 0.04,
+        settings.outerCornerY,
+        defaultBuilderSettings.outerCornerY,
+      );
+
+    /* TEAR DUCT */
+
+    settings.tearDuctLength =
+      clamp(
+        safeNumber(
+          settings.tearDuctLength,
+          4.5,
+        ),
+        0,
+        20,
+      );
+
+    settings.tearDuctHeight =
+      clamp(
+        safeNumber(
+          settings.tearDuctHeight,
+          0,
+        ),
+        -6,
+        6,
+      );
+
+    settings.tearDuctSurfaceHeight =
+      clamp(
+        safeNumber(
+          settings.tearDuctSurfaceHeight,
+          1.35,
+        ),
+        0.25,
+        8,
+      );
+
+    settings.tearDuctAttachmentInset =
+      clamp(
+        safeNumber(
+          settings.tearDuctAttachmentInset,
+          0.22,
+        ),
+        0.05,
+        0.5,
+      );
+
+    [
+      "tearDuctTipOffsetX",
+      "tearDuctTipOffsetY",
+
+      "tearDuctUpperOffsetX",
+      "tearDuctUpperOffsetY",
+
+      "tearDuctLowerOffsetX",
+      "tearDuctLowerOffsetY",
+    ].forEach(
+      function resolveOffset(name) {
+        settings[name] =
+          clamp(
+            safeNumber(
+              settings[name],
+              0,
+            ),
+            -30,
+            30,
+          );
+      },
     );
 
-    settings.upperOuterShoulderPosition = clamp(
-      safeNumber(
-        settings.upperOuterShoulderPosition,
-        defaultBuilderSettings.upperOuterShoulderPosition,
-      ),
-      settings.upperPeakPosition + 0.04,
-      0.95,
-    );
+    /* UPPER */
 
-    settings.upperInnerShoulderHeight = clamp(
-      safeNumber(
-        settings.upperInnerShoulderHeight,
-        defaultBuilderSettings.upperInnerShoulderHeight,
-      ),
-      0.1,
-      1.1,
-    );
+    settings.upperPeakPosition =
+      clamp(
+        safeNumber(
+          settings.upperPeakPosition,
+          defaultBuilderSettings.upperPeakPosition,
+        ),
+        0.15,
+        0.8,
+      );
 
-    settings.upperOuterShoulderHeight = clamp(
-      safeNumber(
-        settings.upperOuterShoulderHeight,
-        defaultBuilderSettings.upperOuterShoulderHeight,
-      ),
-      0.1,
-      1.1,
-    );
+    settings.upperPeakHeight =
+      clamp(
+        safeNumber(
+          settings.upperPeakHeight,
+          defaultBuilderSettings.upperPeakHeight,
+        ),
+        0.02,
+        1.4,
+      );
 
-    settings.lowerLowPosition = clamp(
-      safeNumber(
-        settings.lowerLowPosition,
-        defaultBuilderSettings.lowerLowPosition,
-      ),
-      0.15,
-      0.85,
-    );
+    settings.upperInnerShoulderPosition =
+      clamp(
+        safeNumber(
+          settings.upperInnerShoulderPosition,
+          defaultBuilderSettings.upperInnerShoulderPosition,
+        ),
+        0.05,
+        settings.upperPeakPosition - 0.04,
+      );
 
-    settings.lowerLowDepth = clamp(
-      safeNumber(settings.lowerLowDepth, defaultBuilderSettings.lowerLowDepth),
-      0.01,
-      1.2,
-    );
+    settings.upperOuterShoulderPosition =
+      clamp(
+        safeNumber(
+          settings.upperOuterShoulderPosition,
+          defaultBuilderSettings.upperOuterShoulderPosition,
+        ),
+        settings.upperPeakPosition + 0.04,
+        0.95,
+      );
 
-    settings.lowerInnerShoulderPosition = clamp(
-      safeNumber(
-        settings.lowerInnerShoulderPosition,
-        defaultBuilderSettings.lowerInnerShoulderPosition,
-      ),
-      0.05,
-      settings.lowerLowPosition - 0.04,
-    );
+    settings.upperInnerShoulderHeight =
+      clamp(
+        safeNumber(
+          settings.upperInnerShoulderHeight,
+          defaultBuilderSettings.upperInnerShoulderHeight,
+        ),
+        0.1,
+        1.1,
+      );
 
-    settings.lowerOuterShoulderPosition = clamp(
-      safeNumber(
-        settings.lowerOuterShoulderPosition,
-        defaultBuilderSettings.lowerOuterShoulderPosition,
-      ),
-      settings.lowerLowPosition + 0.04,
-      0.95,
-    );
+    settings.upperOuterShoulderHeight =
+      clamp(
+        safeNumber(
+          settings.upperOuterShoulderHeight,
+          defaultBuilderSettings.upperOuterShoulderHeight,
+        ),
+        0.1,
+        1.1,
+      );
 
-    settings.lowerInnerShoulderDepth = clamp(
-      safeNumber(
-        settings.lowerInnerShoulderDepth,
-        defaultBuilderSettings.lowerInnerShoulderDepth,
-      ),
-      0.05,
-      1.1,
-    );
+    /* LOWER */
 
-    settings.lowerOuterShoulderDepth = clamp(
-      safeNumber(
-        settings.lowerOuterShoulderDepth,
-        defaultBuilderSettings.lowerOuterShoulderDepth,
-      ),
-      0.05,
-      1.1,
-    );
+    settings.lowerLowPosition =
+      clamp(
+        safeNumber(
+          settings.lowerLowPosition,
+          defaultBuilderSettings.lowerLowPosition,
+        ),
+        0.15,
+        0.85,
+      );
 
-    settings.globeWidthScale = clamp(
-      safeNumber(
-        settings.globeWidthScale,
-        defaultBuilderSettings.globeWidthScale,
-      ),
-      0.25,
-      1.2,
-    );
+    settings.lowerLowDepth =
+      clamp(
+        safeNumber(
+          settings.lowerLowDepth,
+          defaultBuilderSettings.lowerLowDepth,
+        ),
+        0.01,
+        1.2,
+      );
 
-    settings.globeHeightScale = clamp(
-      safeNumber(
-        settings.globeHeightScale,
-        defaultBuilderSettings.globeHeightScale,
-      ),
-      0.25,
-      1.5,
-    );
+    settings.lowerInnerShoulderPosition =
+      clamp(
+        safeNumber(
+          settings.lowerInnerShoulderPosition,
+          defaultBuilderSettings.lowerInnerShoulderPosition,
+        ),
+        0.05,
+        settings.lowerLowPosition - 0.04,
+      );
 
-    settings.upperLidWrap = clamp(
-      safeNumber(settings.upperLidWrap, defaultBuilderSettings.upperLidWrap),
-      0,
-      1.5,
-    );
+    settings.lowerOuterShoulderPosition =
+      clamp(
+        safeNumber(
+          settings.lowerOuterShoulderPosition,
+          defaultBuilderSettings.lowerOuterShoulderPosition,
+        ),
+        settings.lowerLowPosition + 0.04,
+        0.95,
+      );
 
-    settings.lowerLidWrap = clamp(
-      safeNumber(settings.lowerLidWrap, defaultBuilderSettings.lowerLidWrap),
-      0,
-      1.5,
-    );
+    settings.lowerInnerShoulderDepth =
+      clamp(
+        safeNumber(
+          settings.lowerInnerShoulderDepth,
+          defaultBuilderSettings.lowerInnerShoulderDepth,
+        ),
+        0.05,
+        1.1,
+      );
 
-    settings.upperTemporalBias = clamp(
-      safeNumber(
-        settings.upperTemporalBias,
-        defaultBuilderSettings.upperTemporalBias,
-      ),
-      -0.4,
-      0.4,
-    );
+    settings.lowerOuterShoulderDepth =
+      clamp(
+        safeNumber(
+          settings.lowerOuterShoulderDepth,
+          defaultBuilderSettings.lowerOuterShoulderDepth,
+        ),
+        0.05,
+        1.1,
+      );
 
-    settings.lowerTemporalBias = clamp(
-      safeNumber(
-        settings.lowerTemporalBias,
-        defaultBuilderSettings.lowerTemporalBias,
-      ),
-      -0.4,
-      0.4,
-    );
+    settings.globeWidthScale =
+      clamp(
+        safeNumber(
+          settings.globeWidthScale,
+          defaultBuilderSettings.globeWidthScale,
+        ),
+        0.25,
+        1.2,
+      );
 
-    settings.innerCanthusFlattening = clamp(
-      safeNumber(
-        settings.innerCanthusFlattening,
-        defaultBuilderSettings.innerCanthusFlattening,
-      ),
-      0,
-      0.9,
-    );
+    settings.globeHeightScale =
+      clamp(
+        safeNumber(
+          settings.globeHeightScale,
+          defaultBuilderSettings.globeHeightScale,
+        ),
+        0.25,
+        1.5,
+      );
 
-    settings.outerCanthusFlattening = clamp(
-      safeNumber(
-        settings.outerCanthusFlattening,
-        defaultBuilderSettings.outerCanthusFlattening,
-      ),
-      0,
-      0.9,
-    );
+    settings.upperLidWrap =
+      clamp(
+        safeNumber(
+          settings.upperLidWrap,
+          defaultBuilderSettings.upperLidWrap,
+        ),
+        0,
+        1.5,
+      );
 
-    settings.sampleCount = clamp(
-      Math.floor(
-        safeNumber(settings.sampleCount, defaultBuilderSettings.sampleCount),
-      ),
-      4,
-      100,
-    );
+    settings.lowerLidWrap =
+      clamp(
+        safeNumber(
+          settings.lowerLidWrap,
+          defaultBuilderSettings.lowerLidWrap,
+        ),
+        0,
+        1.5,
+      );
+
+    settings.upperTemporalBias =
+      clamp(
+        safeNumber(
+          settings.upperTemporalBias,
+          defaultBuilderSettings.upperTemporalBias,
+        ),
+        -0.4,
+        0.4,
+      );
+
+    settings.lowerTemporalBias =
+      clamp(
+        safeNumber(
+          settings.lowerTemporalBias,
+          defaultBuilderSettings.lowerTemporalBias,
+        ),
+        -0.4,
+        0.4,
+      );
+
+    settings.innerCanthusFlattening =
+      clamp(
+        safeNumber(
+          settings.innerCanthusFlattening,
+          defaultBuilderSettings.innerCanthusFlattening,
+        ),
+        0,
+        0.9,
+      );
+
+    settings.outerCanthusFlattening =
+      clamp(
+        safeNumber(
+          settings.outerCanthusFlattening,
+          defaultBuilderSettings.outerCanthusFlattening,
+        ),
+        0,
+        0.9,
+      );
+
+    settings.sampleCount =
+      clamp(
+        Math.floor(
+          safeNumber(
+            settings.sampleCount,
+            defaultBuilderSettings.sampleCount,
+          ),
+        ),
+        4,
+        100,
+      );
 
     return settings;
   }
 
   /* ==========================
-     ORBITAL MODEL
+     ORBIT MODEL
   ========================== */
 
-  function createOrbitalModel(settings, innerCanthus, outerCanthus) {
-    const axisVector = subtractPoints(outerCanthus, innerCanthus);
+  function createOrbitalModel(
+    settings,
+    innerCanthus,
+    outerCanthus,
+  ) {
+    const axis =
+      normalizeVector(
+        subtractPoints(
+          outerCanthus,
+          innerCanthus,
+        ),
+      );
 
-    const axis = normalizeVector(axisVector);
-
-    let upperNormal = perpendicularVector(axis);
+    let upperNormal =
+      perpendicularVector(axis);
 
     if (upperNormal.y > 0) {
-      upperNormal = scalePoint(upperNormal, -1);
+      upperNormal =
+        scalePoint(
+          upperNormal,
+          -1,
+        );
     }
 
-    const lowerNormal = scalePoint(upperNormal, -1);
+    const lowerNormal =
+      scalePoint(
+        upperNormal,
+        -1,
+      );
 
-    const center = pointBetween(innerCanthus, outerCanthus, 0.5);
-
-    const globeRadiusX = Math.max(2, settings.width * settings.globeWidthScale);
-
-    const globeRadiusY = Math.max(
-      2,
-      settings.height * settings.globeHeightScale,
-    );
+    const center =
+      pointBetween(
+        innerCanthus,
+        outerCanthus,
+        0.5,
+      );
 
     return {
       center,
+
       axis,
+
       upperNormal,
       lowerNormal,
-      globeRadiusX,
-      globeRadiusY,
+
+      globeRadiusX:
+        Math.max(
+          2,
+          settings.width *
+            settings.globeWidthScale,
+        ),
+
+      globeRadiusY:
+        Math.max(
+          2,
+          settings.height *
+            settings.globeHeightScale,
+        ),
+
       innerCanthus,
       outerCanthus,
     };
   }
 
-  function resolveCanthusFlattening(amount, settings) {
-    const innerInfluence = 1 - smoothStep(0, 0.24, amount);
+  function resolveCanthusFlattening(
+    amount,
+    settings,
+  ) {
+    const innerInfluence =
+      1 -
+      smoothStep(
+        0,
+        0.24,
+        amount,
+      );
 
-    const outerInfluence = smoothStep(0.76, 1, amount);
+    const outerInfluence =
+      smoothStep(
+        0.76,
+        1,
+        amount,
+      );
 
-    const innerFlattening = settings.innerCanthusFlattening * innerInfluence;
-
-    const outerFlattening = settings.outerCanthusFlattening * outerInfluence;
-
-    return clamp(1 - innerFlattening - outerFlattening, 0.05, 1);
+    return clamp(
+      1 -
+        settings.innerCanthusFlattening *
+          innerInfluence -
+        settings.outerCanthusFlattening *
+          outerInfluence,
+      0.05,
+      1,
+    );
   }
 
-  function resolveTemporalBias(amount, bias) {
-    return mix(1 - bias, 1 + bias, smoothStep(0.15, 0.85, amount));
+  function resolveTemporalBias(
+    amount,
+    bias,
+  ) {
+    return mix(
+      1 - bias,
+      1 + bias,
+      smoothStep(
+        0.15,
+        0.85,
+        amount,
+      ),
+    );
   }
 
   function orbitalPoint(
@@ -513,25 +717,48 @@
     wrapAmount,
     temporalBias,
   ) {
-    const t = clamp(position, 0, 1);
+    const t =
+      clamp(
+        position,
+        0,
+        1,
+      );
 
-    const axisPoint = pointBetween(model.innerCanthus, model.outerCanthus, t);
+    const axisPoint =
+      pointBetween(
+        model.innerCanthus,
+        model.outerCanthus,
+        t,
+      );
 
-    /*
-        Elliptical globe projection.
+    const normalizedX =
+      clamp(
+        (t - 0.5) * 2,
+        -1,
+        1,
+      );
 
-        At the canthi the vertical component approaches zero.
-        Through the central region the lid wraps over the
-        globe rather than rising from a flat baseline.
-    */
+    const globeArc =
+      Math.sqrt(
+        Math.max(
+          0,
+          1 -
+            normalizedX *
+              normalizedX,
+        ),
+      );
 
-    const normalizedX = clamp((t - 0.5) * 2, -1, 1);
+    const canthusFlattening =
+      resolveCanthusFlattening(
+        t,
+        settings,
+      );
 
-    const globeArc = Math.sqrt(Math.max(0, 1 - normalizedX * normalizedX));
-
-    const canthusFlattening = resolveCanthusFlattening(t, settings);
-
-    const sideBias = resolveTemporalBias(t, temporalBias);
+    const sideBias =
+      resolveTemporalBias(
+        t,
+        temporalBias,
+      );
 
     const verticalDistance =
       model.globeRadiusY *
@@ -542,138 +769,284 @@
       sideBias;
 
     const normal =
-      direction === "lower" ? model.lowerNormal : model.upperNormal;
+      direction === "lower"
+        ? model.lowerNormal
+        : model.upperNormal;
 
-    return addPoints(axisPoint, scalePoint(normal, verticalDistance));
+    return addPoints(
+      axisPoint,
+
+      scalePoint(
+        normal,
+        verticalDistance,
+      ),
+    );
   }
 
   /* ==========================
-     LANDMARK BUILDING
+     BUILD LANDMARKS
   ========================== */
 
   function buildLandmarks(settings) {
-    const halfWidth = settings.width / 2;
+    const halfWidth =
+      settings.width / 2;
 
-    const anatomicalDirection = settings.side === "left" ? -1 : 1;
+    const anatomicalDirection =
+      settings.side === "left"
+        ? -1
+        : 1;
 
-    const innerCanthus = point(
-      settings.centerX - anatomicalDirection * halfWidth,
+    const innerCanthus =
+      point(
+        settings.centerX -
+          anatomicalDirection *
+            halfWidth,
 
-      settings.centerY + settings.innerCornerY,
-    );
+        settings.centerY +
+          settings.innerCornerY,
+      );
 
-    const outerCanthus = point(
-      settings.centerX + anatomicalDirection * halfWidth,
+    const outerCanthus =
+      point(
+        settings.centerX +
+          anatomicalDirection *
+            halfWidth,
 
-      settings.centerY + settings.outerCornerY,
-    );
+        settings.centerY +
+          settings.outerCornerY,
+      );
 
-    const model = createOrbitalModel(settings, innerCanthus, outerCanthus);
+    const model =
+      createOrbitalModel(
+        settings,
+        innerCanthus,
+        outerCanthus,
+      );
 
-    /*
-        Upper landmarks.
+    /* ==========================
+       UPPER LID
+    ========================== */
 
-        The old height controls now scale orbital projection
-        instead of creating straight vertical offsets.
-    */
+    const upperInnerShoulder =
+      orbitalPoint(
+        model,
+        settings,
+        settings.upperInnerShoulderPosition,
+        "upper",
+        settings.upperPeakHeight *
+          settings.upperInnerShoulderHeight,
+        settings.upperLidWrap,
+        settings.upperTemporalBias,
+      );
 
-    const upperInnerShoulder = orbitalPoint(
-      model,
-      settings,
-      settings.upperInnerShoulderPosition,
-      "upper",
-      settings.upperPeakHeight * settings.upperInnerShoulderHeight,
-      settings.upperLidWrap,
-      settings.upperTemporalBias,
-    );
+    const upperPeak =
+      orbitalPoint(
+        model,
+        settings,
+        settings.upperPeakPosition,
+        "upper",
+        settings.upperPeakHeight,
+        settings.upperLidWrap,
+        settings.upperTemporalBias,
+      );
 
-    const upperPeak = orbitalPoint(
-      model,
-      settings,
-      settings.upperPeakPosition,
-      "upper",
-      settings.upperPeakHeight,
-      settings.upperLidWrap,
-      settings.upperTemporalBias,
-    );
+    const upperOuterShoulder =
+      orbitalPoint(
+        model,
+        settings,
+        settings.upperOuterShoulderPosition,
+        "upper",
+        settings.upperPeakHeight *
+          settings.upperOuterShoulderHeight,
+        settings.upperLidWrap,
+        settings.upperTemporalBias,
+      );
 
-    const upperOuterShoulder = orbitalPoint(
-      model,
-      settings,
-      settings.upperOuterShoulderPosition,
-      "upper",
-      settings.upperPeakHeight * settings.upperOuterShoulderHeight,
-      settings.upperLidWrap,
-      settings.upperTemporalBias,
-    );
+    /* ==========================
+       LOWER LID
+    ========================== */
 
-    /*
-        Lower landmarks.
+    const lowerInnerShoulder =
+      orbitalPoint(
+        model,
+        settings,
+        settings.lowerInnerShoulderPosition,
+        "lower",
+        settings.lowerLowDepth *
+          settings.lowerInnerShoulderDepth,
+        settings.lowerLidWrap,
+        settings.lowerTemporalBias,
+      );
 
-        Lower landmarks use a weaker globe wrap so the lower
-        lid supports the eye without becoming a deep bowl.
-    */
+    const lowerLow =
+      orbitalPoint(
+        model,
+        settings,
+        settings.lowerLowPosition,
+        "lower",
+        settings.lowerLowDepth,
+        settings.lowerLidWrap,
+        settings.lowerTemporalBias,
+      );
 
-    const lowerInnerShoulder = orbitalPoint(
-      model,
-      settings,
-      settings.lowerInnerShoulderPosition,
-      "lower",
-      settings.lowerLowDepth * settings.lowerInnerShoulderDepth,
-      settings.lowerLidWrap,
-      settings.lowerTemporalBias,
-    );
+    const lowerOuterShoulder =
+      orbitalPoint(
+        model,
+        settings,
+        settings.lowerOuterShoulderPosition,
+        "lower",
+        settings.lowerLowDepth *
+          settings.lowerOuterShoulderDepth,
+        settings.lowerLidWrap,
+        settings.lowerTemporalBias,
+      );
 
-    const lowerLow = orbitalPoint(
-      model,
-      settings,
-      settings.lowerLowPosition,
-      "lower",
-      settings.lowerLowDepth,
-      settings.lowerLidWrap,
-      settings.lowerTemporalBias,
-    );
+    /* ==========================
+       TEAR DUCT — 4.1.3
 
-    const lowerOuterShoulder = orbitalPoint(
-      model,
-      settings,
-      settings.lowerOuterShoulderPosition,
-      "lower",
-      settings.lowerLowDepth * settings.lowerOuterShoulderDepth,
-      settings.lowerLidWrap,
-      settings.lowerTemporalBias,
-    );
+       IMPORTANT:
 
-    /*
-        Tear duct extends from the inner canthus toward the
-        nose along the reverse anatomical eye axis.
-    */
+       model.axis points from:
 
-    const tearDuct = addPoints(
-      innerCanthus,
+       inner canthus → outer canthus
+
+       That is exactly the direction we want.
+
+       The tear duct should sit INSIDE the
+       almond-shaped opening, between the
+       inner canthus and iris.
+    ========================== */
+
+    const tearDuctBase =
       addPoints(
-        scalePoint(model.axis, -settings.tearDuctLength),
+        innerCanthus,
 
-        scalePoint(model.lowerNormal, settings.tearDuctHeight),
-      ),
-    );
+        addPoints(
+          scalePoint(
+            model.axis,
+            settings.tearDuctLength,
+          ),
 
-    const irisCenter = point(
-      settings.centerX + settings.irisCenterX,
+          scalePoint(
+            model.lowerNormal,
+            settings.tearDuctHeight,
+          ),
+        ),
+      );
 
-      settings.centerY + settings.irisCenterY,
-    );
+    const tearDuct =
+      addPoints(
+        tearDuctBase,
+
+        point(
+          settings.tearDuctTipOffsetX,
+          settings.tearDuctTipOffsetY,
+        ),
+      );
+
+    /*
+      Upper and lower tear-duct attachment
+      landmarks also sit inside the eye.
+
+      They remain close to the canthus while
+      extending slightly toward the iris.
+    */
+
+    const attachmentCenter =
+      addPoints(
+        innerCanthus,
+
+        scalePoint(
+          model.axis,
+
+          settings.tearDuctLength *
+            settings.tearDuctAttachmentInset,
+        ),
+      );
+
+    const tearDuctUpperBase =
+      addPoints(
+        attachmentCenter,
+
+        scalePoint(
+          model.upperNormal,
+
+          settings.tearDuctSurfaceHeight *
+            0.55,
+        ),
+      );
+
+    const tearDuctLowerBase =
+      addPoints(
+        attachmentCenter,
+
+        scalePoint(
+          model.lowerNormal,
+
+          settings.tearDuctSurfaceHeight *
+            0.55,
+        ),
+      );
+
+    const tearDuctUpper =
+      addPoints(
+        tearDuctUpperBase,
+
+        point(
+          settings.tearDuctUpperOffsetX,
+          settings.tearDuctUpperOffsetY,
+        ),
+      );
+
+    const tearDuctLower =
+      addPoints(
+        tearDuctLowerBase,
+
+        point(
+          settings.tearDuctLowerOffsetX,
+          settings.tearDuctLowerOffsetY,
+        ),
+      );
+
+    /* ==========================
+       IRIS
+    ========================== */
+
+    const irisCenter =
+      point(
+        settings.centerX +
+          settings.irisCenterX,
+
+        settings.centerY +
+          settings.irisCenterY,
+      );
 
     return {
-      center: point(settings.centerX, settings.centerY),
+      center:
+        point(
+          settings.centerX,
+          settings.centerY,
+        ),
 
-      globeCenter: copyPoint(model.center),
+      globeCenter:
+        copyPoint(
+          model.center,
+        ),
 
-      globeRadiusX: model.globeRadiusX,
+      globeRadiusX:
+        model.globeRadiusX,
 
-      globeRadiusY: model.globeRadiusY,
+      globeRadiusY:
+        model.globeRadiusY,
 
+      /* DUCT */
+
+      tearDuctUpper,
       tearDuct,
+      tearDuctLower,
+
+      /* OPENING */
+
       innerCanthus,
 
       upperInnerShoulder,
@@ -686,18 +1059,35 @@
       lowerLow,
       lowerInnerShoulder,
 
+      /* IRIS */
+
       irisCenter,
 
-      pupilCenter: copyPoint(irisCenter),
+      pupilCenter:
+        copyPoint(
+          irisCenter,
+        ),
 
-      eyeAxis: copyPoint(model.axis),
+      eyeAxis:
+        copyPoint(
+          model.axis,
+        ),
 
-      upperNormal: copyPoint(model.upperNormal),
+      upperNormal:
+        copyPoint(
+          model.upperNormal,
+        ),
 
-      lowerNormal: copyPoint(model.lowerNormal),
+      lowerNormal:
+        copyPoint(
+          model.lowerNormal,
+        ),
 
-      up: point(0, -1),
-      down: point(0, 1),
+      up:
+        point(0, -1),
+
+      down:
+        point(0, 1),
 
       anatomicalDirection,
     };
@@ -709,43 +1099,62 @@
 
   function createGeometryParameters(settings) {
     return {
-      width: settings.width,
+      width:
+        settings.width,
 
-      height: settings.height,
+      height:
+        settings.height,
 
-      upperInnerTension: settings.upperInnerTension,
+      upperInnerTension:
+        settings.upperInnerTension,
 
-      upperOuterTension: settings.upperOuterTension,
+      upperOuterTension:
+        settings.upperOuterTension,
 
-      lowerOuterTension: settings.lowerOuterTension,
+      lowerOuterTension:
+        settings.lowerOuterTension,
 
-      lowerInnerTension: settings.lowerInnerTension,
+      lowerInnerTension:
+        settings.lowerInnerTension,
 
-      upperCreaseHeight: settings.upperCreaseHeight,
+      upperCreaseHeight:
+        settings.upperCreaseHeight,
 
-      upperCreaseInset: settings.upperCreaseInset,
+      upperCreaseInset:
+        settings.upperCreaseInset,
 
-      lowerCreaseDepth: settings.lowerCreaseDepth,
+      lowerCreaseDepth:
+        settings.lowerCreaseDepth,
 
-      lowerCreaseInset: settings.lowerCreaseInset,
+      lowerCreaseInset:
+        settings.lowerCreaseInset,
 
-      tearDuctSurfaceHeight: settings.tearDuctSurfaceHeight,
+      tearDuctSurfaceHeight:
+        settings.tearDuctSurfaceHeight,
 
-      socketWidthScale: settings.socketWidthScale,
+      socketWidthScale:
+        settings.socketWidthScale,
 
-      socketHeightScale: settings.socketHeightScale,
+      socketHeightScale:
+        settings.socketHeightScale,
 
-      socketOffsetY: settings.socketOffsetY,
+      socketOffsetY:
+        settings.socketOffsetY,
 
-      globeWidthScale: settings.globeWidthScale,
+      globeWidthScale:
+        settings.globeWidthScale,
 
-      globeHeightScale: settings.globeHeightScale,
+      globeHeightScale:
+        settings.globeHeightScale,
 
-      upperLidWrap: settings.upperLidWrap,
+      upperLidWrap:
+        settings.upperLidWrap,
 
-      lowerLidWrap: settings.lowerLidWrap,
+      lowerLidWrap:
+        settings.lowerLidWrap,
 
-      sampleCount: settings.sampleCount,
+      sampleCount:
+        settings.sampleCount,
     };
   }
 
@@ -754,42 +1163,71 @@
   ========================== */
 
   function build(inputSettings) {
-    if (!window.EyeGeometry || typeof window.EyeGeometry.build !== "function") {
+    if (
+      !window.EyeGeometry ||
+      typeof window.EyeGeometry
+        .build !==
+        "function"
+    ) {
       throw new Error(
         "EyeGeometry is unavailable. Load eyeGeometry.js before eyeBuilder.js.",
       );
     }
 
-    const settings = resolveSettings(inputSettings);
+    const settings =
+      resolveSettings(
+        inputSettings,
+      );
 
-    const baseLandmarks = buildLandmarks(settings);
+    const baseLandmarks =
+      buildLandmarks(
+        settings,
+      );
 
     const rigResult =
-      window.EyeRig && typeof window.EyeRig.apply === "function"
-        ? window.EyeRig.apply(baseLandmarks, settings.rigState)
+      window.EyeRig &&
+      typeof window.EyeRig.apply ===
+        "function"
+        ? window.EyeRig.apply(
+            baseLandmarks,
+            settings.rigState,
+          )
         : {
-            landmarks: baseLandmarks,
+            landmarks:
+              baseLandmarks,
 
-            baseLandmarks: baseLandmarks,
+            baseLandmarks:
+              baseLandmarks,
 
-            state: settings.rigState || {},
+            state:
+              settings.rigState || {},
           };
 
-    const landmarks = rigResult.landmarks;
+    const landmarks =
+      rigResult.landmarks;
 
-    const parameters = createGeometryParameters(settings);
+    const parameters =
+      createGeometryParameters(
+        settings,
+      );
 
-    const geometry = window.EyeGeometry.build(landmarks, parameters);
+    const geometry =
+      window.EyeGeometry.build(
+        landmarks,
+        parameters,
+      );
 
-    const transformedBaseLandmarks = window.EyeGeometry.rotateLandmarks(
-      baseLandmarks,
-      settings.rotation,
-    );
+    const transformedBaseLandmarks =
+      window.EyeGeometry.rotateLandmarks(
+        baseLandmarks,
+        settings.rotation,
+      );
 
-    const transformedLandmarks = window.EyeGeometry.rotateLandmarks(
-      landmarks,
-      settings.rotation,
-    );
+    const transformedLandmarks =
+      window.EyeGeometry.rotateLandmarks(
+        landmarks,
+        settings.rotation,
+      );
 
     const transform =
       `rotate(${settings.rotation} ` +
@@ -799,7 +1237,8 @@
     return {
       type: "eye",
 
-      side: settings.side,
+      side:
+        settings.side,
 
       settings: {
         ...settings,
@@ -810,10 +1249,13 @@
       },
 
       baseLandmarks,
+
       transformedBaseLandmarks,
 
       landmarks,
-      riggedLandmarks: landmarks,
+
+      riggedLandmarks:
+        landmarks,
 
       transformedLandmarks,
 
@@ -823,30 +1265,45 @@
 
       geometry,
 
-      opening: geometry.opening,
+      opening:
+        geometry.opening,
 
-      upperLid: geometry.upperLid,
+      upperLid:
+        geometry.upperLid,
 
-      lowerLid: geometry.lowerLid,
+      lowerLid:
+        geometry.lowerLid,
 
-      upperCrease: geometry.upperCrease,
+      upperCrease:
+        geometry.upperCrease,
 
-      lowerCrease: geometry.lowerCrease,
+      lowerCrease:
+        geometry.lowerCrease,
 
-      tearDuct: geometry.tearDuct,
+      tearDuct:
+        geometry.tearDuct,
 
-      socket: geometry.socket,
+      socket:
+        geometry.socket,
 
       iris: {
-        center: copyPoint(landmarks.irisCenter),
+        center:
+          copyPoint(
+            landmarks.irisCenter,
+          ),
 
-        radius: settings.irisSize / 2,
+        radius:
+          settings.irisSize / 2,
       },
 
       pupil: {
-        center: copyPoint(landmarks.pupilCenter),
+        center:
+          copyPoint(
+            landmarks.pupilCenter,
+          ),
 
-        radius: settings.pupilSize / 2,
+        radius:
+          settings.pupilSize / 2,
       },
 
       transform,
@@ -869,23 +1326,37 @@
         "EyeRenderer",
       ],
 
-      model: "elliptical globe projection",
+      model:
+        "elliptical globe projection",
 
       landmarks: [
+        "tearDuctUpper",
         "tearDuct",
+        "tearDuctLower",
+
         "innerCanthus",
+
         "upperInnerShoulder",
         "upperPeak",
         "upperOuterShoulder",
+
         "outerCanthus",
+
         "lowerOuterShoulder",
         "lowerLow",
         "lowerInnerShoulder",
+
         "irisCenter",
         "pupilCenter",
       ],
 
-      surfaces: ["opening", "tearDuct", "socket", "iris", "pupil"],
+      surfaces: [
+        "opening",
+        "tearDuct",
+        "socket",
+        "iris",
+        "pupil",
+      ],
     };
   }
 
@@ -894,26 +1365,37 @@
   ========================== */
 
   window.EyeBuilder = {
-    version: "4.0.1",
+    version: "4.1.3",
 
-    defaults: Object.freeze({
-      ...defaultBuilderSettings,
-    }),
+    defaults:
+      Object.freeze({
+        ...defaultBuilderSettings,
+      }),
 
     build,
 
-    buildLandmarks: function publicBuildLandmarks(inputSettings) {
-      return buildLandmarks(resolveSettings(inputSettings));
-    },
+    buildLandmarks:
+      function publicBuildLandmarks(
+        inputSettings,
+      ) {
+        return buildLandmarks(
+          resolveSettings(
+            inputSettings,
+          ),
+        );
+      },
 
     describe,
 
-    getDefaults: function getDefaults() {
-      return {
-        ...defaultBuilderSettings,
-      };
-    },
+    getDefaults:
+      function getDefaults() {
+        return {
+          ...defaultBuilderSettings,
+        };
+      },
   };
 
-  console.log("EyeBuilder 4.0.1 loaded");
+  console.log(
+    "EyeBuilder 4.1.3 loaded",
+  );
 })();
