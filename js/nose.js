@@ -1,3 +1,16 @@
+/* =========================================================
+   FACELAB NOSE
+   Version 1.2.1
+
+   1.2.1
+   - Keeps the new 1.2 anatomical construction.
+   - Removes the flat bottle-neck transition at the top of the tip.
+   - Broadens and rounds the tip.
+   - Restores fuller alar wings around the nostrils without long tails.
+   - Strengthens the small columella/underside cue.
+   - Keeps nostril openings tucked beneath the wings.
+========================================================= */
+
 /* ==========================
    DEFAULT NOSE VALUES
 ========================== */
@@ -16,17 +29,17 @@ const defaultNoseSettings = {
 
     /* Nostril wings */
 
-    nostrilSpacing: 22,
-    nostrilY: 396,
-    nostrilWidth: 22,
+    nostrilSpacing: 20,
+    nostrilY: 395,
+    nostrilWidth: 23,
     nostrilHeight: 14,
 
     /* Nostril holes */
 
-    nostrilHoleSpacing: 18,
-    nostrilHoleY: 399,
-    nostrilHoleWidth: 7,
-    nostrilHoleHeight: 2.8
+    nostrilHoleSpacing: 17.5,
+    nostrilHoleY: 398,
+    nostrilHoleWidth: 6,
+    nostrilHoleHeight: 2.4
 
 };
 
@@ -181,11 +194,8 @@ function applyNoseSettings() {
     const noseCenterX =
         250;
 
-    const noseCenterY =
-        374;
-
-    const nostrilCenterY =
-        settings.nostrilY;
+    const bridgeCenterY =
+        369;
 
     const noseWidth =
         Math.max(
@@ -198,6 +208,9 @@ function applyNoseSettings() {
             settings.noseHeight,
             6
         );
+
+    const nostrilCenterY =
+        settings.nostrilY;
 
     const nostrilWidth =
         Math.max(
@@ -213,7 +226,14 @@ function applyNoseSettings() {
 
 
     /* ==========================
-       NOSE BRIDGE SHADOW
+       BRIDGE / SIDE PLANES
+
+       The sketch reads as two descending side curves,
+       not a central vertical blob.
+
+       We keep noseShadow as a soft ellipse, but flatten it
+       and reduce opacity so it behaves as a blended light/shadow
+       field rather than a visible construction piece.
     ========================== */
 
     noseShadow.setAttribute(
@@ -223,217 +243,291 @@ function applyNoseSettings() {
 
     noseShadow.setAttribute(
         "cy",
-        noseCenterY
+        bridgeCenterY - noseHeight * 0.12
     );
 
     noseShadow.setAttribute(
         "rx",
         Math.max(
-            noseWidth * 0.72,
-            4
+            noseWidth * 0.62,
+            5
         )
     );
 
     noseShadow.setAttribute(
         "ry",
         Math.max(
-            noseHeight * 1.08,
-            8
+            noseHeight * 1.24,
+            10
         )
     );
 
+    noseShadow.style.opacity =
+        "0.24";
+
+    noseShadow.style.pointerEvents =
+        "none";
+
 
     /* ==========================
-       CENTER TIP DIMENSIONS
+       TIP / LOWER BRIDGE GEOMETRY
+
+       1.2.1:
+       The bridge flows directly into a broad rounded tip.
+       There is no flat top edge and no narrow bottle-neck.
     ========================== */
 
     const tipCenterY =
-        noseCenterY +
-        noseHeight * 0.48;
+        bridgeCenterY +
+        noseHeight * 0.62;
 
-    const tipHalfWidth =
+    const bridgeJoinY =
+        bridgeCenterY -
+        noseHeight * 0.18;
+
+    const shoulderY =
+        tipCenterY -
+        noseHeight * 0.18;
+
+    const undersideY =
+        tipCenterY +
+        noseHeight * 0.22;
+
+    const columellaY =
+        tipCenterY +
+        noseHeight * 0.38;
+
+    const bridgeHalfWidth =
         Math.max(
-            noseWidth * 0.82,
+            noseWidth * 0.42,
             6
         );
 
-    const tipHeight =
+    const shoulderHalfWidth =
         Math.max(
-            noseHeight * 0.60,
+            noseWidth * 0.98,
+            10
+        );
+
+    const undersideHalfWidth =
+        Math.max(
+            noseWidth * 0.66,
             8
         );
 
-    const tipTopY =
-        tipCenterY -
-        tipHeight * 0.48;
 
-    const tipShoulderY =
-        tipCenterY -
-        tipHeight * 0.14;
+    noseFront.setAttribute(
+        "d",
+        `
+            M
+            ${noseCenterX - bridgeHalfWidth}
+            ${bridgeJoinY}
 
-    const tipLowerY =
-        tipCenterY +
-        tipHeight * 0.25;
+            C
+            ${noseCenterX - bridgeHalfWidth * 1.10}
+            ${bridgeJoinY + noseHeight * 0.18}
 
-    const tipBottomY =
-        tipCenterY +
-        tipHeight * 0.36;
+            ${noseCenterX - shoulderHalfWidth * 0.76}
+            ${shoulderY - noseHeight * 0.10}
 
-    const topHalfWidth =
-        tipHalfWidth * 0.38;
+            ${noseCenterX - shoulderHalfWidth}
+            ${tipCenterY}
 
-    const shoulderHalfWidth =
-        tipHalfWidth * 0.88;
+            C
+            ${noseCenterX - shoulderHalfWidth * 0.98}
+            ${undersideY}
 
-    const lowerHalfWidth =
-        tipHalfWidth * 0.82;
+            ${noseCenterX - undersideHalfWidth * 0.66}
+            ${columellaY}
+
+            ${noseCenterX}
+            ${columellaY}
+
+            C
+            ${noseCenterX + undersideHalfWidth * 0.66}
+            ${columellaY}
+
+            ${noseCenterX + shoulderHalfWidth * 0.98}
+            ${undersideY}
+
+            ${noseCenterX + shoulderHalfWidth}
+            ${tipCenterY}
+
+            C
+            ${noseCenterX + shoulderHalfWidth * 0.76}
+            ${shoulderY - noseHeight * 0.10}
+
+            ${noseCenterX + bridgeHalfWidth * 1.10}
+            ${bridgeJoinY + noseHeight * 0.18}
+
+            ${noseCenterX + bridgeHalfWidth}
+            ${bridgeJoinY}
+
+            C
+            ${noseCenterX + bridgeHalfWidth * 0.42}
+            ${bridgeJoinY - noseHeight * 0.04}
+
+            ${noseCenterX - bridgeHalfWidth * 0.42}
+            ${bridgeJoinY - noseHeight * 0.04}
+
+            ${noseCenterX - bridgeHalfWidth}
+            ${bridgeJoinY}
+
+            Z
+        `
+    );
+
+    noseFront.style.opacity =
+        "0.54";
+
+    noseFront.style.stroke =
+        "none";
+
+    noseFront.style.pointerEvents =
+        "none";
 
 
     /* ==========================
-       NOSTRIL WING VALUES
+       ALAR WINGS
+
+       Fuller around the nostrils, but they fold inward
+       beneath the tip instead of trailing sideways.
     ========================== */
 
-    /*
-        Negative gap lets the wings tuck
-        slightly beneath the center tip.
-    */
-
-    const wingGap =
-        -1.5;
-
-    const minimumWingSpacing =
-        tipHalfWidth +
-        wingGap;
-
-    const actualWingSpacing =
+    const wingInset =
         Math.max(
             settings.nostrilSpacing,
-            minimumWingSpacing
+            shoulderHalfWidth * 0.70
         );
 
     const leftInnerX =
         noseCenterX -
-        actualWingSpacing;
+        wingInset;
 
     const rightInnerX =
         noseCenterX +
-        actualWingSpacing;
+        wingInset;
 
     const leftOuterX =
         leftInnerX -
-        nostrilWidth;
+        nostrilWidth * 0.82;
 
     const rightOuterX =
         rightInnerX +
-        nostrilWidth;
+        nostrilWidth * 0.82;
 
-    const nostrilTopY =
+    const wingTopY =
         nostrilCenterY -
-        nostrilHeight * 0.58;
+        nostrilHeight * 0.62;
 
-    const nostrilBottomY =
+    const wingBottomY =
         nostrilCenterY +
-        nostrilHeight * 0.58;
+        nostrilHeight * 0.48;
 
-
-    /* ==========================
-       LEFT NOSTRIL WING
-    ========================== */
 
     leftNostril.setAttribute(
         "d",
         `
             M
-            ${leftInnerX}
-            ${nostrilTopY}
+            ${leftInnerX + nostrilWidth * 0.18}
+            ${wingTopY}
 
             C
-            ${leftInnerX + nostrilWidth * 0.16}
-            ${nostrilTopY + nostrilHeight * 0.18}
+            ${leftInnerX - nostrilWidth * 0.10}
+            ${wingTopY - nostrilHeight * 0.04}
 
-            ${leftInnerX + nostrilWidth * 0.10}
-            ${nostrilBottomY - nostrilHeight * 0.18}
-
-            ${leftInnerX}
-            ${nostrilBottomY}
-
-            C
-            ${leftInnerX - nostrilWidth * 0.20}
-            ${nostrilBottomY + nostrilHeight * 0.06}
-
-            ${leftOuterX + nostrilWidth * 0.30}
-            ${nostrilBottomY}
+            ${leftOuterX + nostrilWidth * 0.26}
+            ${wingTopY + nostrilHeight * 0.16}
 
             ${leftOuterX}
-            ${nostrilCenterY + nostrilHeight * 0.20}
+            ${nostrilCenterY + nostrilHeight * 0.02}
 
             C
-            ${leftOuterX - nostrilWidth * 0.02}
-            ${nostrilCenterY - nostrilHeight * 0.12}
+            ${leftOuterX + nostrilWidth * 0.18}
+            ${nostrilCenterY + nostrilHeight * 0.34}
 
-            ${leftOuterX + nostrilWidth * 0.30}
-            ${nostrilTopY}
+            ${leftOuterX + nostrilWidth * 0.52}
+            ${wingBottomY}
 
-            ${leftInnerX}
-            ${nostrilTopY}
+            ${leftInnerX + nostrilWidth * 0.02}
+            ${wingBottomY}
+
+            C
+            ${leftInnerX + nostrilWidth * 0.20}
+            ${wingBottomY - nostrilHeight * 0.22}
+
+            ${leftInnerX + nostrilWidth * 0.24}
+            ${wingTopY + nostrilHeight * 0.20}
+
+            ${leftInnerX + nostrilWidth * 0.18}
+            ${wingTopY}
 
             Z
         `
     );
 
-
-    /* ==========================
-       RIGHT NOSTRIL WING
-    ========================== */
 
     rightNostril.setAttribute(
         "d",
         `
             M
-            ${rightInnerX}
-            ${nostrilTopY}
+            ${rightInnerX - nostrilWidth * 0.18}
+            ${wingTopY}
 
             C
-            ${rightInnerX - nostrilWidth * 0.16}
-            ${nostrilTopY + nostrilHeight * 0.18}
+            ${rightInnerX + nostrilWidth * 0.10}
+            ${wingTopY - nostrilHeight * 0.04}
 
-            ${rightInnerX - nostrilWidth * 0.10}
-            ${nostrilBottomY - nostrilHeight * 0.18}
-
-            ${rightInnerX}
-            ${nostrilBottomY}
-
-            C
-            ${rightInnerX + nostrilWidth * 0.20}
-            ${nostrilBottomY + nostrilHeight * 0.06}
-
-            ${rightOuterX - nostrilWidth * 0.30}
-            ${nostrilBottomY}
+            ${rightOuterX - nostrilWidth * 0.26}
+            ${wingTopY + nostrilHeight * 0.16}
 
             ${rightOuterX}
-            ${nostrilCenterY + nostrilHeight * 0.20}
+            ${nostrilCenterY + nostrilHeight * 0.02}
 
             C
-            ${rightOuterX + nostrilWidth * 0.02}
-            ${nostrilCenterY - nostrilHeight * 0.12}
+            ${rightOuterX - nostrilWidth * 0.18}
+            ${nostrilCenterY + nostrilHeight * 0.34}
 
-            ${rightOuterX - nostrilWidth * 0.30}
-            ${nostrilTopY}
+            ${rightOuterX - nostrilWidth * 0.52}
+            ${wingBottomY}
 
-            ${rightInnerX}
-            ${nostrilTopY}
+            ${rightInnerX - nostrilWidth * 0.02}
+            ${wingBottomY}
+
+            C
+            ${rightInnerX - nostrilWidth * 0.20}
+            ${wingBottomY - nostrilHeight * 0.22}
+
+            ${rightInnerX - nostrilWidth * 0.24}
+            ${wingTopY + nostrilHeight * 0.20}
+
+            ${rightInnerX - nostrilWidth * 0.18}
+            ${wingTopY}
 
             Z
         `
     );
 
 
+    leftNostril.style.opacity =
+        "0.66";
+
+    rightNostril.style.opacity =
+        "0.66";
+
+    leftNostril.style.stroke =
+        "none";
+
+    rightNostril.style.stroke =
+        "none";
+
+
     /* ==========================
-       ROTATE NOSTRIL WINGS
+       SUBTLE WING ROTATION
     ========================== */
 
     const wingRotation =
-        15;
+        6;
 
     leftNostril.setAttribute(
         "transform",
@@ -455,7 +549,9 @@ function applyNoseSettings() {
 
 
     /* ==========================
-       BOTTOM-OF-NOSE SHADOW
+       COLUMELLA / UNDERSIDE SHADOW
+
+       Narrow central underside cue, not a broad oval.
     ========================== */
 
     noseBottomShadow.setAttribute(
@@ -465,95 +561,36 @@ function applyNoseSettings() {
 
     noseBottomShadow.setAttribute(
         "cy",
-        noseCenterY +
-        noseHeight * 0.88
+        columellaY - noseHeight * 0.02
     );
 
     noseBottomShadow.setAttribute(
         "rx",
         Math.max(
-            noseWidth * 0.72,
-            6
+            noseWidth * 0.34,
+            4
         )
     );
 
     noseBottomShadow.setAttribute(
         "ry",
         Math.max(
-            noseHeight * 0.08,
-            1.5
+            noseHeight * 0.050,
+            1.2
         )
     );
 
+    noseBottomShadow.style.opacity =
+        "0.26";
 
-    /* ==========================
-       CENTER NOSE TIP PATH
-    ========================== */
-
-    noseFront.setAttribute(
-        "d",
-        `
-            M
-            ${noseCenterX - topHalfWidth}
-            ${tipTopY}
-
-            C
-            ${noseCenterX - topHalfWidth * 0.55}
-            ${tipTopY - tipHeight * 0.04}
-
-            ${noseCenterX + topHalfWidth * 0.55}
-            ${tipTopY - tipHeight * 0.04}
-
-            ${noseCenterX + topHalfWidth}
-            ${tipTopY}
-
-            C
-            ${noseCenterX + shoulderHalfWidth * 0.72}
-            ${tipTopY + tipHeight * 0.10}
-
-            ${noseCenterX + tipHalfWidth}
-            ${tipShoulderY}
-
-            ${noseCenterX + tipHalfWidth}
-            ${tipCenterY}
-
-            C
-            ${noseCenterX + tipHalfWidth}
-            ${tipLowerY}
-
-            ${noseCenterX + lowerHalfWidth}
-            ${tipBottomY}
-
-            ${noseCenterX}
-            ${tipBottomY}
-
-            C
-            ${noseCenterX - lowerHalfWidth}
-            ${tipBottomY}
-
-            ${noseCenterX - tipHalfWidth}
-            ${tipLowerY}
-
-            ${noseCenterX - tipHalfWidth}
-            ${tipCenterY}
-
-            C
-            ${noseCenterX - tipHalfWidth}
-            ${tipShoulderY}
-
-            ${noseCenterX - shoulderHalfWidth * 0.72}
-            ${tipTopY + tipHeight * 0.10}
-
-            ${noseCenterX - topHalfWidth}
-            ${tipTopY}
-
-            Z
-        `
-    );
+    noseBottomShadow.style.pointerEvents =
+        "none";
 
 
     /* ==========================
        NOSTRIL HOLES
+
+       Compact openings tucked beneath the alar wings.
     ========================== */
 
     const nostrilHoleSpacing =
@@ -627,12 +664,8 @@ function applyNoseSettings() {
     );
 
 
-    /* ==========================
-       ROTATE NOSTRIL HOLES
-    ========================== */
-
     const holeRotation =
-        wingRotation * 0.80;
+        wingRotation * 0.50;
 
     leftHole.setAttribute(
         "transform",
@@ -652,7 +685,14 @@ function applyNoseSettings() {
         )`
     );
 
+    leftHole.style.opacity =
+        "0.88";
+
+    rightHole.style.opacity =
+        "0.88";
+
 }
+
 
 
 /* ==========================
