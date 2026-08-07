@@ -1,6 +1,6 @@
 /* ==========================
    FACELAB
-   FACE INSPECTOR — VERSION 3.1.2
+   FACE INSPECTOR — VERSION 3.1.3
 
    Direct-editing inspector for procedural
    FaceLab feature engines.
@@ -10,6 +10,8 @@
    - Grab-to-pan navigation
    - Reset view
    - Recenter view without changing zoom
+   - Smaller handles at 100%
+   - Progressive handle shrink while zooming
 ========================== */
 
 (function () {
@@ -27,11 +29,29 @@
     showPanel: true,
     showHandles: true,
 
-    handleRadius: 5,
-    hoverRadius: 7,
-    selectedRadius: 8,
+    /*
+      Smaller default handles.
 
-    handleStrokeWidth: 1.5,
+      These are intentionally kept fairly
+      compact because detailed facial
+      landmarks can sit very close together.
+    */
+
+    handleRadius: 3.5,
+    hoverRadius: 4.75,
+    selectedRadius: 5.75,
+
+    handleStrokeWidth: 1.25,
+
+    /*
+      Controls how aggressively handles
+      shrink as Inspector zoom increases.
+
+      1.0 = roughly constant screen size
+      >1  = progressively smaller on screen
+    */
+
+    handleZoomShrinkPower: 1.25,
 
     dragScale: 1,
 
@@ -218,7 +238,7 @@
 
     circle.setAttribute(
       "r",
-      safeNumber(radius, 5),
+      safeNumber(radius, 3.5),
     );
 
     circle.setAttribute(
@@ -555,9 +575,7 @@
     style.textContent = `
 
       #faceInspectorPanel {
-
         position: fixed;
-
         bottom: 1rem;
         right: 1rem;
 
@@ -570,9 +588,7 @@
           calc(100vh - 2rem);
 
         overflow: auto;
-
         z-index: 10000;
-
         color: #f4f7fa;
 
         background-color:
@@ -597,32 +613,21 @@
 
         backdrop-filter:
           blur(.5rem);
-
       }
-
 
       #faceInspectorPanel[hidden] {
-
         display: none;
-
       }
 
-
       .faceInspectorHeader {
-
         position: sticky;
-
         top: 0;
 
         display: flex;
-
         align-items: flex-start;
-
-        justify-content:
-          space-between;
+        justify-content: space-between;
 
         gap: .6rem;
-
         padding: .85rem 1rem;
 
         background-color:
@@ -633,48 +638,31 @@
           rgba(255,255,255,.12);
 
         z-index: 1;
-
       }
-
 
       .faceInspectorTitle {
-
         font-size: 1rem;
-
         font-weight: 700;
-
       }
 
-
       .faceInspectorStatus {
-
         margin-top: .2rem;
 
         color:
           rgba(255,255,255,.58);
 
         font-size: .72rem;
-
       }
-
 
       .faceInspectorHeaderButtons {
-
         display: flex;
-
         align-items: center;
-
         gap: .3rem;
-
         flex-wrap: wrap;
-
         justify-content: flex-end;
-
       }
 
-
       .faceInspectorHeader button {
-
         appearance: none;
 
         border:
@@ -687,54 +675,35 @@
           rgba(255,255,255,.06);
 
         color: white;
-
         cursor: pointer;
 
         padding:
           .25rem .45rem;
 
         font-size: .78rem;
-
       }
-
 
       .faceInspectorHeader button:hover {
-
         background-color:
           rgba(255,255,255,.12);
-
       }
-
 
       .faceInspectorHeader button:disabled {
-
         opacity: .35;
-
         cursor: default;
-
       }
-
 
       .faceInspectorZoomControls {
-
         display: flex;
-
         align-items: center;
-
         gap: .2rem;
-
       }
-
 
       .faceInspectorZoomControls button {
-
         min-width: 1.9rem;
-
       }
 
-
       #faceInspectorZoomReset {
-
         min-width: 3.5rem;
 
         font-family:
@@ -745,40 +714,25 @@
           monospace;
 
         font-size: .72rem;
-
       }
-
 
       #faceInspectorRecenter {
-
         min-width: 3.6rem;
-
       }
-
 
       #faceInspectorClose {
-
         border: 0;
-
-        background:
-          transparent;
+        background: transparent;
 
         font-size: 1.25rem;
-
         line-height: 1;
-
       }
-
 
       .faceInspectorContent {
-
         padding: 1rem;
-
       }
 
-
       .faceInspectorEmpty {
-
         padding:
           1.2rem .5rem;
 
@@ -788,28 +742,18 @@
           rgba(255,255,255,.58);
 
         line-height: 1.55;
-
       }
-
 
       .faceInspectorSection {
-
         margin-bottom: 1rem;
-
       }
-
 
       .faceInspectorSection:last-child {
-
         margin-bottom: 0;
-
       }
 
-
       .faceInspectorSectionTitle {
-
         margin-bottom: .5rem;
-
         padding-bottom: .35rem;
 
         color: #83e9ff;
@@ -819,19 +763,12 @@
           rgba(255,255,255,.12);
 
         font-size: .68rem;
-
         font-weight: 700;
-
         letter-spacing: .07em;
-
-        text-transform:
-          uppercase;
-
+        text-transform: uppercase;
       }
 
-
       .faceInspectorRow {
-
         display: grid;
 
         grid-template-columns:
@@ -842,22 +779,15 @@
 
         padding:
           .27rem 0;
-
       }
-
 
       .faceInspectorLabel {
-
         color:
           rgba(255,255,255,.63);
-
       }
 
-
       .faceInspectorValue {
-
         color: white;
-
         text-align: right;
 
         font-family:
@@ -866,14 +796,10 @@
           Menlo,
           Consolas,
           monospace;
-
       }
 
-
       .faceInspectorHelp {
-
         margin-top: .75rem;
-
         padding: .65rem;
 
         color:
@@ -885,12 +811,9 @@
         border-radius: .4rem;
 
         line-height: 1.45;
-
       }
 
-
       #faceInspectorReopen {
-
         position: fixed;
 
         right: 1rem;
@@ -899,7 +822,6 @@
         z-index: 10001;
 
         display: flex;
-
         align-items: center;
 
         gap: .45rem;
@@ -908,30 +830,23 @@
           .7rem 1rem;
 
         border: none;
-
         border-radius: 999px;
 
         background: #1c2129;
-
         color: white;
 
         cursor: pointer;
 
         font-size: .85rem;
-
         font-weight: 600;
 
         box-shadow:
           0 8px 24px
           rgba(0,0,0,.35);
-
       }
 
-
       #faceInspectorReopen[hidden] {
-
         display: none;
-
       }
 
     `;
@@ -1018,7 +933,6 @@
 
         </div>
 
-
         <div class="faceInspectorHeaderButtons">
 
           <div class="faceInspectorZoomControls">
@@ -1031,7 +945,6 @@
               −
             </button>
 
-
             <button
               type="button"
               id="faceInspectorZoomReset"
@@ -1039,7 +952,6 @@
             >
               100%
             </button>
-
 
             <button
               type="button"
@@ -1051,7 +963,6 @@
 
           </div>
 
-
           <button
             type="button"
             id="faceInspectorRecenter"
@@ -1060,14 +971,12 @@
             Center
           </button>
 
-
           <button
             type="button"
             id="faceInspectorClear"
           >
             Clear
           </button>
-
 
           <button
             type="button"
@@ -1079,7 +988,6 @@
         </div>
 
       </div>
-
 
       <div class="faceInspectorContent">
 
@@ -1502,6 +1410,53 @@
      HANDLE APPEARANCE
   ========================== */
 
+  function getZoomAdjustedHandleRadius(
+    radius,
+  ) {
+    const zoom =
+      Math.max(
+        1,
+        safeNumber(
+          state.zoom,
+          1,
+        ),
+      );
+
+    const shrinkPower =
+      Math.max(
+        0,
+        safeNumber(
+          window
+            .faceInspectorSettings
+            .handleZoomShrinkPower,
+          1.25,
+        ),
+      );
+
+    /*
+      The face SVG is being enlarged by zoom.
+
+      Dividing the SVG-space radius by the
+      zoom factor prevents the landmark from
+      growing along with the face.
+
+      Using a power above 1 makes it become
+      slightly smaller on screen as zoom
+      increases.
+    */
+
+    return (
+      safeNumber(
+        radius,
+        3.5,
+      ) /
+      Math.pow(
+        zoom,
+        shrinkPower,
+      )
+    );
+  }
+
   function getHandleAppearance(
     handleId,
   ) {
@@ -1514,7 +1469,9 @@
     ) {
       return {
         radius:
-          settings.selectedRadius,
+          getZoomAdjustedHandleRadius(
+            settings.selectedRadius,
+          ),
 
         fill:
           settings.selectedFill,
@@ -1530,7 +1487,9 @@
     ) {
       return {
         radius:
-          settings.hoverRadius,
+          getZoomAdjustedHandleRadius(
+            settings.hoverRadius,
+          ),
 
         fill:
           settings.hoverFill,
@@ -1542,7 +1501,9 @@
 
     return {
       radius:
-        settings.handleRadius,
+        getZoomAdjustedHandleRadius(
+          settings.handleRadius,
+        ),
 
       fill:
         settings.handleFill,
@@ -2063,7 +2024,6 @@
 
       </div>
 
-
       <div class="faceInspectorSection">
 
         <div class="faceInspectorSectionTitle">
@@ -2079,7 +2039,6 @@
         }
 
       </div>
-
 
       <div class="faceInspectorHelp">
 
@@ -2709,7 +2668,7 @@
     }
 
     console.log(
-      "Face Inspector 3.1.2 initialized",
+      "Face Inspector 3.1.3 initialized",
     );
 
     return true;
@@ -2830,7 +2789,7 @@
   ========================== */
 
   window.FaceInspector = {
-    version: "3.1.2",
+    version: "3.1.3",
 
     initialize,
     destroy,
@@ -2961,6 +2920,6 @@
   }
 
   console.log(
-    "faceInspector.js V3.1.2 loaded",
+    "faceInspector.js V3.1.3 loaded",
   );
 })();
