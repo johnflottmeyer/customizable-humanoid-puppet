@@ -1,6 +1,6 @@
 /* =========================================================
    FACELAB NOSE
-   Version 1.2.1
+   Version 1.4.2
 
    1.2.1
    - Keeps the new 1.2 anatomical construction.
@@ -31,15 +31,15 @@ const defaultNoseSettings = {
 
     nostrilSpacing: 20,
     nostrilY: 395,
-    nostrilWidth: 23,
-    nostrilHeight: 14,
+    nostrilWidth: 26,
+    nostrilHeight: 18,
 
     /* Nostril holes */
 
-    nostrilHoleSpacing: 17.5,
+    nostrilHoleSpacing: 16.5,
     nostrilHoleY: 398,
-    nostrilHoleWidth: 6,
-    nostrilHoleHeight: 2.4
+    nostrilHoleWidth: 6.8,
+    nostrilHoleHeight: 2.45
 
 };
 
@@ -263,7 +263,7 @@ function applyNoseSettings() {
     );
 
     noseShadow.style.opacity =
-        "0.24";
+        "0.56";
 
     noseShadow.style.pointerEvents =
         "none";
@@ -279,11 +279,11 @@ function applyNoseSettings() {
 
     const tipCenterY =
         bridgeCenterY +
-        noseHeight * 0.62;
+        noseHeight * 0.60;
 
     const bridgeJoinY =
         bridgeCenterY -
-        noseHeight * 0.18;
+        noseHeight * 0.12;
 
     const shoulderY =
         tipCenterY -
@@ -295,23 +295,23 @@ function applyNoseSettings() {
 
     const columellaY =
         tipCenterY +
-        noseHeight * 0.38;
+        noseHeight * 0.25;
 
     const bridgeHalfWidth =
         Math.max(
-            noseWidth * 0.42,
-            6
+            noseWidth * 0.72,
+            8
         );
 
     const shoulderHalfWidth =
         Math.max(
-            noseWidth * 0.98,
+            noseWidth * 1.12,
             10
         );
 
     const undersideHalfWidth =
         Math.max(
-            noseWidth * 0.66,
+            noseWidth * 0.76,
             8
         );
 
@@ -334,21 +334,21 @@ function applyNoseSettings() {
             ${tipCenterY}
 
             C
-            ${noseCenterX - shoulderHalfWidth * 0.98}
-            ${undersideY}
+            ${noseCenterX - shoulderHalfWidth * 0.92}
+            ${undersideY - noseHeight * 0.02}
 
             ${noseCenterX - undersideHalfWidth * 0.66}
-            ${columellaY}
+            ${columellaY - noseHeight * 0.02}
 
             ${noseCenterX}
-            ${columellaY}
+            ${columellaY + noseHeight * 0.015}
 
             C
             ${noseCenterX + undersideHalfWidth * 0.66}
-            ${columellaY}
+            ${columellaY - noseHeight * 0.02}
 
-            ${noseCenterX + shoulderHalfWidth * 0.98}
-            ${undersideY}
+            ${noseCenterX + shoulderHalfWidth * 0.92}
+            ${undersideY - noseHeight * 0.02}
 
             ${noseCenterX + shoulderHalfWidth}
             ${tipCenterY}
@@ -364,11 +364,11 @@ function applyNoseSettings() {
             ${bridgeJoinY}
 
             C
-            ${noseCenterX + bridgeHalfWidth * 0.42}
-            ${bridgeJoinY - noseHeight * 0.04}
+            ${noseCenterX + bridgeHalfWidth * 0.22}
+            ${bridgeJoinY - noseHeight * 0.24}
 
-            ${noseCenterX - bridgeHalfWidth * 0.42}
-            ${bridgeJoinY - noseHeight * 0.04}
+            ${noseCenterX - bridgeHalfWidth * 0.22}
+            ${bridgeJoinY - noseHeight * 0.24}
 
             ${noseCenterX - bridgeHalfWidth}
             ${bridgeJoinY}
@@ -378,13 +378,20 @@ function applyNoseSettings() {
     );
 
     noseFront.style.opacity =
-        "0.54";
+        "0.80";
 
     noseFront.style.stroke =
         "none";
 
     noseFront.style.pointerEvents =
         "none";
+
+    ensureNoseSurfaceSoftener();
+
+    noseFront.setAttribute(
+        "filter",
+        "url(#faceLabNoseSurfaceSoftener)"
+    );
 
 
     /* ==========================
@@ -397,7 +404,7 @@ function applyNoseSettings() {
     const wingInset =
         Math.max(
             settings.nostrilSpacing,
-            shoulderHalfWidth * 0.70
+            shoulderHalfWidth * 0.12
         );
 
     const leftInnerX =
@@ -410,11 +417,11 @@ function applyNoseSettings() {
 
     const leftOuterX =
         leftInnerX -
-        nostrilWidth * 0.82;
+        nostrilWidth * 0.56;
 
     const rightOuterX =
         rightInnerX +
-        nostrilWidth * 0.82;
+        nostrilWidth * 0.56;
 
     const wingTopY =
         nostrilCenterY -
@@ -429,8 +436,8 @@ function applyNoseSettings() {
         "d",
         `
             M
-            ${leftInnerX + nostrilWidth * 0.18}
-            ${wingTopY}
+            ${leftInnerX + nostrilWidth * 0.50}
+            ${wingTopY + nostrilHeight * 0.12}
 
             C
             ${leftInnerX - nostrilWidth * 0.10}
@@ -443,14 +450,14 @@ function applyNoseSettings() {
             ${nostrilCenterY + nostrilHeight * 0.02}
 
             C
-            ${leftOuterX + nostrilWidth * 0.18}
-            ${nostrilCenterY + nostrilHeight * 0.34}
+            ${leftOuterX + nostrilWidth * 0.14}
+            ${nostrilCenterY + nostrilHeight * 0.42}
 
-            ${leftOuterX + nostrilWidth * 0.52}
-            ${wingBottomY}
+            ${leftOuterX + nostrilWidth * 0.48}
+            ${wingBottomY + nostrilHeight * 0.08}
 
-            ${leftInnerX + nostrilWidth * 0.02}
-            ${wingBottomY}
+            ${leftInnerX + nostrilWidth * 0.08}
+            ${wingBottomY + nostrilHeight * 0.03}
 
             C
             ${leftInnerX + nostrilWidth * 0.20}
@@ -459,8 +466,8 @@ function applyNoseSettings() {
             ${leftInnerX + nostrilWidth * 0.24}
             ${wingTopY + nostrilHeight * 0.20}
 
-            ${leftInnerX + nostrilWidth * 0.18}
-            ${wingTopY}
+            ${leftInnerX + nostrilWidth * 0.50}
+            ${wingTopY + nostrilHeight * 0.12}
 
             Z
         `
@@ -471,8 +478,8 @@ function applyNoseSettings() {
         "d",
         `
             M
-            ${rightInnerX - nostrilWidth * 0.18}
-            ${wingTopY}
+            ${rightInnerX - nostrilWidth * 0.50}
+            ${wingTopY + nostrilHeight * 0.12}
 
             C
             ${rightInnerX + nostrilWidth * 0.10}
@@ -485,14 +492,14 @@ function applyNoseSettings() {
             ${nostrilCenterY + nostrilHeight * 0.02}
 
             C
-            ${rightOuterX - nostrilWidth * 0.18}
-            ${nostrilCenterY + nostrilHeight * 0.34}
+            ${rightOuterX - nostrilWidth * 0.14}
+            ${nostrilCenterY + nostrilHeight * 0.42}
 
-            ${rightOuterX - nostrilWidth * 0.52}
-            ${wingBottomY}
+            ${rightOuterX - nostrilWidth * 0.48}
+            ${wingBottomY + nostrilHeight * 0.08}
 
-            ${rightInnerX - nostrilWidth * 0.02}
-            ${wingBottomY}
+            ${rightInnerX - nostrilWidth * 0.08}
+            ${wingBottomY + nostrilHeight * 0.03}
 
             C
             ${rightInnerX - nostrilWidth * 0.20}
@@ -501,8 +508,8 @@ function applyNoseSettings() {
             ${rightInnerX - nostrilWidth * 0.24}
             ${wingTopY + nostrilHeight * 0.20}
 
-            ${rightInnerX - nostrilWidth * 0.18}
-            ${wingTopY}
+            ${rightInnerX - nostrilWidth * 0.50}
+            ${wingTopY + nostrilHeight * 0.12}
 
             Z
         `
@@ -510,16 +517,174 @@ function applyNoseSettings() {
 
 
     leftNostril.style.opacity =
-        "0.66";
+        "0.78";
 
     rightNostril.style.opacity =
-        "0.66";
+        "0.78";
 
     leftNostril.style.stroke =
         "none";
 
     rightNostril.style.stroke =
         "none";
+
+    leftNostril.setAttribute(
+        "filter",
+        "url(#faceLabNoseSurfaceSoftener)"
+    );
+
+    rightNostril.setAttribute(
+        "filter",
+        "url(#faceLabNoseSurfaceSoftener)"
+    );
+
+
+    /* ==========================
+       ALAR CREASE GRADIENTS
+
+       Darkest along the lower inner wing, then fading
+       upward/outward into the surrounding skin.
+
+       This is what visually connects:
+       wing crease -> nostril shadow -> central nose.
+    ========================== */
+
+    function ensureAlarGradient(
+        id,
+        mirrored
+    ) {
+
+        const root =
+            noseGroup.ownerSVGElement;
+
+        if (!root) {
+            return;
+        }
+
+        let defs =
+            root.querySelector("defs");
+
+        if (!defs) {
+
+            defs =
+                document.createElementNS(
+                    "http://www.w3.org/2000/svg",
+                    "defs"
+                );
+
+            root.insertBefore(
+                defs,
+                root.firstChild
+            );
+
+        }
+
+        let gradient =
+            document.getElementById(id);
+
+        if (!gradient) {
+
+            gradient =
+                document.createElementNS(
+                    "http://www.w3.org/2000/svg",
+                    "radialGradient"
+                );
+
+            gradient.setAttribute(
+                "id",
+                id
+            );
+
+            gradient.setAttribute(
+                "r",
+                "92%"
+            );
+
+            [
+                ["0%",   "#5b2b22", "0.88"],
+                ["28%",  "#744033", "0.76"],
+                ["52%",  "#995f49", "0.48"],
+                ["74%",  "#bc8365", "0.22"],
+                ["100%", "#d9a27e", "0"]
+            ].forEach(
+                function (values) {
+
+                    const stop =
+                        document.createElementNS(
+                            "http://www.w3.org/2000/svg",
+                            "stop"
+                        );
+
+                    stop.setAttribute(
+                        "offset",
+                        values[0]
+                    );
+
+                    stop.setAttribute(
+                        "stop-color",
+                        values[1]
+                    );
+
+                    stop.setAttribute(
+                        "stop-opacity",
+                        values[2]
+                    );
+
+                    gradient.appendChild(
+                        stop
+                    );
+
+                }
+            );
+
+            defs.appendChild(
+                gradient
+            );
+
+        }
+
+        gradient.setAttribute(
+            "cx",
+            mirrored ? "34%" : "66%"
+        );
+
+        gradient.setAttribute(
+            "cy",
+            "76%"
+        );
+
+        gradient.setAttribute(
+            "fx",
+            mirrored ? "40%" : "60%"
+        );
+
+        gradient.setAttribute(
+            "fy",
+            "82%"
+        );
+
+    }
+
+
+    ensureAlarGradient(
+        "faceLabLeftAlarGradient",
+        false
+    );
+
+    ensureAlarGradient(
+        "faceLabRightAlarGradient",
+        true
+    );
+
+    leftNostril.setAttribute(
+        "fill",
+        "url(#faceLabLeftAlarGradient)"
+    );
+
+    rightNostril.setAttribute(
+        "fill",
+        "url(#faceLabRightAlarGradient)"
+    );
 
 
     /* ==========================
@@ -581,10 +746,286 @@ function applyNoseSettings() {
     );
 
     noseBottomShadow.style.opacity =
-        "0.26";
+        "0.08";
 
     noseBottomShadow.style.pointerEvents =
         "none";
+
+
+    /* ==========================
+       UNIFIED NOSE SOFTENING
+
+       A tiny blur is applied to the filled tissue surfaces only.
+       This removes hard SVG cut edges while preserving form.
+    ========================== */
+
+    function ensureNoseSurfaceSoftener() {
+
+        const root =
+            noseGroup.ownerSVGElement;
+
+        if (!root) {
+            return;
+        }
+
+        let defs =
+            root.querySelector("defs");
+
+        if (!defs) {
+
+            defs =
+                document.createElementNS(
+                    "http://www.w3.org/2000/svg",
+                    "defs"
+                );
+
+            root.insertBefore(
+                defs,
+                root.firstChild
+            );
+
+        }
+
+        if (
+            document.getElementById(
+                "faceLabNoseSurfaceSoftener"
+            )
+        ) {
+            return;
+        }
+
+        const filter =
+            document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "filter"
+            );
+
+        filter.setAttribute(
+            "id",
+            "faceLabNoseSurfaceSoftener"
+        );
+
+        filter.setAttribute("x", "-25%");
+        filter.setAttribute("y", "-25%");
+        filter.setAttribute("width", "150%");
+        filter.setAttribute("height", "150%");
+
+        const blur =
+            document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "feGaussianBlur"
+            );
+
+        blur.setAttribute(
+            "stdDeviation",
+            "0.16"
+        );
+
+        filter.appendChild(blur);
+        defs.appendChild(filter);
+
+    }
+
+
+    /* ==========================
+       NOSTRIL EDGE FEATHER
+
+       A tiny SVG blur breaks the crisp ellipse boundary.
+       The radial gradient still supplies the actual depth.
+    ========================== */
+
+    const noseSvgRoot =
+        noseGroup.ownerSVGElement;
+
+    function ensureNostrilBlur() {
+
+        if (!noseSvgRoot) {
+            return;
+        }
+
+        let defs =
+            noseSvgRoot.querySelector("defs");
+
+        if (!defs) {
+
+            defs =
+                document.createElementNS(
+                    "http://www.w3.org/2000/svg",
+                    "defs"
+                );
+
+            noseSvgRoot.insertBefore(
+                defs,
+                noseSvgRoot.firstChild
+            );
+
+        }
+
+        if (
+            document.getElementById(
+                "faceLabNostrilFeather"
+            )
+        ) {
+            return;
+        }
+
+        const filter =
+            document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "filter"
+            );
+
+        filter.setAttribute(
+            "id",
+            "faceLabNostrilFeather"
+        );
+
+        filter.setAttribute("x", "-40%");
+        filter.setAttribute("y", "-80%");
+        filter.setAttribute("width", "180%");
+        filter.setAttribute("height", "260%");
+
+        const blur =
+            document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "feGaussianBlur"
+            );
+
+        blur.setAttribute(
+            "stdDeviation",
+            "0.16"
+        );
+
+        filter.appendChild(blur);
+        defs.appendChild(filter);
+
+    }
+
+
+    /* ==========================
+       SOFT NOSTRIL SHADOWS
+
+       Fuzzy radial edges make the openings read as recessed
+       shadows instead of crisp ellipses.
+    ========================== */
+
+    const svgRoot =
+        noseGroup.ownerSVGElement;
+
+    function ensureSoftNostrilGradient(
+        id,
+        mirrored
+    ) {
+
+        if (!svgRoot) {
+            return;
+        }
+
+        let defs =
+            svgRoot.querySelector("defs");
+
+        if (!defs) {
+
+            defs =
+                document.createElementNS(
+                    "http://www.w3.org/2000/svg",
+                    "defs"
+                );
+
+            svgRoot.insertBefore(
+                defs,
+                svgRoot.firstChild
+            );
+
+        }
+
+        let gradient =
+            document.getElementById(id);
+
+        if (!gradient) {
+
+            gradient =
+                document.createElementNS(
+                    "http://www.w3.org/2000/svg",
+                    "radialGradient"
+                );
+
+            gradient.setAttribute(
+                "id",
+                id
+            );
+
+            gradient.setAttribute(
+                "r",
+                "122%"
+            );
+
+            [
+                ["0%", "#28110e", "0.96"],
+                ["18%", "#3d1d18", "0.90"],
+                ["38%", "#5b3028", "0.70"],
+                ["58%", "#7c493b", "0.42"],
+                ["76%", "#a46b55", "0.18"],
+                ["90%", "#c58d6c", "0.06"],
+                ["100%", "#d8a07f", "0"]
+            ].forEach(
+                function (values) {
+
+                    const stop =
+                        document.createElementNS(
+                            "http://www.w3.org/2000/svg",
+                            "stop"
+                        );
+
+                    stop.setAttribute(
+                        "offset",
+                        values[0]
+                    );
+
+                    stop.setAttribute(
+                        "stop-color",
+                        values[1]
+                    );
+
+                    stop.setAttribute(
+                        "stop-opacity",
+                        values[2]
+                    );
+
+                    gradient.appendChild(
+                        stop
+                    );
+
+                }
+            );
+
+            defs.appendChild(
+                gradient
+            );
+
+        }
+
+        gradient.setAttribute(
+            "cx",
+            mirrored ? "43%" : "57%"
+        );
+
+        gradient.setAttribute(
+            "cy",
+            "28%"
+        );
+
+        gradient.setAttribute(
+            "fx",
+            mirrored ? "46%" : "54%"
+        );
+
+        gradient.setAttribute(
+            "fy",
+            "18%"
+        );
+
+    }
 
 
     /* ==========================
@@ -665,7 +1106,7 @@ function applyNoseSettings() {
 
 
     const holeRotation =
-        wingRotation * 0.50;
+        wingRotation * 0.82;
 
     leftHole.setAttribute(
         "transform",
@@ -685,11 +1126,43 @@ function applyNoseSettings() {
         )`
     );
 
+    ensureSoftNostrilGradient(
+        "faceLabLeftNostrilSoft",
+        false
+    );
+
+    ensureSoftNostrilGradient(
+        "faceLabRightNostrilSoft",
+        true
+    );
+
+    leftHole.setAttribute(
+        "fill",
+        "url(#faceLabLeftNostrilSoft)"
+    );
+
+    rightHole.setAttribute(
+        "fill",
+        "url(#faceLabRightNostrilSoft)"
+    );
+
+    ensureNostrilBlur();
+
+    leftHole.setAttribute(
+        "filter",
+        "url(#faceLabNostrilFeather)"
+    );
+
+    rightHole.setAttribute(
+        "filter",
+        "url(#faceLabNostrilFeather)"
+    );
+
     leftHole.style.opacity =
-        "0.88";
+        "1";
 
     rightHole.style.opacity =
-        "0.88";
+        "1";
 
 }
 
