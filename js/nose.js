@@ -1,14 +1,11 @@
 /* =========================================================
    FACELAB NOSE
-   Version 1.4.2
+   Version 1.4.10
 
-   1.2.1
-   - Keeps the new 1.2 anatomical construction.
-   - Removes the flat bottle-neck transition at the top of the tip.
-   - Broadens and rounds the tip.
-   - Restores fuller alar wings around the nostrils without long tails.
-   - Strengthens the small columella/underside cue.
-   - Keeps nostril openings tucked beneath the wings.
+   1.4.10
+   - Drops the lower alar contour a little farther to finish meeting the crease.
+   - Keeps the compact wing width and upper contour from 1.4.9.
+   - Preserves the nostril holes, tip, and nostril-to-wing crease placement.
 ========================================================= */
 
 /* ==========================
@@ -224,6 +221,32 @@ function applyNoseSettings() {
             2
         );
 
+    const nostrilHoleSpacing =
+        Math.max(
+            settings.nostrilHoleSpacing,
+            2
+        );
+
+    const nostrilHoleWidth =
+        Math.max(
+            settings.nostrilHoleWidth,
+            1
+        );
+
+    const nostrilHoleHeight =
+        Math.max(
+            settings.nostrilHoleHeight,
+            1
+        );
+
+    const leftHoleX =
+        noseCenterX -
+        nostrilHoleSpacing;
+
+    const rightHoleX =
+        noseCenterX +
+        nostrilHoleSpacing;
+
 
     /* ==========================
        BRIDGE / SIDE PLANES
@@ -437,37 +460,37 @@ function applyNoseSettings() {
         `
             M
             ${leftInnerX + nostrilWidth * 0.50}
-            ${wingTopY + nostrilHeight * 0.12}
+            ${wingTopY + nostrilHeight * 0.10}
 
             C
-            ${leftInnerX - nostrilWidth * 0.10}
+            ${leftInnerX - nostrilWidth * 0.02}
+            ${wingTopY - nostrilHeight * 0.08}
+
+            ${leftInnerX - nostrilWidth * 0.36}
             ${wingTopY - nostrilHeight * 0.04}
 
-            ${leftOuterX + nostrilWidth * 0.26}
-            ${wingTopY + nostrilHeight * 0.16}
-
-            ${leftOuterX}
-            ${nostrilCenterY + nostrilHeight * 0.02}
+            ${leftInnerX - nostrilWidth * 0.48}
+            ${nostrilCenterY - nostrilHeight * 0.01}
 
             C
-            ${leftOuterX + nostrilWidth * 0.14}
-            ${nostrilCenterY + nostrilHeight * 0.42}
+            ${leftInnerX - nostrilWidth * 0.46}
+            ${nostrilCenterY + nostrilHeight * 0.29}
 
-            ${leftOuterX + nostrilWidth * 0.48}
-            ${wingBottomY + nostrilHeight * 0.08}
+            ${leftInnerX - nostrilWidth * 0.30}
+            ${nostrilCenterY + nostrilHeight * 0.40}
 
+            ${leftInnerX - nostrilWidth * 0.02}
+            ${nostrilCenterY + nostrilHeight * 0.30}
+
+            C
             ${leftInnerX + nostrilWidth * 0.08}
-            ${wingBottomY + nostrilHeight * 0.03}
+            ${nostrilCenterY + nostrilHeight * 0.17}
 
-            C
-            ${leftInnerX + nostrilWidth * 0.20}
-            ${wingBottomY - nostrilHeight * 0.22}
-
-            ${leftInnerX + nostrilWidth * 0.24}
-            ${wingTopY + nostrilHeight * 0.20}
+            ${leftInnerX + nostrilWidth * 0.18}
+            ${wingTopY + nostrilHeight * 0.18}
 
             ${leftInnerX + nostrilWidth * 0.50}
-            ${wingTopY + nostrilHeight * 0.12}
+            ${wingTopY + nostrilHeight * 0.10}
 
             Z
         `
@@ -479,37 +502,37 @@ function applyNoseSettings() {
         `
             M
             ${rightInnerX - nostrilWidth * 0.50}
-            ${wingTopY + nostrilHeight * 0.12}
+            ${wingTopY + nostrilHeight * 0.10}
 
             C
-            ${rightInnerX + nostrilWidth * 0.10}
+            ${rightInnerX + nostrilWidth * 0.02}
+            ${wingTopY - nostrilHeight * 0.08}
+
+            ${rightInnerX + nostrilWidth * 0.36}
             ${wingTopY - nostrilHeight * 0.04}
 
-            ${rightOuterX - nostrilWidth * 0.26}
-            ${wingTopY + nostrilHeight * 0.16}
-
-            ${rightOuterX}
-            ${nostrilCenterY + nostrilHeight * 0.02}
+            ${rightInnerX + nostrilWidth * 0.48}
+            ${nostrilCenterY - nostrilHeight * 0.01}
 
             C
-            ${rightOuterX - nostrilWidth * 0.14}
-            ${nostrilCenterY + nostrilHeight * 0.42}
+            ${rightInnerX + nostrilWidth * 0.46}
+            ${nostrilCenterY + nostrilHeight * 0.29}
 
-            ${rightOuterX - nostrilWidth * 0.48}
-            ${wingBottomY + nostrilHeight * 0.08}
+            ${rightInnerX + nostrilWidth * 0.30}
+            ${nostrilCenterY + nostrilHeight * 0.40}
 
+            ${rightInnerX + nostrilWidth * 0.02}
+            ${nostrilCenterY + nostrilHeight * 0.30}
+
+            C
             ${rightInnerX - nostrilWidth * 0.08}
-            ${wingBottomY + nostrilHeight * 0.03}
+            ${nostrilCenterY + nostrilHeight * 0.17}
 
-            C
-            ${rightInnerX - nostrilWidth * 0.20}
-            ${wingBottomY - nostrilHeight * 0.22}
-
-            ${rightInnerX - nostrilWidth * 0.24}
-            ${wingTopY + nostrilHeight * 0.20}
+            ${rightInnerX - nostrilWidth * 0.18}
+            ${wingTopY + nostrilHeight * 0.18}
 
             ${rightInnerX - nostrilWidth * 0.50}
-            ${wingTopY + nostrilHeight * 0.12}
+            ${wingTopY + nostrilHeight * 0.10}
 
             Z
         `
@@ -601,11 +624,16 @@ function applyNoseSettings() {
             );
 
             [
-                ["0%",   "#5b2b22", "0.88"],
-                ["28%",  "#744033", "0.76"],
-                ["52%",  "#995f49", "0.48"],
-                ["74%",  "#bc8365", "0.22"],
-                ["100%", "#d9a27e", "0"]
+                /*
+                   The wing fill is now only a soft tissue-volume gradient.
+                   The separate nostril-to-wing crease layer supplies the
+                   darker lower edge, so these values intentionally stay light.
+                */
+                ["0%",   "#a86e55", "0.30"],
+                ["30%",  "#b77d60", "0.23"],
+                ["56%",  "#c99473", "0.14"],
+                ["80%",  "#d6a17e", "0.06"],
+                ["100%", "#e0ad87", "0"]
             ].forEach(
                 function (values) {
 
@@ -650,7 +678,7 @@ function applyNoseSettings() {
 
         gradient.setAttribute(
             "cy",
-            "76%"
+            "58%"
         );
 
         gradient.setAttribute(
@@ -660,7 +688,7 @@ function applyNoseSettings() {
 
         gradient.setAttribute(
             "fy",
-            "82%"
+            "62%"
         );
 
     }
@@ -711,6 +739,355 @@ function applyNoseSettings() {
             ${nostrilCenterY}
         )`
     );
+
+
+    /* ==========================
+       NOSTRIL-TO-WING CREASE LAYERS
+
+       These are separate soft crease strokes that visually
+       continue each nostril into the lower alar wing.
+
+       They do not change the wing or tip geometry.
+    ========================== */
+
+    function ensureWingCreasePath(id) {
+
+        let path =
+            document.getElementById(id);
+
+        if (!path) {
+
+            path =
+                document.createElementNS(
+                    "http://www.w3.org/2000/svg",
+                    "path"
+                );
+
+            path.setAttribute(
+                "id",
+                id
+            );
+
+            path.setAttribute(
+                "fill",
+                "none"
+            );
+
+            path.setAttribute(
+                "stroke-linecap",
+                "round"
+            );
+
+            path.setAttribute(
+                "stroke-linejoin",
+                "round"
+            );
+
+            /*
+               Put the crease above the wing surface but below
+               the nostril opening whenever the SVG structure allows it.
+            */
+
+            const holeParent =
+                leftHole.parentNode;
+
+            if (
+                holeParent === noseGroup &&
+                leftHole
+            ) {
+
+                noseGroup.insertBefore(
+                    path,
+                    leftHole
+                );
+
+            } else {
+
+                noseGroup.appendChild(
+                    path
+                );
+
+            }
+
+        }
+
+        return path;
+
+    }
+
+
+    function ensureWingCreaseGradient(
+        id,
+        startX,
+        endX
+    ) {
+
+        const root =
+            noseGroup.ownerSVGElement;
+
+        if (!root) {
+            return null;
+        }
+
+        let defs =
+            root.querySelector("defs");
+
+        if (!defs) {
+
+            defs =
+                document.createElementNS(
+                    "http://www.w3.org/2000/svg",
+                    "defs"
+                );
+
+            root.insertBefore(
+                defs,
+                root.firstChild
+            );
+
+        }
+
+        let gradient =
+            document.getElementById(id);
+
+        if (!gradient) {
+
+            gradient =
+                document.createElementNS(
+                    "http://www.w3.org/2000/svg",
+                    "linearGradient"
+                );
+
+            gradient.setAttribute(
+                "id",
+                id
+            );
+
+            gradient.setAttribute(
+                "gradientUnits",
+                "userSpaceOnUse"
+            );
+
+            [
+                /*
+                   Keep this close to the nostril-hole family rather
+                   than using a black crease. The line is darkest where
+                   it leaves the nostril, then gently fades into the wing.
+                */
+                ["0%",   "#4a231d", "0.74"],
+                ["24%",  "#5b3028", "0.62"],
+                ["50%",  "#74483a", "0.44"],
+                ["76%",  "#95634f", "0.23"],
+                ["100%", "#b77d60", "0"]
+            ].forEach(
+                function (values) {
+
+                    const stop =
+                        document.createElementNS(
+                            "http://www.w3.org/2000/svg",
+                            "stop"
+                        );
+
+                    stop.setAttribute(
+                        "offset",
+                        values[0]
+                    );
+
+                    stop.setAttribute(
+                        "stop-color",
+                        values[1]
+                    );
+
+                    stop.setAttribute(
+                        "stop-opacity",
+                        values[2]
+                    );
+
+                    gradient.appendChild(
+                        stop
+                    );
+
+                }
+            );
+
+            defs.appendChild(
+                gradient
+            );
+
+        }
+
+        gradient.setAttribute(
+            "x1",
+            startX
+        );
+
+        gradient.setAttribute(
+            "x2",
+            endX
+        );
+
+        gradient.setAttribute(
+            "y1",
+            nostrilCenterY
+        );
+
+        gradient.setAttribute(
+            "y2",
+            wingBottomY
+        );
+
+        return gradient;
+
+    }
+
+
+    const leftWingCrease =
+        ensureWingCreasePath(
+            "leftNostrilWingCrease"
+        );
+
+    const rightWingCrease =
+        ensureWingCreasePath(
+            "rightNostrilWingCrease"
+        );
+
+
+    if (
+        leftWingCrease &&
+        rightWingCrease
+    ) {
+
+        /*
+           Start at the outside/lower edge of each nostril opening,
+           then follow the lower-inner wing before fading outward.
+        */
+
+        const creaseStartOffset =
+            nostrilHoleWidth * 0.70;
+
+        const creaseStartY =
+            settings.nostrilHoleY +
+            nostrilHoleHeight * 0.48;
+
+        const leftCreaseStartX =
+            leftHoleX -
+            creaseStartOffset;
+
+        const rightCreaseStartX =
+            rightHoleX +
+            creaseStartOffset;
+
+        /*
+           Carry the crease farther along the lower wing so it follows
+           the contour from the nostril toward the outside, like the
+           sketched lower edge, without outlining the whole wing.
+        */
+        const leftCreaseEndX =
+            leftOuterX +
+            nostrilWidth * 0.16;
+
+        const rightCreaseEndX =
+            rightOuterX -
+            nostrilWidth * 0.16;
+
+        const creaseEndY =
+            wingBottomY -
+            nostrilHeight * 0.02;
+
+
+        leftWingCrease.setAttribute(
+            "d",
+            `
+                M
+                ${leftCreaseStartX}
+                ${creaseStartY}
+
+                C
+                ${leftCreaseStartX - nostrilWidth * 0.16}
+                ${creaseStartY + nostrilHeight * 0.16}
+
+                ${leftCreaseEndX + nostrilWidth * 0.12}
+                ${creaseEndY + nostrilHeight * 0.02}
+
+                ${leftCreaseEndX}
+                ${creaseEndY}
+            `
+        );
+
+
+        rightWingCrease.setAttribute(
+            "d",
+            `
+                M
+                ${rightCreaseStartX}
+                ${creaseStartY}
+
+                C
+                ${rightCreaseStartX + nostrilWidth * 0.16}
+                ${creaseStartY + nostrilHeight * 0.16}
+
+                ${rightCreaseEndX - nostrilWidth * 0.12}
+                ${creaseEndY + nostrilHeight * 0.02}
+
+                ${rightCreaseEndX}
+                ${creaseEndY}
+            `
+        );
+
+
+        ensureWingCreaseGradient(
+            "faceLabLeftNostrilWingCreaseGradient",
+            leftCreaseStartX,
+            leftCreaseEndX
+        );
+
+        ensureWingCreaseGradient(
+            "faceLabRightNostrilWingCreaseGradient",
+            rightCreaseStartX,
+            rightCreaseEndX
+        );
+
+
+        leftWingCrease.setAttribute(
+            "stroke",
+            "url(#faceLabLeftNostrilWingCreaseGradient)"
+        );
+
+        rightWingCrease.setAttribute(
+            "stroke",
+            "url(#faceLabRightNostrilWingCreaseGradient)"
+        );
+
+
+        const creaseWidth =
+            Math.max(
+                nostrilHoleHeight * 0.58,
+                0.95
+            );
+
+        leftWingCrease.setAttribute(
+            "stroke-width",
+            creaseWidth
+        );
+
+        rightWingCrease.setAttribute(
+            "stroke-width",
+            creaseWidth
+        );
+
+        leftWingCrease.style.opacity =
+            "0.78";
+
+        rightWingCrease.style.opacity =
+            "0.78";
+
+        leftWingCrease.style.pointerEvents =
+            "none";
+
+        rightWingCrease.style.pointerEvents =
+            "none";
+
+    }
 
 
     /* ==========================
@@ -1033,32 +1410,6 @@ function applyNoseSettings() {
 
        Compact openings tucked beneath the alar wings.
     ========================== */
-
-    const nostrilHoleSpacing =
-        Math.max(
-            settings.nostrilHoleSpacing,
-            2
-        );
-
-    const nostrilHoleWidth =
-        Math.max(
-            settings.nostrilHoleWidth,
-            1
-        );
-
-    const nostrilHoleHeight =
-        Math.max(
-            settings.nostrilHoleHeight,
-            1
-        );
-
-    const leftHoleX =
-        noseCenterX -
-        nostrilHoleSpacing;
-
-    const rightHoleX =
-        noseCenterX +
-        nostrilHoleSpacing;
 
     const holeY =
         settings.nostrilHoleY;
