@@ -1,5 +1,5 @@
 /* ==========================
-   MOUTH ENGINE — VERSION 7.3
+   MOUTH ENGINE — VERSION 7.5
 
    Responsibilities:
 
@@ -301,6 +301,28 @@
 	
 
     /* ==========================
+           VISEME / DEFORMATION
+        ========================== */
+
+    /*
+        Base deformation values.
+
+        These remain zero in the neutral mouth.
+        Viseme presets temporarily derive from them.
+    */
+
+    viseme: "neutral",
+    visemeStrength: 1,
+
+    lipPucker: 0,
+    cornerPull: 0,
+
+    lowerLipRaise: 0,
+    upperLipRaise: 0,
+
+    lipCompression: 0,
+
+    /* ==========================
            SAMPLING
         ========================== */
 
@@ -511,6 +533,525 @@
   }
 
   /* ==========================
+       VISEME SYSTEM
+    ========================== */
+
+  const mouthVisemes =
+    Object.freeze({
+
+      neutral:
+        Object.freeze({}),
+
+
+      /*
+          M / B / P
+
+          Lips remain closed but compress
+          slightly into each other.
+      */
+
+      MBP:
+        Object.freeze({
+
+          mouthOpen: 0,
+
+          widthScale: 0.98,
+
+          lipCompression: 0.78,
+
+          cornerPull: -0.05,
+
+          showTeeth: false,
+          showTongue: false
+
+        }),
+
+
+      /*
+          EE
+
+          Corners pull outward and the
+          opening remains relatively small.
+      */
+
+      EE:
+        Object.freeze({
+
+          mouthOpen: 0.20,
+
+          widthScale: 1.03,
+
+          cornerPull: 0.68,
+
+          lipPucker: -0.12,
+
+          lipCompression: 0.08,
+
+          upperThicknessScale: 0.94,
+          lowerThicknessScale: 0.92,
+
+          showTeeth: true,
+          showTongue: false
+
+        }),
+
+
+      /*
+          OH / OO
+
+          Corners move inward and the
+          central lip body puckers forward.
+
+          In a front view the pucker is
+          represented by stronger narrowing
+          through the outer thirds.
+      */
+
+      OH:
+        Object.freeze({
+
+          mouthOpen: 0.48,
+
+          widthScale: 0.92,
+
+          lipPucker: 0.82,
+
+          cornerPull: -0.72,
+
+          lipCompression: 0.14,
+
+          upperThicknessScale: 1.08,
+          lowerThicknessScale: 1.08,
+
+          showTeeth: false,
+          showTongue: false
+
+        }),
+
+
+      /*
+          AH
+
+          Primarily uses the articulation
+          system already established.
+      */
+
+      AH:
+        Object.freeze({
+
+          mouthOpen: 0.82,
+
+          widthScale: 0.96,
+
+          lipPucker: 0,
+
+          cornerPull: -0.08,
+
+          lipCompression: 0,
+
+          showTeeth: true,
+          showTongue: true
+
+        }),
+
+
+      /*
+          F / V
+
+          Lower lip rises toward the upper
+          teeth while the mouth remains only
+          slightly open.
+      */
+
+      FV:
+        Object.freeze({
+
+          mouthOpen: 0.18,
+
+          widthScale: 0.98,
+
+          lowerLipRaise: 0.78,
+
+          upperLipRaise: 0.06,
+
+          lipCompression: 0.22,
+
+          cornerPull: 0.04,
+
+          upperThicknessScale: 0.96,
+          lowerThicknessScale: 0.84,
+
+          showTeeth: true,
+          showTongue: false
+
+        })
+
+    });
+
+
+  function clamp01(value) {
+
+    return Math.max(
+      0,
+      Math.min(
+        1,
+        Number.isFinite(
+          Number(value)
+        )
+          ? Number(value)
+          : 0
+      )
+    );
+
+  }
+
+
+  function clampSigned(value) {
+
+    return Math.max(
+      -1,
+      Math.min(
+        1,
+        Number.isFinite(
+          Number(value)
+        )
+          ? Number(value)
+          : 0
+      )
+    );
+
+  }
+
+
+  function mixNumber(
+    start,
+    end,
+    amount
+  ) {
+
+    return (
+      Number(start) +
+      (
+        Number(end) -
+        Number(start)
+      ) *
+      amount
+    );
+
+  }
+
+
+  function normalizeVisemeName(name) {
+
+    const key =
+      String(
+        name || "neutral"
+      )
+        .trim()
+        .toUpperCase();
+
+
+    const aliases = {
+
+      NEUTRAL: "neutral",
+      REST: "neutral",
+      CLOSED: "neutral",
+
+      M: "MBP",
+      B: "MBP",
+      P: "MBP",
+      MBP: "MBP",
+
+      E: "EE",
+      EE: "EE",
+      I: "EE",
+
+      O: "OH",
+      OH: "OH",
+      OO: "OH",
+      U: "OH",
+
+      A: "AH",
+      AH: "AH",
+
+      F: "FV",
+      V: "FV",
+      FV: "FV"
+
+    };
+
+
+    return (
+      aliases[key] ||
+      "neutral"
+    );
+
+  }
+
+
+  function getVisemeSettings(
+    settings
+  ) {
+
+    const source =
+      settings ||
+      window.mouthEngineSettings;
+
+
+    const name =
+      normalizeVisemeName(
+        source.viseme
+      );
+
+
+    if (
+      name ===
+      "neutral"
+    ) {
+
+      return {
+
+        ...source,
+
+        viseme:
+          "neutral"
+
+      };
+
+    }
+
+
+    const preset =
+      mouthVisemes[name] ||
+      mouthVisemes.neutral;
+
+
+    const strength =
+      clamp01(
+
+        source.visemeStrength ===
+        undefined
+
+          ? 1
+          : source.visemeStrength
+
+      );
+
+
+    const result = {
+
+      ...source,
+
+      viseme:
+        name
+
+    };
+
+
+    if (
+      preset.mouthOpen !==
+      undefined
+    ) {
+
+      result.mouthOpen =
+        mixNumber(
+
+          source.mouthOpen,
+
+          preset.mouthOpen,
+
+          strength
+
+        );
+
+    }
+
+
+    if (
+      preset.widthScale !==
+      undefined
+    ) {
+
+      result.width =
+        Number(
+          source.width
+        ) *
+        mixNumber(
+
+          1,
+
+          preset.widthScale,
+
+          strength
+
+        );
+
+    }
+
+
+    if (
+      preset.upperThicknessScale !==
+      undefined
+    ) {
+
+      result.upperLipThickness =
+        Number(
+          source.upperLipThickness
+        ) *
+        mixNumber(
+
+          1,
+
+          preset.upperThicknessScale,
+
+          strength
+
+        );
+
+    }
+
+
+    if (
+      preset.lowerThicknessScale !==
+      undefined
+    ) {
+
+      result.lowerLipThickness =
+        Number(
+          source.lowerLipThickness
+        ) *
+        mixNumber(
+
+          1,
+
+          preset.lowerThicknessScale,
+
+          strength
+
+        );
+
+    }
+
+
+    [
+      "lipPucker",
+      "cornerPull",
+      "lowerLipRaise",
+      "upperLipRaise",
+      "lipCompression"
+    ].forEach(
+      function (property) {
+
+        if (
+          preset[property] ===
+          undefined
+        ) {
+          return;
+        }
+
+
+        result[property] =
+          mixNumber(
+
+            source[property] || 0,
+
+            preset[property],
+
+            strength
+
+          );
+
+      }
+    );
+
+
+    if (
+      strength >=
+      0.5
+    ) {
+
+      if (
+        preset.showTeeth !==
+        undefined
+      ) {
+
+        result.showTeeth =
+          preset.showTeeth;
+
+      }
+
+
+      if (
+        preset.showTongue !==
+        undefined
+      ) {
+
+        result.showTongue =
+          preset.showTongue;
+
+      }
+
+    }
+
+
+    return result;
+
+  }
+
+
+  function setMouthViseme(
+    name,
+    strength
+  ) {
+
+    window.mouthEngineSettings = {
+
+      ...window.mouthEngineSettings,
+
+      viseme:
+        normalizeVisemeName(
+          name
+        ),
+
+      visemeStrength:
+
+        strength ===
+        undefined
+
+          ? 1
+          : clamp01(
+              strength
+            )
+
+    };
+
+
+    return drawMouthEngine();
+
+  }
+
+
+  function clearMouthViseme() {
+
+    window.mouthEngineSettings = {
+
+      ...window.mouthEngineSettings,
+
+      viseme:
+        "neutral",
+
+      visemeStrength:
+        1
+
+    };
+
+
+    return drawMouthEngine();
+
+  }
+
+
+  /* ==========================
        BUILD COMPLETE GEOMETRY
     ========================== */
 
@@ -526,7 +1067,16 @@
       return buildEmptyGeometry();
     }
 
-    return window.MouthGeometry.build(overrides || window.mouthEngineSettings);
+    const source =
+      overrides ||
+      window.mouthEngineSettings;
+
+
+    return window.MouthGeometry.build(
+      getVisemeSettings(
+        source
+      )
+    );
   }
 
   /* ==========================
@@ -652,7 +1202,16 @@
             Draw the completed SVG path data.
         */
 
-    window.MouthRenderer.draw(currentMouthGeometry, window.mouthEngineSettings);
+    const renderSettings =
+      getVisemeSettings(
+        window.mouthEngineSettings
+      );
+
+
+    window.MouthRenderer.draw(
+      currentMouthGeometry,
+      renderSettings
+    );
 
     /*
             Synchronize the lower jaw / chin with
@@ -662,7 +1221,25 @@
     if (
       typeof window.drawHead === "function"
     ) {
+
+      const baselineOpen =
+        window.mouthEngineSettings
+          .mouthOpen;
+
+
+      window.mouthEngineSettings
+        .mouthOpen =
+          renderSettings
+            .mouthOpen;
+
+
       window.drawHead();
+
+
+      window.mouthEngineSettings
+        .mouthOpen =
+          baselineOpen;
+
     }
 
     /*
@@ -945,6 +1522,12 @@
 
   window.resetMouthEngine = resetMouthEngine;
 
+  window.setMouthViseme =
+    setMouthViseme;
+
+  window.clearMouthViseme =
+    clearMouthViseme;
+
   /* ==========================
        MOUTH ENGINE API
     ========================== */
@@ -971,6 +1554,26 @@
     set: setMouthEngineSettings,
 
     reset: resetMouthEngine,
+
+    /* Visemes */
+
+    visemes:
+      mouthVisemes,
+
+    setViseme:
+      setMouthViseme,
+
+    clearViseme:
+      clearMouthViseme,
+
+    getVisemeSettings:
+      function () {
+
+        return getVisemeSettings(
+          window.mouthEngineSettings
+        );
+
+      },
 
     /* Geometry construction */
 
@@ -1028,5 +1631,5 @@
 
     getLowerPath: getCurrentLowerPath,
   };
-  console.log("mouthEngine.js V7.3 loaded");
+  console.log("mouthEngine.js V7.5 loaded");
 })();
