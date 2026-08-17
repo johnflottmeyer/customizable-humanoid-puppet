@@ -1,4 +1,11 @@
 /* ==========================
+   HEAD — VERSION 1.1
+
+   Adds lower-jaw / chin articulation
+   driven by mouthEngineSettings.mouthOpen.
+========================== */
+
+/* ==========================
    HEAD SETTINGS
 ========================== */
 
@@ -45,7 +52,17 @@ window.headSettings = {
 
     chinBottomWidth: 34,
     chinDepth: 6,
-    chinRoundness: 24
+    chinRoundness: 24,
+
+    /* ==========================
+       JAW ARTICULATION
+       ========================== */
+
+    jawOpenDrop: 9,
+    jawOpenNarrowing: 0.04,
+
+    jawOpenJawShare: 0.28,
+    jawOpenChinShare: 0.78
 
 };
 
@@ -228,6 +245,144 @@ function removeInitialMoveCommand(path) {
         ""
 
     );
+
+}
+
+
+/* ==========================
+   GET MOUTH OPEN AMOUNT
+========================== */
+
+function getHeadMouthOpenAmount() {
+
+    const mouthSettings =
+        window.mouthEngineSettings || {};
+
+
+    return clampHeadValue(
+
+        Number(
+            mouthSettings.mouthOpen
+        ) || 0,
+
+        0,
+        1
+
+    );
+
+}
+
+
+/* ==========================
+   JAW ARTICULATION
+========================== */
+
+function getHeadJawArticulation(
+    settings
+) {
+
+    const mouthOpen =
+        getHeadMouthOpenAmount();
+
+
+    const smoothOpen =
+        mouthOpen *
+        mouthOpen *
+        (
+            3 -
+            2 *
+            mouthOpen
+        );
+
+
+    const jawOpenDrop =
+        clampHeadValue(
+            getHeadSetting(
+                settings,
+                "jawOpenDrop",
+                9
+            ),
+            0,
+            30
+        );
+
+
+    const jawOpenNarrowing =
+        clampHeadValue(
+            getHeadSetting(
+                settings,
+                "jawOpenNarrowing",
+                0.04
+            ),
+            0,
+            0.20
+        );
+
+
+    const jawShare =
+        clampHeadValue(
+            getHeadSetting(
+                settings,
+                "jawOpenJawShare",
+                0.28
+            ),
+            0,
+            1
+        );
+
+
+    const chinShare =
+        clampHeadValue(
+            getHeadSetting(
+                settings,
+                "jawOpenChinShare",
+                0.78
+            ),
+            0,
+            1
+        );
+
+
+    return {
+
+        mouthOpen:
+            mouthOpen,
+
+        smoothOpen:
+            smoothOpen,
+
+        jawDrop:
+            jawOpenDrop *
+            smoothOpen *
+            jawShare,
+
+        upperChinDrop:
+            jawOpenDrop *
+            smoothOpen *
+            (
+                jawShare +
+                (
+                    chinShare -
+                    jawShare
+                ) *
+                0.58
+            ),
+
+        chinDrop:
+            jawOpenDrop *
+            smoothOpen *
+            chinShare,
+
+        chinBottomDrop:
+            jawOpenDrop *
+            smoothOpen,
+
+        widthScale:
+            1 -
+            jawOpenNarrowing *
+            smoothOpen
+
+    };
 
 }
 
@@ -441,6 +596,38 @@ function createHeadSidePoints(
 
 
     /* ==========================
+       JAW ARTICULATION
+    ========================== */
+
+    const jawArticulation =
+        getHeadJawArticulation(
+            settings
+        );
+
+
+    const articulatedJawWidth =
+        jawWidth *
+        (
+            1 -
+            (
+                1 -
+                jawArticulation.widthScale
+            ) *
+            0.45
+        );
+
+
+    const articulatedChinWidth =
+        chinWidth *
+        jawArticulation.widthScale;
+
+
+    const articulatedChinBottomWidth =
+        chinBottomWidth *
+        jawArticulation.widthScale;
+
+
+    /* ==========================
        ROUNDNESS SETTINGS
     ========================== */
 
@@ -594,10 +781,10 @@ function createHeadSidePoints(
         0.12;
 
     const upperChinWidth =
-        jawWidth +
+        articulatedJawWidth +
         (
-            chinWidth -
-            jawWidth
+            articulatedChinWidth -
+            articulatedJawWidth
         ) *
         jawChinBlend;
 
@@ -719,8 +906,9 @@ function createHeadSidePoints(
         /* Jaw */
 
         point(
-            jawWidth,
-            jawY
+            articulatedJawWidth,
+            jawY +
+            jawArticulation.jawDrop
         ),
 
         /* Jaw to chin */
@@ -732,21 +920,24 @@ function createHeadSidePoints(
                 chinY -
                 jawY
             ) *
-            0.52
+            0.52 +
+            jawArticulation.upperChinDrop
         ),
 
         /* Chin side */
 
         point(
-            chinWidth,
-            chinY
+            articulatedChinWidth,
+            chinY +
+            jawArticulation.chinDrop
         ),
 
         /* Chin bottom corner */
 
         point(
-            chinBottomWidth,
-            chinBottomY
+            articulatedChinBottomWidth,
+            chinBottomY +
+            jawArticulation.chinBottomDrop
         )
 
     ];
@@ -963,3 +1154,11 @@ window.createHeadSidePoints =
 
 window.createSmoothHeadCurve =
     createSmoothHeadCurve;
+
+window.getHeadJawArticulation =
+    getHeadJawArticulation;
+
+
+console.log(
+    "head.js V1.1 loaded"
+);
