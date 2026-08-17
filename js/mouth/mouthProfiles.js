@@ -1,5 +1,5 @@
 /* ==========================
-   MOUTH PROFILES
+   MOUTH PROFILES — VERSION 1.6
 
    Produces anatomical lip thickness values
    across the mouth from t = 0 to t = 1.
@@ -248,24 +248,44 @@
                 0.35
             );
 
+
         /*
-            Two peaks positioned on either
-            side of the philtrum center.
+            V1.4
+
+            Keep the Cupid peaks closer to the
+            center than V1.3.
+
+            This produces a recognizable upper-lip
+            M-shape without dividing the entire
+            upper lip into two isolated humps.
         */
+
+        const peakOffset =
+            0.095;
+
+
+        const peakWidth =
+            safeWidth *
+            0.82;
+
 
         const leftPeak =
             gaussian(
                 t,
-                0.36,
-                safeWidth
+                0.5 -
+                    peakOffset,
+                peakWidth
             );
+
 
         const rightPeak =
             gaussian(
                 t,
-                0.64,
-                safeWidth
+                0.5 +
+                    peakOffset,
+                peakWidth
             );
+
 
         return Math.max(
             leftPeak,
@@ -275,14 +295,28 @@
     }
 
 
-    function philtrumWeight(t, width) {
+    function philtrumWeight(
+        t,
+        width
+    ) {
+
+        /*
+            V1.4
+
+            A narrow center-only field.
+
+            This creates a small Cupid notch
+            instead of a broad central valley.
+        */
 
         const safeWidth =
             clamp(
-                safeNumber(width, 0.16) * 0.72,
-                0.025,
-                0.22
+                safeNumber(width, 0.16) *
+                    0.29,
+                0.018,
+                0.10
             );
+
 
         return gaussian(
             t,
@@ -309,10 +343,48 @@
                 0.65
             );
 
-        return gaussian(
-            t,
-            0.5,
-            safeWidth
+
+        /*
+            V1.4
+
+            Two strongly overlapping lower-lip
+            support fields create a broad central
+            body instead of one pointed center bump.
+        */
+
+        const lobeOffset =
+            0.08;
+
+
+        const lobeWidth =
+            safeWidth *
+            0.85;
+
+
+        const leftLobe =
+            gaussian(
+                t,
+                0.5 -
+                    lobeOffset,
+                lobeWidth
+            );
+
+
+        const rightLobe =
+            gaussian(
+                t,
+                0.5 +
+                    lobeOffset,
+                lobeWidth
+            );
+
+
+        return clamp01(
+            (
+                leftLobe +
+                rightLobe
+            ) *
+            0.52
         );
 
     }
@@ -462,8 +534,12 @@
         const normalizedT =
             clamp01(t);
 
+
         const values =
-            normalizeSettings(settings);
+            normalizeSettings(
+                settings
+            );
+
 
         const taper =
             cornerWeight(
@@ -472,11 +548,13 @@
                 values.cornerThickness
             );
 
+
         const cupid =
             cupidBowWeight(
                 normalizedT,
                 values.cupidBowWidth
             );
+
 
         const philtrum =
             philtrumWeight(
@@ -484,12 +562,48 @@
                 values.cupidBowWidth
             );
 
-        const centerFullness =
+
+        /*
+            A wide body field keeps the upper lip
+            full through most of its width.
+        */
+
+        const broadBody =
             gaussian(
                 normalizedT,
                 0.5,
-                0.30
+                0.50
             );
+
+
+        /*
+            Outer-third support delays the taper
+            toward the corners while still allowing
+            the actual corner points to stay thin.
+        */
+
+        const leftOuterSupport =
+            gaussian(
+                normalizedT,
+                0.24,
+                0.25
+            );
+
+
+        const rightOuterSupport =
+            gaussian(
+                normalizedT,
+                0.76,
+                0.25
+            );
+
+
+        const outerSupport =
+            Math.max(
+                leftOuterSupport,
+                rightOuterSupport
+            );
+
 
         const asymmetry =
             asymmetryWeight(
@@ -498,32 +612,57 @@
             );
 
 
-        /*
-            Anatomical upper-lip profile:
-
-            base thickness
-            + two Cupid peaks
-            - central philtrum dip
-            + gentle center fullness
-        */
-
         let height =
             values.upperLipThickness;
 
+
+        /*
+            Distinct but soft Cupid peaks.
+        */
+
         height +=
             cupid *
-            values.cupidBowHeight;
+            values.cupidBowHeight *
+            0.72;
+
+
+        /*
+            Localized center notch.
+        */
 
         height -=
             philtrum *
-            values.philtrumDip;
+            values.philtrumDip *
+            0.72;
+
+
+        /*
+            Gentle body fullness rather than a
+            central plateau.
+        */
 
         height +=
-            centerFullness *
-            values.upperCenterFullness;
+            broadBody *
+            values.upperCenterFullness *
+            0.55;
 
-        height *= taper;
-        height *= asymmetry;
+
+        /*
+            Carry fullness toward the outer thirds.
+        */
+
+        height +=
+            outerSupport *
+            values.upperLipThickness *
+            0.12;
+
+
+        height *=
+            taper;
+
+
+        height *=
+            asymmetry;
 
 
         return Math.max(
@@ -749,5 +888,5 @@
 })();
 
 console.log(
-    "mouthProfiles.js loaded"
+    "mouthProfiles.js V1.6 loaded"
 );
