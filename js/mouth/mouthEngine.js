@@ -1,5 +1,5 @@
 /* ==========================
-   MOUTH ENGINE — VERSION 5.1
+   MOUTH ENGINE — VERSION 7.3
 
    Responsibilities:
 
@@ -89,13 +89,13 @@
            UPPER LIP
         ========================== */
 
-    upperLipThickness: 6.5,
+    upperLipThickness: 13,
 
-    cupidBowHeight: 3.2,
+    cupidBowHeight: 4.2,
     cupidBowWidth: 0.16,
 
-    philtrumDip: 2.4,
-    upperCenterFullness: 0.5,
+    philtrumDip: 3.2,
+    upperCenterFullness: 1.0,
 
     upperAsymmetry: 0,
 
@@ -103,9 +103,9 @@
            LOWER LIP
         ========================== */
 
-    lowerLipThickness: 8.5,
+    lowerLipThickness: 15,
 
-    lowerCenterFullness: 2.5,
+    lowerCenterFullness: 3.2,
     lowerLobeWidth: 0.34,
 
     lowerAsymmetry: 0,
@@ -147,7 +147,47 @@
     lowerLipColor: "#ca7880",
 
     seamColor: "#8f2740",
-    seamWidth: 2,
+    seamWidth: 1.45,
+
+    /*
+        Surface shading.
+        These are renderer-only appearance values.
+    */
+
+    upperLipHighlight: "#d4878e",
+    upperLipShadow: "#93444f",
+
+    lowerLipHighlight: "#e0a0a5",
+    lowerLipShadow: "#a95763",
+
+    lipHighlightStrength: 0.34,
+    lipShadowStrength: 0.28,
+
+    seamCenterDarkness: 0.85,
+    seamEdgeFade: 0.22,
+
+    /*
+        Secondary center-light / edge-depth layer.
+        Kept deliberately subtle so the lips do
+        not read as glossy lipstick.
+    */
+
+    lipCenterHighlightStrength: 0.16,
+    lipEdgeDepthStrength: 0.12,
+
+    /*
+        Animation-safe anatomical highlight controls.
+
+        These are interpreted by MouthRenderer using
+        current generated geometry, not fixed page
+        coordinates, so highlights follow deformations.
+    */
+
+    upperLobeHighlightStrength: 0.18,
+    upperLobeHighlightWidth: 0.22,
+
+    lowerCenterHighlightStrength: 0.20,
+    lowerCenterHighlightWidth: 0.34,
 
     /* ==========================
            VISIBILITY
@@ -155,6 +195,110 @@
 
     showLipShapes: true,
     showSeam: true,
+
+    /* ==========================
+           ARTICULATION
+        ========================== */
+
+    /*
+        0 = neutral / closed
+        1 = maximum open
+    */
+
+    mouthOpen: 0,
+
+    /*
+        Base vertical opening distance.
+    */
+
+    mouthOpenDistance: 22,
+
+    /*
+        Upper lip moves less than lower lip.
+    */
+
+    upperOpenShare: 0.30,
+    lowerOpenShare: 0.70,
+
+    /*
+        Nonlinear boost near full-open.
+    */
+
+    fullOpenBoost: 0.72,
+
+    /*
+        Controls roundness and tissue stretch.
+    */
+
+    openRoundness: 1.35,
+    openLipCompression: 0.18,
+
+    /*
+        Inner cavity becomes narrower as the
+        mouth opens.
+    */
+
+    openWidthCompression: 0.20,
+    openWidthPower: 1.8,
+
+    /*
+        Outer lips retain more neutral width.
+
+        0.00 = outer lips keep neutral width
+        1.00 = outer lips narrow as much as cavity
+    */
+
+    outerLipCompressionShare: 0.55,
+
+    /*
+        Softens the last part of the lip contour
+        as it converges into each mouth corner.
+    */
+
+    openCornerRoundness: 0.72,
+
+    /*
+        Inner mouth / future teeth.
+    */
+
+    innerMouthColor: "#54242b",
+
+    showTeeth: true,
+    teethHeight: 0.43,
+    teethInset: 0.13,
+    teethRevealStart: 0.35,
+    teethColor: "#eee7dc",
+
+    /*
+        Very subtle tooth definition.
+        These are intentionally restrained so the
+        dental row does not become cartoon "piano keys".
+    */
+
+    teethCenterSeamOpacity: 0.13,
+    teethCenterSeamWidth: 0.55,
+    teethLateralRecede: 0.13,
+
+    /*
+        Tongue surface.
+
+        Kept subtle and only revealed at larger
+        mouth openings.
+    */
+
+    showTongue: true,
+    tongueRevealStart: 0.48,
+    tongueHeight: 0.34,
+    tongueWidth: 0.40,
+
+    tongueColor: "#98515C",
+    tongueFrontColor: "#87434E",
+    tongueBackColor: "#743942",
+    tongueShadowStrength: 0.52,
+  
+    tongueDome: 0.08,
+    tongueSideFalloff: .95,
+	
 
     /* ==========================
            SAMPLING
@@ -509,6 +653,17 @@
         */
 
     window.MouthRenderer.draw(currentMouthGeometry, window.mouthEngineSettings);
+
+    /*
+            Synchronize the lower jaw / chin with
+            mouth articulation.
+        */
+
+    if (
+      typeof window.drawHead === "function"
+    ) {
+      window.drawHead();
+    }
 
     /*
             MouthDebug owns all diagnostic
@@ -873,282 +1028,5 @@
 
     getLowerPath: getCurrentLowerPath,
   };
-  /* ==========================
-    FACELAB FEATURE ADAPTER
-    ========================== */
-
-  function createFaceLabMouthHandles() {
-    const geometry = getCurrentGeometry();
-
-    if (!geometry) {
-      return [];
-    }
-
-    const landmarks = Array.isArray(geometry.landmarks)
-      ? geometry.landmarks
-      : [];
-
-    const samples = Array.isArray(geometry.anatomySamples)
-      ? geometry.anatomySamples
-      : [];
-
-    if (landmarks.length < 2 || samples.length === 0) {
-      return [];
-    }
-
-    function findNearestSample(targetT) {
-      let nearest = samples[0];
-
-      let nearestDistance = Math.abs(Number(nearest.t || 0) - targetT);
-
-      samples.forEach(function (sample) {
-        const distance = Math.abs(Number(sample.t || 0) - targetT);
-
-        if (distance < nearestDistance) {
-          nearest = sample;
-
-          nearestDistance = distance;
-        }
-      });
-
-      return nearest;
-    }
-
-    const leftCorner = landmarks[0];
-
-    const rightCorner = landmarks[landmarks.length - 1];
-
-    const upperSample = findNearestSample(0.28);
-
-    const cupidSample = findNearestSample(0.4);
-
-    const centerSample = findNearestSample(0.5);
-
-    return [
-      {
-        id: "leftCorner",
-
-        label: "Left Mouth Corner",
-
-        point: leftCorner,
-
-        properties: ["width", "cornerY"],
-
-        help: "Drag horizontally to change mouth width. Drag vertically to change corner height.",
-
-        beginDrag: function () {
-          return {
-            ...window.mouthEngineSettings,
-          };
-        },
-
-        drag: function (deltaX, deltaY, dragStart) {
-          const start = dragStart || {};
-
-          updateMouthEngineSettings({
-            width: Math.max(
-              30,
-              Math.min(300, Number(start.width || 150) - deltaX * 2),
-            ),
-
-            cornerY: Math.max(
-              -60,
-              Math.min(60, Number(start.cornerY || 0) + deltaY),
-            ),
-          });
-        },
-      },
-
-      {
-        id: "rightCorner",
-
-        label: "Right Mouth Corner",
-
-        point: rightCorner,
-
-        properties: ["width", "cornerY"],
-
-        help: "Drag horizontally to change mouth width. Drag vertically to change corner height.",
-
-        beginDrag: function () {
-          return {
-            ...window.mouthEngineSettings,
-          };
-        },
-
-        drag: function (deltaX, deltaY, dragStart) {
-          const start = dragStart || {};
-
-          updateMouthEngineSettings({
-            width: Math.max(
-              30,
-              Math.min(300, Number(start.width || 150) + deltaX * 2),
-            ),
-
-            cornerY: Math.max(
-              -60,
-              Math.min(60, Number(start.cornerY || 0) + deltaY),
-            ),
-          });
-        },
-      },
-
-      {
-        id: "cupidBow",
-
-        label: "Cupid Bow",
-
-        point: cupidSample.upperBorder,
-
-        properties: ["cupidBowHeight", "cupidBowWidth", "philtrumDip"],
-
-        help: "Drag vertically to change cupid-bow height. Drag horizontally to alter its width.",
-
-        beginDrag: function () {
-          return {
-            ...window.mouthEngineSettings,
-          };
-        },
-
-        drag: function (deltaX, deltaY, dragStart) {
-          const start = dragStart || {};
-
-          updateMouthEngineSettings({
-            cupidBowHeight: Math.max(
-              0,
-              Math.min(25, Number(start.cupidBowHeight || 3.2) - deltaY),
-            ),
-
-            cupidBowWidth: Math.max(
-              0.04,
-              Math.min(
-                0.45,
-                Number(start.cupidBowWidth || 0.16) + deltaX * 0.003,
-              ),
-            ),
-          });
-        },
-      },
-
-      {
-        id: "upperLip",
-
-        label: "Upper Lip Fullness",
-
-        point: upperSample.upperBorder,
-
-        properties: ["upperLipThickness", "upperCenterFullness"],
-
-        help: "Drag vertically to change upper-lip thickness. Drag horizontally to alter center fullness.",
-
-        beginDrag: function () {
-          return {
-            ...window.mouthEngineSettings,
-          };
-        },
-
-        drag: function (deltaX, deltaY, dragStart) {
-          const start = dragStart || {};
-
-          updateMouthEngineSettings({
-            upperLipThickness: Math.max(
-              0,
-              Math.min(
-                35,
-                Number(start.upperLipThickness || 6.5) - deltaY * 0.6,
-              ),
-            ),
-
-            upperCenterFullness: Math.max(
-              -10,
-              Math.min(
-                20,
-                Number(start.upperCenterFullness || 0) + deltaX * 0.03,
-              ),
-            ),
-          });
-        },
-      },
-
-      {
-        id: "lowerLip",
-
-        label: "Lower Lip Fullness",
-
-        point: centerSample.lowerBorder,
-
-        properties: [
-          "lowerLipThickness",
-          "lowerCenterFullness",
-          "lowerLobeWidth",
-        ],
-
-        help: "Drag vertically to alter lower-lip fullness. Drag horizontally to change lower-lobe width.",
-
-        beginDrag: function () {
-          return {
-            ...window.mouthEngineSettings,
-          };
-        },
-
-        drag: function (deltaX, deltaY, dragStart) {
-          const start = dragStart || {};
-
-          updateMouthEngineSettings({
-            lowerLipThickness: Math.max(
-              0,
-              Math.min(
-                40,
-                Number(start.lowerLipThickness || 8.5) + deltaY * 0.6,
-              ),
-            ),
-
-            lowerCenterFullness: Math.max(
-              -10,
-              Math.min(
-                25,
-                Number(start.lowerCenterFullness || 2.5) + deltaY * 0.35,
-              ),
-            ),
-
-            lowerLobeWidth: Math.max(
-              0.05,
-              Math.min(
-                0.75,
-                Number(start.lowerLobeWidth || 0.34) + deltaX * 0.003,
-              ),
-            ),
-          });
-        },
-      },
-    ];
-  }
-
-  if (window.FaceLab && typeof window.FaceLab.registerFeature === "function") {
-    window.FaceLab.registerFeature(
-      "mouth",
-
-      {
-        label: "Mouth",
-
-        getSettings: function () {
-          return {
-            ...window.mouthEngineSettings,
-          };
-        },
-
-        getHandles: createFaceLabMouthHandles,
-
-        update: updateMouthEngineSettings,
-
-        draw: drawMouthEngine,
-
-        refresh: refreshMouthEngine,
-
-        reset: resetMouthEngine,
-      },
-    );
-  }
-
-  console.log("mouthEngine.js V5.1 loaded");
+  console.log("mouthEngine.js V7.3 loaded");
 })();
