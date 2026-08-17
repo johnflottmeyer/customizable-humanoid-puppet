@@ -1,5 +1,5 @@
 /* ==========================
-   MOUTH RENDERER — VERSION 2.8
+   MOUTH RENDERER — VERSION 2.9
 
    Responsibilities:
 
@@ -844,6 +844,62 @@
     const offsets =
       getOpenOffsets(settings);
 
+
+    const lipPucker =
+      clamp(
+        safeNumber(
+          settings.lipPucker,
+          0
+        ),
+        -1,
+        1
+      );
+
+
+    const cornerPull =
+      clamp(
+        safeNumber(
+          settings.cornerPull,
+          0
+        ),
+        -1,
+        1
+      );
+
+
+    const lowerLipRaise =
+      clamp(
+        safeNumber(
+          settings.lowerLipRaise,
+          0
+        ),
+        0,
+        1
+      );
+
+
+    const upperLipRaise =
+      clamp(
+        safeNumber(
+          settings.upperLipRaise,
+          0
+        ),
+        -1,
+        1
+      );
+
+
+    const lipCompression =
+      clamp(
+        safeNumber(
+          settings.lipCompression,
+          0
+        ),
+        0,
+        1
+      );
+
+
     const samples =
       Array.isArray(geometry.anatomySamples)
         ? geometry.anatomySamples
@@ -1046,13 +1102,133 @@
           envelopeExponent
         );
 
+      /*
+          V2.9 VISEME DEFORMATION
+
+          centerWeight:
+              strongest around the center lip body
+
+          cornerWeight:
+              strongest toward both corners
+      */
+
+      const centerWeight =
+        Math.pow(
+          envelope,
+          1.15
+        );
+
+
+      const cornerWeight =
+        1 -
+        centerWeight;
+
+
+      /*
+          Pucker brings the outer thirds inward.
+
+          Negative pucker does the opposite and
+          helps EE flatten/widen.
+      */
+
+      const puckerScale =
+        1 -
+        lipPucker *
+        0.18 *
+        centerWeight;
+
+
+      /*
+          Corner pull acts mostly on the outer
+          thirds.
+
+          Positive = EE style lateral pull
+          Negative = OH/OO corner contraction
+      */
+
+      const cornerOffsetX =
+        cornerPull *
+        13 *
+        cornerWeight;
+
+
+      const sideSign =
+        t < 0.5
+          ? -1
+          : 1;
+
+
+      const deformedSeamX =
+        mouthCenterX +
+        (
+          sample.seamPoint.x -
+          mouthCenterX
+        ) *
+        puckerScale +
+        sideSign *
+        cornerOffsetX;
+
+
+      const deformedUpperX =
+        mouthCenterX +
+        (
+          sample.upperBorder.x -
+          mouthCenterX
+        ) *
+        puckerScale +
+        sideSign *
+        cornerOffsetX;
+
+
+      const deformedLowerX =
+        mouthCenterX +
+        (
+          sample.lowerBorder.x -
+          mouthCenterX
+        ) *
+        puckerScale +
+        sideSign *
+        cornerOffsetX;
+
+
+      /*
+          Compression closes the inner lip edges
+          toward one another.
+
+          It is strongest through the center and
+          fades at the corners.
+      */
+
+      const compressionPixels =
+        lipCompression *
+        5.5 *
+        centerWeight;
+
+
+      const upperRaisePixels =
+        upperLipRaise *
+        4.5 *
+        centerWeight;
+
+
+      const lowerRaisePixels =
+        lowerLipRaise *
+        7.5 *
+        centerWeight;
+
+
       const upperShift =
         offsets.upperY *
-        shapedEnvelope;
+        shapedEnvelope +
+        compressionPixels -
+        upperRaisePixels;
+
 
       const lowerShift =
         offsets.lowerY *
-        shapedEnvelope;
+        shapedEnvelope -
+        compressionPixels -
+        lowerRaisePixels;
 
       /*
           Lip tissue stretches as the mouth opens.
@@ -1083,21 +1259,21 @@
         sample.seamPoint.y;
 
       upperInner.push({
-        x: compressInnerX(sample.seamPoint.x),
+        x: compressInnerX(deformedSeamX),
         y:
           sample.seamPoint.y +
           upperShift,
       });
 
       lowerInner.push({
-        x: compressInnerX(sample.seamPoint.x),
+        x: compressInnerX(deformedSeamX),
         y:
           sample.seamPoint.y +
           lowerShift,
       });
 
       upperOuter.push({
-        x: compressOuterX(sample.upperBorder.x),
+        x: compressOuterX(deformedUpperX),
         y:
           sample.seamPoint.y +
           upperShift +
@@ -1106,7 +1282,7 @@
       });
 
       lowerOuter.push({
-        x: compressOuterX(sample.lowerBorder.x),
+        x: compressOuterX(deformedLowerX),
         y:
           sample.seamPoint.y +
           lowerShift +
@@ -2177,5 +2353,5 @@
     drawSeam: drawSeam,
   };
 
-  console.log("mouthRenderer.js V2.8 loaded");
+  console.log("mouthRenderer.js V2.9 loaded");
 })();
