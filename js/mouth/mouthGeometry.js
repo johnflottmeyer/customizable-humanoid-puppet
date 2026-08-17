@@ -1,5 +1,5 @@
 /* ==========================
-   MOUTH GEOMETRY — VERSION 2.1
+   MOUTH GEOMETRY — VERSION 2.6
 
    Responsibilities:
 
@@ -65,13 +65,13 @@
            UPPER LIP
         ========================== */
 
-        upperLipThickness: 6.5,
+        upperLipThickness: 13,
 
-        cupidBowHeight: 3.2,
+        cupidBowHeight: 3.5,
         cupidBowWidth: 0.16,
 
-        philtrumDip: 2.4,
-        upperCenterFullness: 0.5,
+        philtrumDip: 2.8,
+        upperCenterFullness: 1.0,
 
         upperAsymmetry: 0,
 
@@ -80,9 +80,9 @@
            LOWER LIP
         ========================== */
 
-        lowerLipThickness: 8.5,
+        lowerLipThickness: 15,
 
-        lowerCenterFullness: 2.5,
+        lowerCenterFullness: 3.1,
         lowerLobeWidth: 0.34,
 
         lowerAsymmetry: 0,
@@ -1041,78 +1041,6 @@
             getDirectionSettings(settings);
 
 
-        const defaultUpperThickness =
-            6.5;
-
-
-        const defaultLowerThickness =
-            7.2;
-
-
-        const upperThickness =
-            safeNumber(
-                settings.upperLipThickness,
-                defaultUpperThickness
-            );
-
-
-        const lowerThickness =
-            safeNumber(
-                settings.lowerLipThickness,
-                defaultLowerThickness
-            );
-
-
-        const upperThicknessScale =
-            clamp(
-                upperThickness /
-                    defaultUpperThickness,
-
-                0,
-
-                4
-            );
-
-
-        const lowerThicknessScale =
-            clamp(
-                lowerThickness /
-                    defaultLowerThickness,
-
-                0,
-
-                4
-            );
-
-
-        const cupidBowHeight =
-            safeNumber(
-                settings.cupidBowHeight,
-                2.5
-            );
-
-
-        const philtrumDip =
-            safeNumber(
-                settings.philtrumDip,
-                1.5
-            );
-
-
-        const upperCenterFullness =
-            safeNumber(
-                settings.upperCenterFullness,
-                0
-            );
-
-
-        const lowerCenterFullness =
-            safeNumber(
-                settings.lowerCenterFullness,
-                1.8
-            );
-
-
         return seamSamples.map(
             function (seamSample) {
 
@@ -1142,38 +1070,59 @@
                     );
 
 
-                let upperHeight =
+                /*
+                    V2.5 — DIRECT THICKNESS MODEL
+
+                    MouthProfiles now owns the primary visible
+                    upper/lower lip height.
+
+                    This means:
+
+                        upperLipThickness
+                        lowerLipThickness
+
+                    directly affect the visible lip depth instead
+                    of first being converted into a secondary scale.
+
+                    MouthPads remain present, but only as a small
+                    soft-tissue contour layer.
+
+                    The previous V2.4 hard-coded Gaussian lobe
+                    shaping has been removed from MouthGeometry.
+                    Upper/lower silhouette anatomy now belongs in
+                    mouthProfiles.js, where it can be tuned cleanly
+                    without fighting the geometry engine.
+                */
+
+
+                const upperPadContour =
                     pads.upperHeight *
-                    upperThicknessScale;
+                    0.08;
+
+
+                const lowerPadContour =
+                    pads.lowerHeight *
+                    0.06;
+
+
+                let upperHeight =
+                    profile.upperHeight +
+                    upperPadContour;
 
 
                 let lowerHeight =
-                    pads.lowerHeight *
-                    lowerThicknessScale;
+                    profile.lowerHeight +
+                    lowerPadContour;
 
 
-                upperHeight +=
-                    profile.cupidWeight *
-                    cupidBowHeight *
-                    0.45;
+                /*
+                    Preserve a little breathing room at the
+                    absolute corners.
 
-
-                upperHeight -=
-                    profile.philtrumWeight *
-                    philtrumDip *
-                    0.4;
-
-
-                upperHeight +=
-                    directions.centerWeight *
-                    upperCenterFullness *
-                    0.25;
-
-
-                lowerHeight +=
-                    profile.lowerLobeWeight *
-                    lowerCenterFullness *
-                    0.4;
+                    profile.cornerWeight already provides the
+                    main anatomical taper; these limits simply
+                    prevent accidental negative or extreme values.
+                */
 
 
                 upperHeight =
@@ -1273,6 +1222,7 @@
             }
         );
     }
+
 
 
     /* ==========================
@@ -1904,9 +1854,22 @@
             );
 
 
+        /*
+            Keep the visible seam inside the same
+            corner inset used by the lip surfaces.
+            This removes the exposed horizontal line
+            that previously extended beyond the lips.
+        */
+
+        const visibleSeamPoints =
+            getSeamPoints(
+                surfaceSamples
+            );
+
+
         const seamPath =
             buildSeamPath(
-                seamPoints
+                visibleSeamPoints
             );
 
 
@@ -2039,7 +2002,7 @@
 
 
     console.log(
-        "mouthGeometry.js V2.1 loaded"
+        "mouthGeometry.js V2.6 loaded"
     );
 
 })();
