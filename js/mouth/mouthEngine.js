@@ -1,5 +1,5 @@
 /* ==========================
-   MOUTH ENGINE — VERSION 7.5
+   MOUTH ENGINE — VERSION 8.8
 
    Responsibilities:
 
@@ -322,6 +322,29 @@
 
     lipCompression: 0,
 
+    ohRoundnessBoost: 0,
+    fvContactStrength: 0,
+    eeCornerStretch: 0,
+
+    /*
+        Layered viseme pose controls.
+
+        lipPose controls lip contact/shape.
+        teethPose controls upper/lower tooth reveal.
+        tonguePose controls tongue placement/reveal.
+    */
+
+    lipPress: 0,
+    lowerLipToTeeth: 0,
+
+    upperTeethReveal: 0,
+    lowerTeethReveal: 0,
+
+    tongueForward: 0,
+    tongueRaise: 0,
+
+    explicitVisemePose: "",
+
     /* ==========================
            SAMPLING
         ========================== */
@@ -553,13 +576,18 @@
       MBP:
         Object.freeze({
 
+          explicitVisemePose: "MBP",
+
           mouthOpen: 0,
 
           widthScale: 0.98,
 
-          lipCompression: 0.78,
+          lipCompression: 1.00,
 
-          cornerPull: -0.05,
+          cornerPull: -0.16,
+
+          upperThicknessScale: 1.06,
+          lowerThicknessScale: 1.06,
 
           showTeeth: false,
           showTongue: false
@@ -577,18 +605,22 @@
       EE:
         Object.freeze({
 
-          mouthOpen: 0.20,
+          explicitVisemePose: "EE",
+
+          mouthOpen: 0.18,
 
           widthScale: 1.03,
 
-          cornerPull: 0.68,
+          cornerPull: 0.56,
 
-          lipPucker: -0.12,
+          lipPucker: -0.08,
 
-          lipCompression: 0.08,
+          lipCompression: 0.04,
 
           upperThicknessScale: 0.94,
           lowerThicknessScale: 0.92,
+
+          eeCornerStretch: 0.36,
 
           showTeeth: true,
           showTongue: false
@@ -610,18 +642,20 @@
       OH:
         Object.freeze({
 
-          mouthOpen: 0.48,
+          mouthOpen: 0.52,
 
-          widthScale: 0.92,
+          widthScale: 0.86,
 
-          lipPucker: 0.82,
+          lipPucker: 1.00,
 
-          cornerPull: -0.72,
+          cornerPull: -0.92,
 
-          lipCompression: 0.14,
+          lipCompression: 0.10,
 
-          upperThicknessScale: 1.08,
-          lowerThicknessScale: 1.08,
+          upperThicknessScale: 1.12,
+          lowerThicknessScale: 1.12,
+
+          ohRoundnessBoost: 0.95,
 
           showTeeth: false,
           showTongue: false
@@ -666,20 +700,24 @@
       FV:
         Object.freeze({
 
-          mouthOpen: 0.18,
+          explicitVisemePose: "FV",
+
+          mouthOpen: 0.14,
 
           widthScale: 0.98,
 
-          lowerLipRaise: 0.78,
+          lowerLipRaise: 0.62,
 
-          upperLipRaise: 0.06,
+          upperLipRaise: 0.04,
 
-          lipCompression: 0.22,
+          lipCompression: 0.12,
 
-          cornerPull: 0.04,
+          cornerPull: 0.02,
 
           upperThicknessScale: 0.96,
-          lowerThicknessScale: 0.84,
+          lowerThicknessScale: 0.96,
+
+          fvContactStrength: 0.68,
 
           showTeeth: true,
           showTongue: false
@@ -848,6 +886,15 @@
     };
 
 
+    result.explicitVisemePose =
+      (
+        preset.explicitVisemePose !== undefined &&
+        strength >= 0.5
+      )
+        ? preset.explicitVisemePose
+        : "";
+
+
     if (
       preset.mouthOpen !==
       undefined
@@ -938,7 +985,16 @@
       "cornerPull",
       "lowerLipRaise",
       "upperLipRaise",
-      "lipCompression"
+      "lipCompression",
+      "ohRoundnessBoost",
+      "fvContactStrength",
+      "eeCornerStretch",
+      "lipPress",
+      "lowerLipToTeeth",
+      "upperTeethReveal",
+      "lowerTeethReveal",
+      "tongueForward",
+      "tongueRaise"
     ].forEach(
       function (property) {
 
@@ -1631,5 +1687,5 @@
 
     getLowerPath: getCurrentLowerPath,
   };
-  console.log("mouthEngine.js V7.5 loaded");
+  console.log("mouthEngine.js V8.8 loaded");
 })();
