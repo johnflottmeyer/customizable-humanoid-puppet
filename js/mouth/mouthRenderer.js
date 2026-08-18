@@ -1,5 +1,5 @@
 /* ==========================
-   MOUTH RENDERER — VERSION 2.9
+   MOUTH RENDERER — VERSION 4.2
 
    Responsibilities:
 
@@ -426,6 +426,70 @@
   }
 
 
+  function createEeTeethGradient(
+    defs,
+    settings
+  ) {
+    const toothColor =
+      settings.teethColor ||
+      "#eee7dc";
+
+    const gradient =
+      createSvgElement(
+        "linearGradient",
+        {
+          id:
+            "eeTeethHorizontalGradient",
+          x1: "0%",
+          y1: "0%",
+          x2: "100%",
+          y2: "0%"
+        }
+      );
+
+    appendStop(
+      gradient,
+      "0%",
+      toothColor,
+      0.62
+    );
+
+    appendStop(
+      gradient,
+      "16%",
+      toothColor,
+      0.92
+    );
+
+    appendStop(
+      gradient,
+      "50%",
+      toothColor,
+      1
+    );
+
+    appendStop(
+      gradient,
+      "84%",
+      toothColor,
+      0.92
+    );
+
+    appendStop(
+      gradient,
+      "100%",
+      toothColor,
+      0.62
+    );
+
+    defs.appendChild(
+      gradient
+    );
+
+    return "url(#eeTeethHorizontalGradient)";
+  }
+
+
   function createGeometryRadialGradient(
     defs,
     id,
@@ -652,6 +716,12 @@
     }
 
     return {
+      eeTeethFill:
+        createEeTeethGradient(
+          defs,
+          settings
+        ),
+
       tongueFill:
         createTongueGradient(
           defs,
@@ -900,6 +970,83 @@
       );
 
 
+    const ohRoundnessBoost =
+      clamp(
+        safeNumber(
+          settings.ohRoundnessBoost,
+          0
+        ),
+        0,
+        1
+      );
+
+
+    const fvContactStrength =
+      clamp(
+        safeNumber(
+          settings.fvContactStrength,
+          0
+        ),
+        0,
+        1
+      );
+
+
+    const eeCornerStretch =
+      clamp(
+        safeNumber(
+          settings.eeCornerStretch,
+          0
+        ),
+        0,
+        1
+      );
+
+
+    const lipPress =
+      clamp(
+        safeNumber(
+          settings.lipPress,
+          0
+        ),
+        0,
+        1
+      );
+
+
+    const lowerLipToTeeth =
+      clamp(
+        safeNumber(
+          settings.lowerLipToTeeth,
+          0
+        ),
+        0,
+        1
+      );
+
+
+    const upperTeethReveal =
+      clamp(
+        safeNumber(
+          settings.upperTeethReveal,
+          settings.showTeeth === false ? 0 : 1
+        ),
+        0,
+        1
+      );
+
+
+    const lowerTeethReveal =
+      clamp(
+        safeNumber(
+          settings.lowerTeethReveal,
+          0
+        ),
+        0,
+        1
+      );
+
+
     const samples =
       Array.isArray(geometry.anatomySamples)
         ? geometry.anatomySamples
@@ -1134,7 +1281,11 @@
       const puckerScale =
         1 -
         lipPucker *
-        0.18 *
+        (
+          0.18 +
+          ohRoundnessBoost *
+          0.10
+        ) *
         centerWeight;
 
 
@@ -1152,6 +1303,12 @@
         cornerWeight;
 
 
+      const eeStretchPixels =
+        eeCornerStretch *
+        6.5 *
+        cornerWeight;
+
+
       const sideSign =
         t < 0.5
           ? -1
@@ -1166,7 +1323,10 @@
         ) *
         puckerScale +
         sideSign *
-        cornerOffsetX;
+        (
+          cornerOffsetX +
+          eeStretchPixels
+        );
 
 
       const deformedUpperX =
@@ -1177,7 +1337,10 @@
         ) *
         puckerScale +
         sideSign *
-        cornerOffsetX;
+        (
+          cornerOffsetX +
+          eeStretchPixels
+        );
 
 
       const deformedLowerX =
@@ -1188,7 +1351,10 @@
         ) *
         puckerScale +
         sideSign *
-        cornerOffsetX;
+        (
+          cornerOffsetX +
+          eeStretchPixels
+        );
 
 
       /*
@@ -1217,18 +1383,62 @@
         centerWeight;
 
 
+      const ohVerticalBoost =
+        ohRoundnessBoost *
+        5.5 *
+        centerWeight;
+
+
+      const fvContactLift =
+        fvContactStrength *
+        6.0 *
+        centerWeight;
+
+
+      /*
+          M/B/P lip press:
+          press both inner edges into one shared
+          contact line while allowing the outer
+          lip bodies to retain fullness.
+      */
+
+      const lipPressPixels =
+        lipPress *
+        3.0 *
+        centerWeight;
+
+
+      /*
+          F/V contact:
+          lower inner lip rises toward the lower
+          edge of the upper teeth instead of merely
+          collapsing upward into the upper lip.
+      */
+
+      const lowerLipTeethLift =
+        lowerLipToTeeth *
+        4.8 *
+        centerWeight;
+
+
       const upperShift =
         offsets.upperY *
         shapedEnvelope +
         compressionPixels -
-        upperRaisePixels;
+        upperRaisePixels -
+        ohVerticalBoost +
+        lipPressPixels;
 
 
       const lowerShift =
         offsets.lowerY *
         shapedEnvelope -
         compressionPixels -
-        lowerRaisePixels;
+        lowerRaisePixels +
+        ohVerticalBoost -
+        fvContactLift -
+        lipPressPixels -
+        lowerLipTeethLift;
 
       /*
           Lip tissue stretches as the mouth opens.
@@ -1286,6 +1496,8 @@
         y:
           sample.seamPoint.y +
           lowerShift +
+          fvContactLift * 0.82 +
+          lowerLipTeethLift * 0.72 +
           lowerThicknessY *
           (1 - compression),
       });
@@ -1470,6 +1682,329 @@
     };
   }
 
+  /* ==========================
+       EXPLICIT VISEME GEOMETRY
+    ========================== */
+
+  function buildExplicitVisemeGeometry(
+    geometry,
+    settings
+  ) {
+    const pose =
+      String(
+        settings.explicitVisemePose ||
+        ""
+      ).toUpperCase();
+
+    if (
+      pose !== "MBP" &&
+      pose !== "EE" &&
+      pose !== "FV"
+    ) {
+      return null;
+    }
+
+    const samples =
+      Array.isArray(
+        geometry.anatomySamples
+      )
+        ? geometry.anatomySamples
+        : [];
+
+    if (samples.length < 3) {
+      return null;
+    }
+
+    const upperOuter = [];
+    const upperInner = [];
+    const lowerInner = [];
+    const lowerOuter = [];
+
+    samples.forEach(function (sample) {
+      if (
+        !validPoint(sample.seamPoint) ||
+        !validPoint(sample.upperBorder) ||
+        !validPoint(sample.lowerBorder)
+      ) {
+        return;
+      }
+
+      const t =
+        clamp(
+          safeNumber(sample.t, 0),
+          0,
+          1
+        );
+
+      const centerWeight =
+        Math.sin(
+          Math.PI * t
+        );
+
+      const cornerWeight =
+        1 -
+        centerWeight;
+
+      let xScale = 1;
+
+      let upperInnerY =
+        sample.seamPoint.y;
+
+      let lowerInnerY =
+        sample.seamPoint.y;
+
+      let upperOuterY =
+        sample.upperBorder.y;
+
+      let lowerOuterY =
+        sample.lowerBorder.y;
+
+
+      if (pose === "MBP") {
+        /*
+            M / B / P:
+            pressed, flattened closed lips.
+        */
+
+        xScale = 0.985;
+
+        const contactY =
+          settings.centerY +
+          (
+            sample.seamPoint.y -
+            settings.centerY
+          ) *
+          0.06;
+
+        upperInnerY =
+          contactY;
+
+        lowerInnerY =
+          contactY;
+
+        upperOuterY =
+          contactY -
+          (
+            contactY -
+            sample.upperBorder.y
+          ) *
+          0.58;
+
+        lowerOuterY =
+          contactY +
+          (
+            sample.lowerBorder.y -
+            contactY
+          ) *
+          0.58;
+      }
+
+
+      if (pose === "EE") {
+        /*
+            EE:
+            shallow grin-like opening with
+            restrained width and visible teeth.
+        */
+
+        xScale =
+          1.035 +
+          cornerWeight *
+          0.008;
+
+        const gap =
+          9.8 *
+          Math.pow(
+            centerWeight,
+            0.64
+          );
+
+        upperInnerY =
+          sample.seamPoint.y -
+          gap *
+          (
+            0.52 +
+            0.08 *
+            centerWeight
+          );
+
+        lowerInnerY =
+          sample.seamPoint.y +
+          gap *
+          (
+            0.48 -
+            0.04 *
+            centerWeight
+          );
+
+        upperOuterY =
+          upperInnerY -
+          (
+            sample.seamPoint.y -
+            sample.upperBorder.y
+          ) *
+          0.90;
+
+        lowerOuterY =
+          lowerInnerY +
+          (
+            sample.lowerBorder.y -
+            sample.seamPoint.y
+          ) *
+          0.94;
+      }
+
+
+      if (pose === "FV") {
+        /*
+            F / V:
+            upper teeth exposed; lower inner lip
+            rises into their lower edge while
+            the lower outer lip remains visible.
+        */
+
+        xScale = 0.99;
+
+        const gap =
+          4.8 *
+          Math.pow(
+            centerWeight,
+            0.86
+          );
+
+        upperInnerY =
+          sample.seamPoint.y -
+          gap *
+          0.66 -
+          centerWeight *
+          0.85;
+
+        const toothDepth =
+          6.4 *
+          Math.pow(
+            centerWeight,
+            0.68
+          );
+
+        lowerInnerY =
+          upperInnerY +
+          toothDepth -
+          0.10 *
+          centerWeight;
+
+        upperOuterY =
+          upperInnerY -
+          (
+            sample.seamPoint.y -
+            sample.upperBorder.y
+          ) *
+          0.90;
+
+        lowerOuterY =
+          lowerInnerY +
+          (
+            sample.lowerBorder.y -
+            sample.seamPoint.y
+          ) *
+          1.08;
+      }
+
+
+      const seamX =
+        settings.centerX +
+        (
+          sample.seamPoint.x -
+          settings.centerX
+        ) *
+        xScale;
+
+      const upperX =
+        settings.centerX +
+        (
+          sample.upperBorder.x -
+          settings.centerX
+        ) *
+        xScale;
+
+      const lowerX =
+        settings.centerX +
+        (
+          sample.lowerBorder.x -
+          settings.centerX
+        ) *
+        xScale;
+
+
+      upperInner.push({
+        x: seamX,
+        y: upperInnerY
+      });
+
+      lowerInner.push({
+        x: seamX,
+        y: lowerInnerY
+      });
+
+      upperOuter.push({
+        x: upperX,
+        y: upperOuterY
+      });
+
+      lowerOuter.push({
+        x: lowerX,
+        y: lowerOuterY
+      });
+    });
+
+
+    function buildLipPath(
+      outer,
+      inner
+    ) {
+      return pointsToClosedPath(
+        outer.concat(
+          inner
+            .slice()
+            .reverse()
+        )
+      );
+    }
+
+
+    return {
+      pose: pose,
+
+      upperPath:
+        buildLipPath(
+          upperOuter,
+          upperInner
+        ),
+
+      lowerPath:
+        buildLipPath(
+          lowerOuter,
+          lowerInner
+        ),
+
+      cavityPath:
+        pose === "MBP"
+          ? ""
+          : pointsToClosedPath(
+              upperInner.concat(
+                lowerInner
+                  .slice()
+                  .reverse()
+              )
+            ),
+
+      upperInner: upperInner,
+      lowerInner: lowerInner,
+      upperOuter: upperOuter,
+      lowerOuter: lowerOuter
+    };
+  }
+
+
   function drawLipShapes(group, geometry, settings) {
     if (settings.showLipShapes === false) {
       return;
@@ -1481,10 +2016,58 @@
         settings
       );
 
-    const articulation =
+    const genericArticulation =
       buildArticulatedLipPaths(
         geometry,
         settings
+      );
+
+
+    const explicitArticulation =
+      buildExplicitVisemeGeometry(
+        geometry,
+        settings
+      );
+
+
+    const articulation =
+      explicitArticulation ||
+      genericArticulation;
+
+
+    /*
+        V3.2.1
+
+        Teeth-layer pose values belong in the
+        drawLipShapes scope because the upper/lower
+        dental surfaces are rendered here.
+
+        V3.2 accidentally declared lowerTeethReveal
+        only inside buildArticulatedLipPaths(), which
+        made it unavailable to this rendering block.
+    */
+
+    const upperTeethReveal =
+      clamp(
+        safeNumber(
+          settings.upperTeethReveal,
+          settings.showTeeth === false
+            ? 0
+            : 1
+        ),
+        0,
+        1
+      );
+
+
+    const lowerTeethReveal =
+      clamp(
+        safeNumber(
+          settings.lowerTeethReveal,
+          0
+        ),
+        0,
+        1
       );
 
     /*
@@ -1507,6 +2090,343 @@
         ),
       );
     }
+
+    /*
+        EXPLICIT VISEME TEETH
+
+        EE and F/V use the actual explicit cavity
+        edges rather than generic mouthOpen offsets.
+    */
+
+    const explicitPose =
+      String(
+        settings.explicitVisemePose ||
+        ""
+      ).toUpperCase();
+
+    let explicitUpperTeethDrawn =
+      false;
+
+    if (
+      (
+        explicitPose === "EE" ||
+        explicitPose === "FV"
+      ) &&
+      articulation.upperInner &&
+      articulation.lowerInner &&
+      articulation.upperInner.length > 4 &&
+      articulation.lowerInner.length ===
+        articulation.upperInner.length
+    ) {
+      const toothTop = [];
+      const toothBottom = [];
+      const count =
+        articulation.upperInner.length;
+
+      for (
+        let index = 0;
+        index < count;
+        index += 1
+      ) {
+        const t =
+          count <= 1
+            ? 0
+            : index / (count - 1);
+
+        const toothInset =
+          explicitPose === "EE"
+            ? 0.155
+            : 0.13;
+
+        if (
+          t < toothInset ||
+          t > 1 - toothInset
+        ) {
+          continue;
+        }
+
+        const upperPoint =
+          articulation.upperInner[index];
+        const lowerPoint =
+          articulation.lowerInner[index];
+
+        if (
+          !validPoint(upperPoint) ||
+          !validPoint(lowerPoint)
+        ) {
+          continue;
+        }
+
+        const envelope =
+          Math.sin(Math.PI * t);
+
+        const cavityHeight =
+          Math.max(
+            0,
+            lowerPoint.y - upperPoint.y
+          );
+
+        const depthShare =
+          explicitPose === "FV"
+            ? 0.96
+            : 0.68;
+
+        const minimumDepth =
+          explicitPose === "FV"
+            ? 4.8
+            : 4.4;
+
+        /*
+            Make the upper dental band read as a
+            row of teeth rather than a flat stripe.
+            The center descends slightly farther
+            than the sides.
+        */
+
+        const dentalArc =
+          explicitPose === "EE"
+            ? (
+                0.60 +
+                0.40 *
+                Math.pow(
+                  envelope,
+                  1.08
+                )
+              )
+            : (
+                0.78 +
+                0.22 *
+                Math.pow(
+                  envelope,
+                  1.45
+                )
+              );
+
+        const toothDepth =
+          Math.max(
+            minimumDepth * envelope,
+            cavityHeight * depthShare
+          ) *
+          dentalArc;
+
+        /*
+            EE upper tooth edge:
+            subtle center arc so the row follows
+            the mouth rather than forming a ruler-
+            straight white strip.
+        */
+
+        const toothTopOffset =
+          explicitPose === "EE"
+            ? (
+                0.08 +
+                0.22 *
+                Math.pow(
+                  envelope,
+                  1.30
+                )
+              )
+            : (
+                0.18 *
+                envelope
+              );
+
+        toothTop.push({
+          x: upperPoint.x,
+          y:
+            upperPoint.y +
+            toothTopOffset
+        });
+
+        /*
+            EE lower tooth edge:
+            center incisors extend slightly farther
+            down while lateral visibility tapers.
+        */
+
+        const eeDepthScale =
+          explicitPose === "EE"
+            ? (
+                0.68 +
+                0.32 *
+                Math.pow(
+                  envelope,
+                  1.18
+                )
+              )
+            : 1;
+
+        const eeCenterDrop =
+          explicitPose === "EE"
+            ? (
+                0.78 *
+                Math.pow(
+                  envelope,
+                  1.08
+                )
+              )
+            : 0;
+
+        toothBottom.push({
+          x: upperPoint.x,
+          y:
+            Math.min(
+              lowerPoint.y -
+              (
+                explicitPose === "FV"
+                  ? 0.05
+                  : 1.15
+              ),
+              upperPoint.y +
+              toothDepth *
+              eeDepthScale +
+              eeCenterDrop
+            )
+        });
+      }
+
+      if (
+        toothTop.length > 1 &&
+        toothBottom.length > 1
+      ) {
+        const explicitUpperTeethPath =
+          pointsToClosedPath(
+            toothTop.concat(
+              toothBottom.slice().reverse()
+            )
+          );
+
+        group.appendChild(
+          createPath(
+            explicitUpperTeethPath,
+            {
+              id: "upperTeethExplicit",
+              className:
+                "upperTeeth upperTeethExplicit",
+              fill:
+                explicitPose === "EE"
+                  ? (
+                      paint.eeTeethFill ||
+                      settings.teethColor ||
+                      "#eee7dc"
+                    )
+                  : (
+                      settings.teethColor ||
+                      "#eee7dc"
+                    ),
+              stroke: "none",
+              opacity:
+                explicitPose === "FV"
+                  ? 1
+                  : 0.96
+            }
+          )
+        );
+
+        explicitUpperTeethDrawn = true;
+      }
+    }
+
+
+    /*
+        LOWER TEETH
+
+        Only rendered when the current viseme asks
+        for them. EE can show a subtle lower dental
+        edge without adding permanent lower teeth to
+        the neutral/open-mouth renderer.
+    */
+
+    if (
+      lowerTeethReveal > 0.001 &&
+      articulation.cavityPath &&
+      Array.isArray(geometry.anatomySamples) &&
+      geometry.anatomySamples.length > 3
+    ) {
+      const samples =
+        geometry.anatomySamples;
+
+      const offsets =
+        getOpenOffsets(settings);
+
+      const lowerTop = [];
+      const lowerBottom = [];
+
+      samples.forEach(function (sample) {
+        if (!validPoint(sample.seamPoint)) {
+          return;
+        }
+
+        const t =
+          clamp(
+            safeNumber(sample.t, 0),
+            0,
+            1
+          );
+
+        if (t < 0.16 || t > 0.84) {
+          return;
+        }
+
+        const envelope =
+          Math.sin(Math.PI * t);
+
+        const lowerInnerY =
+          sample.seamPoint.y +
+          offsets.lowerY *
+          envelope;
+
+        const cavityDepth =
+          offsets.gap *
+          envelope;
+
+        lowerTop.push({
+          x: sample.seamPoint.x,
+          y:
+            lowerInnerY -
+            cavityDepth * 0.18
+        });
+
+        lowerBottom.push({
+          x: sample.seamPoint.x,
+          y:
+            lowerInnerY -
+            cavityDepth * 0.04
+        });
+      });
+
+      if (
+        lowerTop.length > 1 &&
+        lowerBottom.length > 1
+      ) {
+        const lowerTeethPath =
+          pointsToClosedPath(
+            lowerTop.concat(
+              lowerBottom
+                .slice()
+                .reverse()
+            )
+          );
+
+        group.appendChild(
+          createPath(
+            lowerTeethPath,
+            {
+              id: "lowerTeeth",
+              className: "lowerTeeth",
+              fill:
+                settings.teethColor ||
+                "#eee7dc",
+              stroke: "none",
+              opacity:
+                lowerTeethReveal *
+                0.72
+            }
+          )
+        );
+      }
+    }
+
 
     /*
         TONGUE
@@ -1808,10 +2728,28 @@
         0.95
       );
 
+    const explicitTeethPose =
+      String(
+        settings.explicitVisemePose ||
+        ""
+      ).toUpperCase();
+
+
+    const forceUpperTeeth =
+      (
+        explicitTeethPose === "EE" ||
+        explicitTeethPose === "FV"
+      );
+
+
     if (
+      !explicitUpperTeethDrawn &&
       settings.showTeeth !== false &&
       articulation.cavityPath &&
-      openAmount > revealStart
+      (
+        openAmount > revealStart ||
+        forceUpperTeeth
+      )
     ) {
       const samples =
         Array.isArray(geometry.anatomySamples)
@@ -2010,7 +2948,7 @@
           const teethPath =
             pointsToClosedPath(points);
 
-          const reveal =
+          let reveal =
             clamp(
               (
                 openAmount -
@@ -2024,6 +2962,28 @@
               1
             );
 
+
+          if (
+            explicitTeethPose === "EE"
+          ) {
+            reveal =
+              Math.max(
+                reveal,
+                0.82
+              );
+          }
+
+
+          if (
+            explicitTeethPose === "FV"
+          ) {
+            reveal =
+              Math.max(
+                reveal,
+                0.96
+              );
+          }
+
           group.appendChild(
             createPath(
               teethPath,
@@ -2034,7 +2994,9 @@
                   settings.teethColor ||
                   "#f3eee7",
                 stroke: "none",
-                opacity: reveal
+                opacity:
+                  reveal *
+                  upperTeethReveal
               }
             )
           );
@@ -2228,6 +3190,20 @@
       return;
     }
 
+    const explicitPose =
+      String(
+        settings.explicitVisemePose ||
+        ""
+      ).toUpperCase();
+
+    if (
+      explicitPose === "MBP" ||
+      explicitPose === "EE" ||
+      explicitPose === "FV"
+    ) {
+      return;
+    }
+
     const offsets =
       getOpenOffsets(settings);
 
@@ -2353,5 +3329,5 @@
     drawSeam: drawSeam,
   };
 
-  console.log("mouthRenderer.js V2.9 loaded");
+  console.log("mouthRenderer.js V4.2 loaded");
 })();
