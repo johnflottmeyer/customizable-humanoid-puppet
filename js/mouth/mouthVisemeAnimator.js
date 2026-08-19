@@ -1,7 +1,7 @@
 /*
 ==================================================
 FACELAB — MOUTH VISEME ANIMATOR
-VERSION 1.0
+VERSION 1.2
 ==================================================
 
 Purpose:
@@ -21,6 +21,9 @@ Purpose:
   let animationFrame = null;
   let animationToken = 0;
   let currentViseme = "neutral";
+
+  let queueToken = 0;
+  let queueRunning = false;
 
   function clamp01(value) {
     return Math.max(
@@ -329,28 +332,29 @@ Purpose:
     }
 
     /*
-        Pose -> pose
+        Pose -> pose — V1.1
 
-        First stable implementation:
-        45% out of the old pose,
-        10% neutral crossover,
-        45% into the new pose.
+        Direct overlapping transition.
 
-        This prevents hard snapping while keeping
-        every established viseme untouched.
+        There is no neutral hold between poses. The old articulation
+        fades only partway out, then the destination pose takes over
+        from that partially articulated state.
     */
 
     const oldViseme =
       currentViseme;
 
-    const half =
-      duration * 0.45;
+    const firstHalf =
+      duration * 0.50;
+
+    const secondHalf =
+      duration * 0.50;
 
     const crossedOut =
       await tween(
         1,
-        0,
-        half,
+        0.38,
+        firstHalf,
         function (strength) {
           drawViseme(
             oldViseme,
@@ -368,35 +372,11 @@ Purpose:
       return target;
     }
 
-    drawViseme(
-      "neutral",
-      1
-    );
-
-    await new Promise(
-      function (resolve) {
-        setTimeout(
-          resolve,
-          Math.max(
-            0,
-            duration * 0.10
-          )
-        );
-      }
-    );
-
-    if (
-      token !==
-      animationToken
-    ) {
-      return target;
-    }
-
     const crossedIn =
       await tween(
-        0,
+        0.38,
         1,
-        half,
+        secondHalf,
         function (strength) {
           drawViseme(
             target,
@@ -417,6 +397,213 @@ Purpose:
 
     return target;
   }
+
+  function wait(
+    milliseconds,
+    token
+  ) {
+    return new Promise(
+      function (resolve) {
+
+        const duration =
+          Math.max(
+            0,
+            Number(milliseconds) || 0
+          );
+
+        if (duration === 0) {
+          resolve(
+            token === queueToken
+          );
+          return;
+        }
+
+        setTimeout(
+          function () {
+            resolve(
+              token === queueToken
+            );
+          },
+          duration
+        );
+      }
+    );
+  }
+
+
+  function normalizeQueueItem(
+    item
+  ) {
+
+    if (
+      typeof item === "string"
+    ) {
+      return {
+        viseme:
+          normalizeName(item),
+        duration:
+          DEFAULT_DURATION,
+        hold:
+          0
+      };
+    }
+
+    const source =
+      item || {};
+
+    return {
+      viseme:
+        normalizeName(
+          source.viseme ||
+          source.name ||
+          "neutral"
+        ),
+
+      duration:
+        Math.max(
+          0,
+          Number(
+            source.duration
+          ) ||
+          DEFAULT_DURATION
+        ),
+
+      hold:
+        Math.max(
+          0,
+          Number(
+            source.hold
+          ) ||
+          0
+        )
+    };
+  }
+
+
+  async function playQueue(
+    sequence,
+    options
+  ) {
+
+    if (
+      !Array.isArray(sequence) ||
+      sequence.length === 0
+    ) {
+      return false;
+    }
+
+    const settings =
+      options || {};
+
+    const token =
+      ++queueToken;
+
+    queueRunning = true;
+
+    if (
+      settings.startNeutral !== false
+    ) {
+      await transitionTo(
+        "neutral",
+        {
+          duration:
+            Math.max(
+              0,
+              Number(
+                settings.neutralDuration
+              ) ||
+              120
+            )
+        }
+      );
+    }
+
+    for (
+      const rawItem of sequence
+    ) {
+
+      if (
+        token !== queueToken
+      ) {
+        queueRunning = false;
+        return false;
+      }
+
+      const item =
+        normalizeQueueItem(
+          rawItem
+        );
+
+      await transitionTo(
+        item.viseme,
+        {
+          duration:
+            item.duration
+        }
+      );
+
+      if (
+        token !== queueToken
+      ) {
+        queueRunning = false;
+        return false;
+      }
+
+      if (
+        item.hold > 0
+      ) {
+        const completed =
+          await wait(
+            item.hold,
+            token
+          );
+
+        if (!completed) {
+          queueRunning = false;
+          return false;
+        }
+      }
+    }
+
+    if (
+      settings.endNeutral !== false &&
+      token === queueToken
+    ) {
+      await transitionTo(
+        "neutral",
+        {
+          duration:
+            Math.max(
+              0,
+              Number(
+                settings.neutralDuration
+              ) ||
+              120
+            )
+        }
+      );
+    }
+
+    if (
+      token === queueToken
+    ) {
+      queueRunning = false;
+      return true;
+    }
+
+    queueRunning = false;
+    return false;
+  }
+
+
+  function stopQueue() {
+
+    queueToken++;
+    queueRunning = false;
+
+    stop();
+  }
+
 
   function stop() {
 
@@ -472,7 +659,7 @@ Purpose:
 
   window.MouthVisemeAnimator = {
 
-    version: "1.0",
+    version: "1.2",
 
     transitionTo:
       transitionTo,
@@ -482,6 +669,17 @@ Purpose:
 
     runTestSequence:
       runTestSequence,
+
+    playQueue:
+      playQueue,
+
+    stopQueue:
+      stopQueue,
+
+    isQueueRunning:
+      function () {
+        return queueRunning;
+      },
 
     getCurrentViseme:
       function () {
@@ -500,7 +698,7 @@ Purpose:
   };
 
   console.log(
-    "mouthVisemeAnimator.js V1.0 loaded"
+    "mouthVisemeAnimator.js V1.2 loaded"
   );
 
 })();
