@@ -1,7 +1,7 @@
 /*
 ==================================================
 FACELAB — MOUTH VISEME ANIMATOR
-VERSION 1.2
+VERSION 1.3
 ==================================================
 
 Purpose:
@@ -55,10 +55,34 @@ Purpose:
       EE: "EE",
       I: "EE",
 
+      L: "L",
+
+      TH: "TH",
+
+      SH: "SH",
+      CH: "SH",
+      J: "SH",
+
+      W: "WR",
+      R: "WR",
+      WR: "WR",
+
+      T: "TDN",
+      D: "TDN",
+      N: "TDN",
+      TDN: "TDN",
+
+      K: "KG",
+      G: "KG",
+      KG: "KG",
+
+      UH: "UHEH",
+      EH: "UHEH",
+      UHEH: "UHEH",
+
       O: "OH",
       OH: "OH",
       OO: "OH",
-      U: "OH",
 
       A: "AH",
       AH: "AH",
@@ -659,7 +683,7 @@ Purpose:
 
   window.MouthVisemeAnimator = {
 
-    version: "1.2",
+    version: "1.3",
 
     transitionTo:
       transitionTo,
@@ -698,7 +722,7 @@ Purpose:
   };
 
   console.log(
-    "mouthVisemeAnimator.js V1.2 loaded"
+    "mouthVisemeAnimator.js V1.3 loaded"
   );
 
 })();
