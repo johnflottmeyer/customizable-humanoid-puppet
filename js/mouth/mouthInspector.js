@@ -1,6 +1,6 @@
 /* ==========================
    FACELAB
-   MOUTH INSPECTOR — VERSION 1.1.2
+   MOUTH INSPECTOR — VERSION 1.6
 
    Mouth-specific Face Inspector adapter.
 
@@ -370,10 +370,168 @@ function createFaceLabMouthHandles() {
     );
 
 
+    const speechRow =
+      document.createElement(
+        "div"
+      );
+
+    speechRow.style.width =
+      "100%";
+
+    speechRow.style.display =
+      "flex";
+
+    speechRow.style.gap =
+      "6px";
+
+    speechRow.style.marginBottom =
+      "6px";
+
+
+    const speechInput =
+      document.createElement(
+        "input"
+      );
+
+    speechInput.type =
+      "text";
+
+    speechInput.id =
+      "mouthTextVisemeInput";
+
+    speechInput.value =
+      "Maybe we should go.";
+
+    speechInput.placeholder =
+      "Type text to animate";
+
+    speechInput.style.flex =
+      "1";
+
+    speechInput.style.minWidth =
+      "0";
+
+    speechInput.style.padding =
+      "6px 8px";
+
+    speechInput.style.border =
+      "1px solid #4b505a";
+
+    speechInput.style.borderRadius =
+      "6px";
+
+    speechInput.style.background =
+      "#1f2227";
+
+    speechInput.style.color =
+      "#f2f2f2";
+
+
+    const speechButton =
+      document.createElement(
+        "button"
+      );
+
+    speechButton.type =
+      "button";
+
+    speechButton.textContent =
+      "Speak";
+
+    speechButton.style.padding =
+      "6px 10px";
+
+    speechButton.style.border =
+      "1px solid #4b505a";
+
+    speechButton.style.borderRadius =
+      "6px";
+
+    speechButton.style.background =
+      "#343942";
+
+    speechButton.style.color =
+      "#f2f2f2";
+
+    speechButton.style.cursor =
+      "pointer";
+
+
+    function runTextVisemeTest() {
+
+      const text =
+        speechInput.value.trim();
+
+      if (!text) {
+        return;
+      }
+
+
+      if (
+        window.TextToVisemes &&
+        typeof window.TextToVisemes
+          .speak ===
+          "function"
+      ) {
+
+        window.TextToVisemes
+          .speak(text);
+
+      } else {
+
+        console.warn(
+          "TextToVisemes is not available."
+        );
+
+      }
+
+    }
+
+
+    speechButton.addEventListener(
+      "click",
+      runTextVisemeTest
+    );
+
+
+    speechInput.addEventListener(
+      "keydown",
+      function (event) {
+
+        if (
+          event.key ===
+          "Enter"
+        ) {
+
+          runTextVisemeTest();
+
+        }
+
+      }
+    );
+
+
+    speechRow.appendChild(
+      speechInput
+    );
+
+    speechRow.appendChild(
+      speechButton
+    );
+
+    panel.appendChild(
+      speechRow
+    );
+
+
     const visemes = [
       ["neutral", "Neutral"],
       ["MBP", "M / B / P"],
       ["EE", "EE"],
+      ["L", "L"],
+      ["TH", "TH"],
+      ["SH", "SH / CH / J"],
+      ["WR", "W / R"],
       ["OH", "OH / OO"],
       ["AH", "AH"],
       ["FV", "F / V"]
@@ -544,5 +702,5 @@ function createFaceLabMouthHandles() {
   }
 
 
-  console.log("mouthInspector.js V1.1.2 loaded");
+  console.log("mouthInspector.js V1.6 loaded");
 })();
