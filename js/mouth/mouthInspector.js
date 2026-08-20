@@ -1,6 +1,6 @@
 /* ==========================
    FACELAB
-   MOUTH INSPECTOR — VERSION 1.6
+   MOUTH INSPECTOR — VERSION 1.9
 
    Mouth-specific Face Inspector adapter.
 
@@ -530,8 +530,11 @@ function createFaceLabMouthHandles() {
       ["EE", "EE"],
       ["L", "L"],
       ["TH", "TH"],
+      ["TDN", "T / D / N"],
+      ["KG", "K / G"],
       ["SH", "SH / CH / J"],
       ["WR", "W / R"],
+      ["UHEH", "UH / EH"],
       ["OH", "OH / OO"],
       ["AH", "AH"],
       ["FV", "F / V"]
@@ -702,5 +705,5 @@ function createFaceLabMouthHandles() {
   }
 
 
-  console.log("mouthInspector.js V1.6 loaded");
+  console.log("mouthInspector.js V1.9 loaded");
 })();
