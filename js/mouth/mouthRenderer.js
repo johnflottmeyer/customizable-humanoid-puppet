@@ -1,5 +1,5 @@
 /* ==========================
-   MOUTH RENDERER — VERSION 4.2
+   MOUTH RENDERER — VERSION 4.8
 
    Responsibilities:
 
@@ -1699,7 +1699,11 @@
     if (
       pose !== "MBP" &&
       pose !== "EE" &&
-      pose !== "FV"
+      pose !== "FV" &&
+      pose !== "L" &&
+      pose !== "TH" &&
+      pose !== "SH" &&
+      pose !== "WR"
     ) {
       return null;
     }
@@ -1852,6 +1856,189 @@
             sample.seamPoint.y
           ) *
           0.94;
+      }
+
+
+      if (pose === "L") {
+        /*
+            L:
+            modest central opening with mostly neutral lips.
+            The dedicated L teeth/tongue layers use the
+            upperInner/lowerInner arrays produced here.
+        */
+
+        xScale =
+          0.99;
+
+        const gap =
+          7.2 *
+          Math.pow(
+            centerWeight,
+            0.78
+          );
+
+        upperInnerY =
+          sample.seamPoint.y -
+          gap *
+          0.44;
+
+        lowerInnerY =
+          sample.seamPoint.y +
+          gap *
+          0.56;
+
+        upperOuterY =
+          upperInnerY -
+          (
+            sample.seamPoint.y -
+            sample.upperBorder.y
+          ) *
+          0.96;
+
+        lowerOuterY =
+          lowerInnerY +
+          (
+            sample.lowerBorder.y -
+            sample.seamPoint.y
+          ) *
+          0.98;
+      }
+
+
+      if (pose === "WR") {
+        /*
+            W / R:
+            tight pursed opening.
+            Narrower than OH/OO and much less vertically open.
+        */
+
+        xScale =
+          0.84;
+
+        const gap =
+          4.4 *
+          Math.pow(
+            centerWeight,
+            0.62
+          );
+
+        upperInnerY =
+          sample.seamPoint.y -
+          gap *
+          0.48;
+
+        lowerInnerY =
+          sample.seamPoint.y +
+          gap *
+          0.52;
+
+        upperOuterY =
+          upperInnerY -
+          (
+            sample.seamPoint.y -
+            sample.upperBorder.y
+          ) *
+          1.10;
+
+        lowerOuterY =
+          lowerInnerY +
+          (
+            sample.lowerBorder.y -
+            sample.seamPoint.y
+          ) *
+          1.10;
+      }
+
+
+      if (pose === "SH") {
+        /*
+            SH / CH / J:
+            compact rounded opening.
+            Outer width narrows while the inner opening
+            stays slightly taller through the center.
+        */
+
+        xScale =
+          0.96;
+
+        const gap =
+          5.7 *
+          Math.pow(
+            centerWeight,
+            0.82
+          );
+
+        upperInnerY =
+          sample.seamPoint.y -
+          gap *
+          0.46;
+
+        lowerInnerY =
+          sample.seamPoint.y +
+          gap *
+          0.54;
+
+        upperOuterY =
+          upperInnerY -
+          (
+            sample.seamPoint.y -
+            sample.upperBorder.y
+          ) *
+          1.03;
+
+        lowerOuterY =
+          lowerInnerY +
+          (
+            sample.lowerBorder.y -
+            sample.seamPoint.y
+          ) *
+          1.03;
+      }
+
+
+      if (pose === "TH") {
+        /*
+            TH:
+            modest central opening with a slightly
+            forward lower inner edge so the tongue
+            can project between the teeth.
+        */
+
+        xScale =
+          0.99;
+
+        const gap =
+          10.6 *
+          Math.pow(
+            centerWeight,
+            0.72
+          );
+
+        upperInnerY =
+          sample.seamPoint.y -
+          gap *
+          0.42;
+
+        lowerInnerY =
+          sample.seamPoint.y +
+          gap *
+          0.58;
+
+        upperOuterY =
+          upperInnerY -
+          (
+            sample.seamPoint.y -
+            sample.upperBorder.y
+          ) *
+          0.95;
+
+        lowerOuterY =
+          lowerInnerY +
+          (
+            sample.lowerBorder.y -
+            sample.seamPoint.y
+          ) *
+          0.96;
       }
 
 
@@ -2429,6 +2616,689 @@
 
 
     /*
+        EXPLICIT L UPPER TEETH
+
+        L needs a dedicated dental band because the generic tooth
+        reveal can be too shallow to read through this pose.
+
+        Render order is important:
+        cavity -> upper teeth -> tongue tip -> lips
+    */
+
+    if (
+      explicitPose === "L" &&
+      articulation.upperInner &&
+      articulation.lowerInner &&
+      articulation.upperInner.length > 4 &&
+      articulation.lowerInner.length ===
+        articulation.upperInner.length
+    ) {
+
+      const lToothTop = [];
+      const lToothBottom = [];
+
+      const count =
+        articulation.upperInner.length;
+
+      for (
+        let index = 0;
+        index < count;
+        index += 1
+      ) {
+
+        const t =
+          count <= 1
+            ? 0
+            : index / (count - 1);
+
+        if (
+          t < 0.20 ||
+          t > 0.80
+        ) {
+          continue;
+        }
+
+        const upperPoint =
+          articulation.upperInner[index];
+
+        const lowerPoint =
+          articulation.lowerInner[index];
+
+        if (
+          !validPoint(upperPoint) ||
+          !validPoint(lowerPoint)
+        ) {
+          continue;
+        }
+
+        const envelope =
+          Math.sin(
+            Math.PI * t
+          );
+
+        const cavityHeight =
+          Math.max(
+            1,
+            lowerPoint.y -
+            upperPoint.y
+          );
+
+        const topY =
+          upperPoint.y +
+          0.20 *
+          envelope;
+
+        const bottomY =
+          Math.min(
+            lowerPoint.y - 1.0,
+            upperPoint.y +
+            Math.max(
+              2.8 * envelope,
+              cavityHeight * 0.48
+            )
+          );
+
+        lToothTop.push({
+          x: upperPoint.x,
+          y: topY
+        });
+
+        lToothBottom.push({
+          x: upperPoint.x,
+          y: bottomY
+        });
+      }
+
+      if (
+        lToothTop.length > 1 &&
+        lToothBottom.length > 1
+      ) {
+
+        const lTeethPath =
+          pointsToClosedPath(
+            lToothTop.concat(
+              lToothBottom
+                .slice()
+                .reverse()
+            )
+          );
+
+        group.appendChild(
+          createPath(
+            lTeethPath,
+            {
+              id: "upperTeethL",
+              className:
+                "upperTeeth upperTeethL",
+              fill:
+                settings.teethColor ||
+                "#eee7dc",
+              stroke: "none",
+              opacity: 1
+            }
+          )
+        );
+      }
+    }
+
+
+    /*
+        EXPLICIT L TONGUE
+
+        The tongue tip rises into the upper dental region and overlaps
+        the lower edge of the upper teeth around the center.
+
+        This is intentionally more obvious than a realistic tongue tip
+        at first; we can tune it back once the pose reads clearly.
+    */
+
+    if (
+      explicitPose === "L" &&
+      articulation.upperInner &&
+      articulation.lowerInner &&
+      articulation.upperInner.length > 4 &&
+      articulation.lowerInner.length ===
+        articulation.upperInner.length
+    ) {
+
+      const lTongueTop = [];
+      const lTongueBottom = [];
+
+      const count =
+        articulation.upperInner.length;
+
+      for (
+        let index = 0;
+        index < count;
+        index += 1
+      ) {
+
+        const t =
+          count <= 1
+            ? 0
+            : index / (count - 1);
+
+        if (
+          t < 0.315 ||
+          t > 0.685
+        ) {
+          continue;
+        }
+
+        const upperPoint =
+          articulation.upperInner[index];
+
+        const lowerPoint =
+          articulation.lowerInner[index];
+
+        if (
+          !validPoint(upperPoint) ||
+          !validPoint(lowerPoint)
+        ) {
+          continue;
+        }
+
+        const localT =
+          (t - 0.315) /
+          0.37;
+
+        const rawArch =
+          Math.sin(
+            Math.PI * localT
+          );
+
+        /*
+            Broad, flatter tongue-tip plateau.
+            Raising rawArch to a low power keeps the center wide
+            instead of creating the previous little pointed bump.
+        */
+        const arch =
+          Math.pow(
+            Math.max(
+              0,
+              rawArch
+            ),
+            0.34
+          );
+
+        const cavityHeight =
+          Math.max(
+            1,
+            lowerPoint.y -
+            upperPoint.y
+          );
+
+        /*
+            Center tip reaches into the dental zone.
+            Side points stay lower so this reads as a tongue tip,
+            not a broad AH tongue.
+        */
+
+        const topY =
+          lowerPoint.y -
+          cavityHeight *
+          (
+            0.40 +
+            0.64 *
+            Math.pow(
+              arch,
+              1.45
+            )
+          );
+
+        const bottomY =
+          lowerPoint.y -
+          cavityHeight *
+          (
+            0.10 +
+            0.22 *
+            arch
+          );
+
+        lTongueTop.push({
+          x: upperPoint.x,
+          y: topY
+        });
+
+        lTongueBottom.push({
+          x: lowerPoint.x,
+          y: bottomY
+        });
+      }
+
+      if (
+        lTongueTop.length > 1 &&
+        lTongueBottom.length > 1
+      ) {
+
+        const lTonguePath =
+          pointsToClosedPath(
+            lTongueTop.concat(
+              lTongueBottom
+                .slice()
+                .reverse()
+            )
+          );
+
+        group.appendChild(
+          createPath(
+            lTonguePath,
+            {
+              id: "tongueL",
+              className:
+                "tongueSurface tongueL",
+              fill:
+                settings.tongueTipColor ||
+                settings.tongueFrontColor ||
+                "#c96f78",
+              stroke:
+                settings.tongueEdgeColor ||
+                "rgba(90, 35, 45, 0.22)",
+              strokeWidth: 0.55,
+              opacity: 1
+            }
+          )
+        );
+      }
+    }
+
+
+    /*
+        EXPLICIT SH / CH / J UPPER TEETH
+
+        A restrained dental reveal behind the rounded lips.
+        The lips remain the dominant feature of this pose.
+    */
+
+    if (
+      explicitPose === "SH" &&
+      articulation.upperInner &&
+      articulation.lowerInner &&
+      articulation.upperInner.length > 4 &&
+      articulation.lowerInner.length ===
+        articulation.upperInner.length
+    ) {
+
+      const shToothTop = [];
+      const shToothBottom = [];
+
+      const count =
+        articulation.upperInner.length;
+
+      for (
+        let index = 0;
+        index < count;
+        index += 1
+      ) {
+
+        const t =
+          count <= 1
+            ? 0
+            : index / (count - 1);
+
+        if (
+          t < 0.28 ||
+          t > 0.72
+        ) {
+          continue;
+        }
+
+        const upperPoint =
+          articulation.upperInner[index];
+
+        const lowerPoint =
+          articulation.lowerInner[index];
+
+        if (
+          !validPoint(upperPoint) ||
+          !validPoint(lowerPoint)
+        ) {
+          continue;
+        }
+
+        const envelope =
+          Math.sin(
+            Math.PI * t
+          );
+
+        const cavityHeight =
+          Math.max(
+            1,
+            lowerPoint.y -
+            upperPoint.y
+          );
+
+        shToothTop.push({
+          x: upperPoint.x,
+          y:
+            upperPoint.y +
+            0.18 *
+            envelope
+        });
+
+        shToothBottom.push({
+          x: upperPoint.x,
+          y:
+            Math.min(
+              lowerPoint.y - 1.35,
+              upperPoint.y +
+              Math.max(
+                2.1 * envelope,
+                cavityHeight * 0.28
+              )
+            )
+        });
+      }
+
+      if (
+        shToothTop.length > 1 &&
+        shToothBottom.length > 1
+      ) {
+
+        const shTeethPath =
+          pointsToClosedPath(
+            shToothTop.concat(
+              shToothBottom
+                .slice()
+                .reverse()
+            )
+          );
+
+        group.appendChild(
+          createPath(
+            shTeethPath,
+            {
+              id: "upperTeethSH",
+              className:
+                "upperTeeth upperTeethSH",
+              fill:
+                settings.teethColor ||
+                "#eee7dc",
+              stroke: "none",
+              opacity: 0.88
+            }
+          )
+        );
+      }
+    }
+
+
+    /*
+        EXPLICIT TH UPPER TEETH
+    */
+
+    if (
+      explicitPose === "TH" &&
+      articulation.upperInner &&
+      articulation.lowerInner &&
+      articulation.upperInner.length > 4 &&
+      articulation.lowerInner.length ===
+        articulation.upperInner.length
+    ) {
+
+      const thToothTop = [];
+      const thToothBottom = [];
+      const count =
+        articulation.upperInner.length;
+
+      for (
+        let index = 0;
+        index < count;
+        index += 1
+      ) {
+
+        const t =
+          count <= 1
+            ? 0
+            : index / (count - 1);
+
+        if (
+          t < 0.18 ||
+          t > 0.82
+        ) {
+          continue;
+        }
+
+        const upperPoint =
+          articulation.upperInner[index];
+
+        const lowerPoint =
+          articulation.lowerInner[index];
+
+        if (
+          !validPoint(upperPoint) ||
+          !validPoint(lowerPoint)
+        ) {
+          continue;
+        }
+
+        const envelope =
+          Math.sin(
+            Math.PI * t
+          );
+
+        const cavityHeight =
+          Math.max(
+            1,
+            lowerPoint.y -
+            upperPoint.y
+          );
+
+        thToothTop.push({
+          x: upperPoint.x,
+          y:
+            upperPoint.y +
+            0.18 *
+            envelope
+        });
+
+        thToothBottom.push({
+          x: upperPoint.x,
+          y:
+            Math.min(
+              lowerPoint.y - 1.2,
+              upperPoint.y +
+              Math.max(
+                2.6 * envelope,
+                cavityHeight * 0.36
+              )
+            )
+        });
+      }
+
+      if (
+        thToothTop.length > 1 &&
+        thToothBottom.length > 1
+      ) {
+
+        const thTeethPath =
+          pointsToClosedPath(
+            thToothTop.concat(
+              thToothBottom
+                .slice()
+                .reverse()
+            )
+          );
+
+        group.appendChild(
+          createPath(
+            thTeethPath,
+            {
+              id: "upperTeethTH",
+              className:
+                "upperTeeth upperTeethTH",
+              fill:
+                settings.teethColor ||
+                "#eee7dc",
+              stroke: "none",
+              opacity: 1
+            }
+          )
+        );
+      }
+    }
+
+
+    /*
+        EXPLICIT TH TONGUE
+
+        Wider than L and pushed forward/downward so the tip
+        visibly protrudes between the teeth instead of rising
+        behind them.
+    */
+
+    if (
+      explicitPose === "TH" &&
+      articulation.upperInner &&
+      articulation.lowerInner &&
+      articulation.upperInner.length > 4 &&
+      articulation.lowerInner.length ===
+        articulation.upperInner.length
+    ) {
+
+      const thTongueTop = [];
+      const thTongueBottom = [];
+
+      const count =
+        articulation.upperInner.length;
+
+      for (
+        let index = 0;
+        index < count;
+        index += 1
+      ) {
+
+        const t =
+          count <= 1
+            ? 0
+            : index / (count - 1);
+
+        if (
+          t < 0.27 ||
+          t > 0.73
+        ) {
+          continue;
+        }
+
+        const upperPoint =
+          articulation.upperInner[index];
+
+        const lowerPoint =
+          articulation.lowerInner[index];
+
+        if (
+          !validPoint(upperPoint) ||
+          !validPoint(lowerPoint)
+        ) {
+          continue;
+        }
+
+        const localT =
+          (t - 0.27) /
+          0.46;
+
+        const rawArch =
+          Math.sin(
+            Math.PI * localT
+          );
+
+        const arch =
+          Math.pow(
+            Math.max(
+              0,
+              rawArch
+            ),
+            0.78
+          );
+
+        const sideTaper =
+          Math.pow(
+            Math.max(
+              0,
+              rawArch
+            ),
+            0.58
+          );
+
+        const cavityHeight =
+          Math.max(
+            1,
+            lowerPoint.y -
+            upperPoint.y
+          );
+
+        /*
+            TH tongue top sits lower than L and extends
+            forward into the gap between teeth.
+        */
+
+        const topY =
+          upperPoint.y +
+          cavityHeight *
+          (
+            0.36 -
+            0.11 *
+            arch
+          );
+
+        const bottomY =
+          topY +
+          cavityHeight *
+          (
+            0.035 +
+            0.12 *
+            sideTaper
+          );
+
+        thTongueTop.push({
+          x: upperPoint.x,
+          y: topY
+        });
+
+        thTongueBottom.push({
+          x: lowerPoint.x,
+          y: bottomY
+        });
+      }
+
+      if (
+        thTongueTop.length > 1 &&
+        thTongueBottom.length > 1
+      ) {
+
+        const thTonguePath =
+          pointsToClosedPath(
+            thTongueTop.concat(
+              thTongueBottom
+                .slice()
+                .reverse()
+            )
+          );
+
+        group.appendChild(
+          createPath(
+            thTonguePath,
+            {
+              id: "tongueTH",
+              className:
+                "tongueSurface tongueTH",
+              fill:
+                settings.tongueTipColor ||
+                settings.tongueFrontColor ||
+                "#c96f78",
+              stroke:
+                settings.tongueEdgeColor ||
+                "rgba(90, 35, 45, 0.22)",
+              strokeWidth: 0.55,
+              opacity: 1
+            }
+          )
+        );
+      }
+    }
+
+
+    /*
         TONGUE
 
         Broad curved surface rising from the lower
@@ -2453,6 +3323,8 @@
 
     if (
       settings.showTongue !== false &&
+      explicitPose !== "L" &&
+      explicitPose !== "TH" &&
       articulation.cavityPath &&
       tongueOpenAmount >
         tongueRevealStart
@@ -3199,7 +4071,11 @@
     if (
       explicitPose === "MBP" ||
       explicitPose === "EE" ||
-      explicitPose === "FV"
+      explicitPose === "FV" ||
+      explicitPose === "L" ||
+      explicitPose === "TH" ||
+      explicitPose === "SH" ||
+      explicitPose === "WR"
     ) {
       return;
     }
@@ -3329,5 +4205,5 @@
     drawSeam: drawSeam,
   };
 
-  console.log("mouthRenderer.js V4.2 loaded");
+  console.log("mouthRenderer.js V4.8 loaded");
 })();
