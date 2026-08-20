@@ -1,5 +1,5 @@
 /* ==========================
-   MOUTH ENGINE — VERSION 9.2
+   MOUTH ENGINE — VERSION 9.5
 
    Responsibilities:
 
@@ -731,6 +731,115 @@
 
 
       /*
+          UH / EH
+
+          Middle vowel family.
+
+          Wider and flatter than OH / OO,
+          less stretched than EE,
+          and less vertically open than AH.
+      */
+
+      UHEH:
+        Object.freeze({
+
+          explicitVisemePose: "UHEH",
+
+          mouthOpen: 0.46,
+
+          widthScale: 1.035,
+
+          lipPucker: 0,
+
+          cornerPull: 0.045,
+
+          lipCompression: 0,
+
+          upperThicknessScale: 0.98,
+          lowerThicknessScale: 1.01,
+
+          upperTeethReveal: 0.30,
+
+          showTeeth: true,
+          showTongue: false
+
+        }),
+
+
+      /*
+          K / G
+
+          Back-of-mouth consonant pose.
+
+          The tongue contact happens far enough back that
+          the tongue tip should not be visibly articulated.
+          We mainly show a modest jaw opening and darker
+          oral cavity.
+      */
+
+      KG:
+        Object.freeze({
+
+          explicitVisemePose: "KG",
+
+          mouthOpen: 0.40,
+
+          widthScale: 0.98,
+
+          lipPucker: 0,
+
+          cornerPull: 0.015,
+
+          lipCompression: 0,
+
+          upperThicknessScale: 0.98,
+          lowerThicknessScale: 1.02,
+
+          upperTeethReveal: 0.24,
+
+          showTeeth: true,
+          showTongue: false
+
+        }),
+
+
+      /*
+          T / D / N
+
+          Tongue tip rises to the alveolar ridge
+          just behind the upper front teeth.
+
+          Less tongue exposure than L and no
+          tongue projection between the teeth.
+      */
+
+      TDN:
+        Object.freeze({
+
+          explicitVisemePose: "TDN",
+
+          mouthOpen: 0.28,
+
+          widthScale: 0.99,
+
+          lipPucker: 0,
+
+          cornerPull: 0.03,
+
+          lipCompression: 0.02,
+
+          upperThicknessScale: 0.98,
+          lowerThicknessScale: 0.98,
+
+          upperTeethReveal: 0.66,
+
+          showTeeth: true,
+          showTongue: true
+
+        }),
+
+
+      /*
           W / R
 
           Tight forward rounding.
@@ -949,6 +1058,19 @@
       W: "WR",
       R: "WR",
       WR: "WR",
+
+      T: "TDN",
+      D: "TDN",
+      N: "TDN",
+      TDN: "TDN",
+
+      K: "KG",
+      G: "KG",
+      KG: "KG",
+
+      UH: "UHEH",
+      EH: "UHEH",
+      UHEH: "UHEH",
 
       O: "OH",
       OH: "OH",
@@ -1833,5 +1955,5 @@
 
     getLowerPath: getCurrentLowerPath,
   };
-  console.log("mouthEngine.js V9.2 loaded");
+  console.log("mouthEngine.js V9.5 loaded");
 })();
