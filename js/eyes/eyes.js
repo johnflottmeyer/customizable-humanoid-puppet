@@ -1,6 +1,6 @@
 /* =========================================================
    FACELAB EYE SYSTEM
-   Version 2.2.1
+   Version 2.2.3
 
    2.2.1
    - Tear duct is centered on inner canthus.
@@ -205,13 +205,13 @@ function buildEyeAnatomy(
       0.9,
     );
 
-  const cornerInfluence =
-    1 -
-    clamp(
-      blinkAmount,
-      0,
-      1,
-    );
+  /*
+      Blink geometry is owned by EyeRig.
+
+      Keep eye-corner geometry fixed during blink
+      so the canthi do not waggle or collapse.
+  */
+  const cornerInfluence = 1;
 
   const isLeft =
     side === "left";
@@ -509,6 +509,15 @@ function drawEye(
       1,
     );
 
+  /*
+      Keep the eye corners fixed, but restore the renderer's
+      vertical eye-height closure so a blink remains visible.
+
+      EyeRig still shapes the lids anatomically while this value
+      controls the visible opening height. Because cornerInfluence
+      remains fixed at 1, this should close vertically without the
+      previous side-to-side canthus wiggle.
+  */
   const animatedEyeHeight =
     Math.max(
       1.5,
@@ -2086,7 +2095,7 @@ window.resetEyeRig =
     updateFaceLabEyes;
 
   window.EyeSystem = {
-    version: "2.2.1",
+    version: "2.2.3",
 
     defaults:
       Object.freeze({
@@ -2204,6 +2213,6 @@ window.resetEyeRig =
   }
 
   console.log(
-    "FaceLab Eye System 2.2.1 registered",
+    "FaceLab Eye System 2.2.3 registered",
   );
 })();
