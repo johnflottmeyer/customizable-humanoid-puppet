@@ -1,7 +1,7 @@
 /*
 ==================================================
 FACELAB — TEXT TO VISEMES
-VERSION 1.0
+VERSION 1.2
 ==================================================
 
 Purpose:
@@ -33,10 +33,12 @@ Usage:
   const DEFAULTS = {
     consonantDuration: 72,
     vowelDuration: 105,
-    transitionDuration: 95,
-    shortHold: 18,
-    vowelHold: 34,
-    wordGap: 28,
+    transitionDuration: 62,
+    consonantNeutralDuration: 42,
+    consonantNeutralHold: 8,
+    shortHold: 16,
+    vowelHold: 38,
+    wordGap: 18,
     commaGap: 90,
     sentenceGap: 150
   };
@@ -200,6 +202,25 @@ Usage:
         continue;
       }
 
+      /*
+          Common consonant clusters without
+          dedicated FaceLab geometry.
+      */
+
+      if (
+        /^(SH|CH|TH|NG)/.test(rest)
+      ) {
+        pushPose(
+          queue,
+          "neutral",
+          options.consonantNeutralDuration,
+          options.consonantNeutralHold
+        );
+
+        i += 2;
+        continue;
+      }
+
       const char =
         upper[i];
 
@@ -302,12 +323,39 @@ Usage:
       }
 
       /*
-          Most tongue-driven consonants
-          don't yet have their own FaceLab
-          pose. We avoid inventing one and
-          let the neighboring vowel carry
-          the visible articulation.
+          Tongue / jaw consonants do not yet
+          have dedicated FaceLab visemes.
+          A short neutral beat prevents large
+          vowel poses from flowing together.
+          H is left to the following vowel.
       */
+
+      /*
+          Selective neutral consonants only.
+
+          Most T/D/K/G/S/Z/R/L/N-style consonants
+          are now allowed to ride through the
+          neighboring vowel so the mouth does not
+          over-articulate every letter.
+
+          J and hard C/Q/X are kept as brief neutral
+          interruptions because they tend to produce
+          stronger visible jaw/tongue events.
+      */
+
+      if (
+        /[JQX]/.test(char)
+      ) {
+        pushPose(
+          queue,
+          "neutral",
+          options.consonantNeutralDuration,
+          options.consonantNeutralHold
+        );
+
+        i++;
+        continue;
+      }
 
       i++;
     }
@@ -449,7 +497,7 @@ Usage:
 
   window.TextToVisemes = {
 
-    version: "1.0",
+    version: "1.2",
 
     convert:
       convert,
@@ -465,7 +513,7 @@ Usage:
   };
 
   console.log(
-    "textToVisemes.js V1.0 loaded"
+    "textToVisemes.js V1.2 loaded"
   );
 
 })();
