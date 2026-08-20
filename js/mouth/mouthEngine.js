@@ -1,5 +1,5 @@
 /* ==========================
-   MOUTH ENGINE — VERSION 8.8
+   MOUTH ENGINE — VERSION 9.2
 
    Responsibilities:
 
@@ -629,6 +629,140 @@
 
 
       /*
+          L
+
+          Tongue tip rises behind the upper
+          front teeth. The mouth remains only
+          moderately open and relatively neutral
+          in width.
+      */
+
+      L:
+        Object.freeze({
+
+          explicitVisemePose: "L",
+
+          mouthOpen: 0.38,
+
+          widthScale: 0.98,
+
+          cornerPull: 0.05,
+
+          lipPucker: 0,
+
+          lipCompression: 0,
+
+          upperThicknessScale: 0.98,
+          lowerThicknessScale: 0.98,
+
+          upperTeethReveal: 1.00,
+
+          showTeeth: true,
+          showTongue: true
+
+        }),
+
+
+      /*
+          TH
+
+          Tongue tip extends slightly between the
+          front teeth. Mouth stays modestly open.
+      */
+
+      TH:
+        Object.freeze({
+
+          explicitVisemePose: "TH",
+
+          mouthOpen: 0.48,
+
+          widthScale: 0.97,
+
+          cornerPull: 0.00,
+
+          lipPucker: 0,
+
+          lipCompression: 0,
+
+          upperThicknessScale: 0.98,
+          lowerThicknessScale: 0.98,
+
+          upperTeethReveal: 0.90,
+
+          showTeeth: true,
+          showTongue: true
+
+        }),
+
+
+      /*
+          SH / CH / J
+
+          Lips round and compress slightly.
+          Opening remains small and forward,
+          with a modest upper-teeth reveal.
+      */
+
+      SH:
+        Object.freeze({
+
+          explicitVisemePose: "SH",
+
+          mouthOpen: 0.24,
+
+          widthScale: 0.95,
+
+          lipPucker: 0.48,
+
+          cornerPull: -0.30,
+
+          lipCompression: 0.16,
+
+          upperThicknessScale: 1.04,
+          lowerThicknessScale: 1.04,
+
+          upperTeethReveal: 0.46,
+
+          showTeeth: true,
+          showTongue: false
+
+        }),
+
+
+      /*
+          W / R
+
+          Tight forward rounding.
+          More pursed and compact than OH / OO,
+          with only a small central opening.
+      */
+
+      WR:
+        Object.freeze({
+
+          explicitVisemePose: "WR",
+
+          mouthOpen: 0.20,
+
+          widthScale: 0.82,
+
+          lipPucker: 0.88,
+
+          cornerPull: -0.72,
+
+          lipCompression: 0.12,
+
+          upperThicknessScale: 1.10,
+          lowerThicknessScale: 1.10,
+
+          showTeeth: false,
+          showTongue: false
+
+        }),
+
+
+      /*
           OH / OO
 
           Corners move inward and the
@@ -803,6 +937,18 @@
       E: "EE",
       EE: "EE",
       I: "EE",
+
+      L: "L",
+
+      TH: "TH",
+
+      SH: "SH",
+      CH: "SH",
+      J: "SH",
+
+      W: "WR",
+      R: "WR",
+      WR: "WR",
 
       O: "OH",
       OH: "OH",
@@ -1687,5 +1833,5 @@
 
     getLowerPath: getCurrentLowerPath,
   };
-  console.log("mouthEngine.js V8.8 loaded");
+  console.log("mouthEngine.js V9.2 loaded");
 })();
