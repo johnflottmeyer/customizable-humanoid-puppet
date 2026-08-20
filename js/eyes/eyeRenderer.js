@@ -1,6 +1,6 @@
 /* =========================================================
    FACELAB EYE RENDERER
-   Version 5.5.9
+   Version 5.6.0
 
    5.5.9
    - Flips the tear-duct iris-facing arc to a true concave "(" profile.
@@ -246,6 +246,71 @@ tearDuctOffsetY:
       .slice()
       .reverse()
       .map(copyPoint);
+  }
+
+
+  /*
+     5.6.0 — RENDERER-LEVEL BLINK
+
+     EyeRig still supplies the anatomical lid pose.
+
+     This transform guarantees that the visible eye opening,
+     lid edges and lid surfaces actually close vertically in
+     the renderer. X is never scaled, so the canthi cannot
+     waggle left/right during a blink.
+  */
+
+  function buildBlinkTransform(
+    baseTransform,
+    centerY,
+    blinkAmount,
+  ) {
+    const blink =
+      clamp(
+        number(
+          blinkAmount,
+          0,
+        ),
+        0,
+        1,
+      );
+
+    if (blink <= 0.0001) {
+      return baseTransform || "";
+    }
+
+    /*
+       Leave a tiny amount of vertical height at full closure
+       so strokes remain visible rather than degenerating to
+       an invalid zero-height shape.
+    */
+
+    const verticalScale =
+      mix(
+        1,
+        0.045,
+        blink,
+      );
+
+    const pivotY =
+      number(
+        centerY,
+        0,
+      );
+
+    const blinkTransform =
+      [
+        `translate(0 ${pivotY})`,
+        `scale(1 ${verticalScale})`,
+        `translate(0 ${-pivotY})`,
+      ].join(" ");
+
+    return [
+      baseTransform || "",
+      blinkTransform,
+    ]
+      .filter(Boolean)
+      .join(" ");
   }
 
   /*
@@ -3758,6 +3823,27 @@ tearDuctOffsetY:
     const transform =
       anatomy.transform || "";
 
+    const blinkAmount =
+      clamp(
+        number(
+          input.animationState &&
+          input.animationState.blink,
+          0,
+        ),
+        0,
+        1,
+      );
+
+    const blinkTransform =
+      buildBlinkTransform(
+        transform,
+        number(
+          input.centerY,
+          0,
+        ),
+        blinkAmount,
+      );
+
     const surfaces =
       buildLidSurfaces(
         anatomy,
@@ -3789,7 +3875,7 @@ tearDuctOffsetY:
     renderOpening(
       elements,
       anatomy,
-      transform,
+      blinkTransform,
     );
 
     const irisPlacement =
@@ -3814,28 +3900,28 @@ tearDuctOffsetY:
       elements,
       surfaces,
       anatomy,
-      transform,
+      blinkTransform,
       options,
     );
 
     renderUpperLidFold(
       elements,
       anatomy,
-      transform,
+      blinkTransform,
       options,
     );
 
     renderLidEdges(
       elements,
       anatomy,
-      transform,
+      blinkTransform,
       options,
     );
 
     renderCreases(
       elements,
       surfaces,
-      transform,
+      blinkTransform,
       options,
     );
 
@@ -3864,7 +3950,7 @@ tearDuctOffsetY:
   ========================================================= */
 
   window.EyeRenderer = {
-    version: "5.5.9",
+    version: "5.6.0",
 
     defaults:
       DEFAULT_RENDER_OPTIONS,
@@ -3881,6 +3967,6 @@ tearDuctOffsetY:
   };
 
   console.log(
-    "EyeRenderer 5.5.9 loaded",
+    "EyeRenderer 5.6.0 loaded",
   );
 })();
